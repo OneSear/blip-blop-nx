@@ -3,6 +3,104 @@
 Status of the phases of [migration.md](../migration.md), with the facts
 learnt while implementing them. Newest phase first.
 
+## The Switch port (30 October 2026: implemented, not yet tried on a console)
+
+[switch-port.md](../switch-port.md), steps S1 to S7, done in one go; what a
+console must still show is the checklist (`docs/release-checklist.md`).
+
+### What changed
+
+* **The Switch is the only target.** CI builds the `.nro` and nothing else
+  (`ci.yml`: one job in the `devkitpro/devkita64` container); `release.yml`
+  attaches `blipblop-<version>-switch-nro.zip`; the maintainer packs the
+  `.nsp` with `tools/switch/make-nsp.sh`. Gone: the desktop jobs and
+  packages (CPack, the macOS bundle and its universal SDL, the Windows DLLs,
+  the MinGW cross-check, the replays from the packages) and every Windows
+  branch of the code and the build. Local builds on a Mac or Linux stay,
+  for the tests, `bbassets` and `bbedit`.
+* **Build.** The `switch` preset (devkitPro's `Switch.cmake`) builds
+  `bbassets` and the runtime pack first for the machine it runs on (this
+  tree again, `BB_TOOLS_ONLY`, no SDL), then the game, `blipblop.nro` with
+  the pack in its RomFS (`cmake/BBSwitch.cmake`). The `.nsp`: `elf2nso` and
+  `npdmtool` (`cmake/switch/npdm.json`) make the ExeFS, the NACP and the
+  icon (`assets/switch/icon.jpg`, from the title picture, no Exif) the
+  control data, hacBrewPack packs them with the maintainer's keys
+  (`cmake/switch/MakeNsp.cmake`). Title ID `0x011142be60644000`, chosen at
+  random with bits 0 to 12 clear.
+* **Display.** `core::gfx::viewport()` places the 640x480 frame: fit
+  (960x720 at 160,0 on the 1280x720 handheld screen, 1440x1080 at 240,0 on
+  1920x1080) or by a whole factor of 2 or more (1280x960 at 320,60 docked).
+  `Sdl2Display` draws that rectangle itself (no more SDL logical size) and
+  implements the new FILTER value CRISP: the frame enlarged with sharp
+  pixels by the next whole factor in a render-target texture, then filtered
+  down. On the Switch the window is created at the screen's size (else the
+  system stretched 640x480 to 16:9) and stays resizable, so that SDL
+  follows docking; the display reads the output size at every present and
+  logs a `Display:` line when it changes. VSYNC, F10 and the fullscreen
+  setting are gone; the defaults are CRISP and SMOOTH MOTION on; the
+  deterministic runs start from `core::Settings::reference()` (smooth motion
+  off, as the replays were recorded).
+* **Controls.** The default pad layout is the Switch's, by SDL's positional
+  numbers: fire `kPadButtonB` (the right button, the Switch's A) or ZR, jump
+  `kPadButtonA` (bottom, B), cow bomb `kPadButtonX` (left, Y) or ZL
+  (`Bindings::defaultPadCodes()`: two inputs per action). The triggers come
+  as buttons 32 and 33. A pad's right button acts as Return (confirm), its
+  bottom button is the menus' new back (`Input::backHeld()`: up one page,
+  resume from the pause menu). The controls menu names pad inputs the
+  Switch's way (`P1 A`, `P2 ZR`, `P3 +`). SDL's Nintendo layout by label is
+  turned off on the Mac too (`SDL_HINT_GAMECONTROLLER_USE_BUTTON_LABELS`).
+* **System.** `switch_main.cpp`: RomFS, nxlink's standard output when it
+  started the game, the HOME menu's exit locked (closing reaches the game
+  as a quit), `sdmc:/switch/blipblop/` as current and preferences
+  directory. The applet's focus messages pause the game (HOME, sleep);
+  `Sdl2Input` delivers a focus return seen in the same update as the loss
+  one update later. Errors in the error applet; the controller applet
+  before a game of 2 to 4 players; the hi-score name on the console's
+  keyboard (`Input::beginTextEntry()`, never in deterministic runs); the
+  console's language on the first run; the mixer at the device's rate
+  (48 kHz); the settings saved when the options or controls pages are left
+  and the hi-scores after a name entry.
+* **Text.** CRISP (id 862, PRECIS in French) and "Press a button to start."
+  (id 852) in `assets/source/strings` and, through
+  `tools/data/fix_legacy_data.py`, in `data.zip` (`uk.dat`, `fr.dat`).
+
+### Facts learnt
+
+* devkitPro's SDL 2 for the Switch is 2.28.5; its pkg-config wrapper
+  (`aarch64-none-elf-pkg-config`) links statically by itself. devkitA64's
+  GCC is 15.2 and builds the tree with the strict warnings; its C++ library
+  has `std::filesystem` (it links; still to see it list `romfs:/` on a
+  console). The `.nro` is 102 MB, the ELF's code 7.8 MB.
+* `npdmtool` refuses more than one debug flag; hacBrewPack's template sets
+  two. hacBrewPack (built from the rlaphoenix mirror) packs the four
+  folders with key generation 1; with random keys it made a 99 MB `.nsp`
+  (not installable: the check of the chain only, deleted after).
+* libnx's controller applet has no option for single Joy-Cons: the style
+  set SDL configures allows them.
+
+### Verification (30 October 2026)
+
+* Before the changes, on the Mac (Debug): 40 of 40 tests passed.
+* After: the 11 tests without replays pass (Release), with the new cases
+  (viewport sizes, the Switch layout and its second inputs, the Switch's
+  names, `filter crisp`, a desktop-era settings file, the CRISP display,
+  the triggers as buttons).
+* The replays: every tick fingerprint of the 13 replays that changed is the
+  same as before (the simulation is untouched); only frames differ, from
+  the first briefing ("Press a button to start.") and, in `menus`, from the
+  options page (VSYNC gone, CRISP) — `menus` also presents 12 more frames,
+  the two taps of the VSYNC item that were waits for a release. `attract`,
+  which shows neither, is unchanged. `fourplayers`, generated again with the
+  Switch layout's fire button (`JOY3_B1`), keeps every tick. The expected
+  fingerprints were recorded again (`update_replay_hashes`); the 29 replay
+  tests then pass, data and pack.
+* The Switch build in the `devkitpro/devkita64` container: `cmake --preset
+  switch && cmake --build --preset switch` from the tree makes
+  `blipblop.nro` (102 MB); a Debug build carries the 14 replays in
+  `romfs:/replays/`; `tools/switch/make-nsp.sh`, run on a copy of the tree
+  with hacBrewPack and random keys, made `blipblop-0.1.0.nsp` (99 MB).
+* Not seen yet, on a console: everything of `docs/release-checklist.md`.
+
 ## Phase 9 — Optional improvements (the chosen items done)
 
 The maintainer chose (28 October 2026) the French text, the scaling

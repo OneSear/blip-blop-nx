@@ -7,8 +7,19 @@
   },
   "configurePresets": [
     {
+      "name": "switch",
+      "displayName": "Nintendo Switch: the .nro (and the .nsp, target blipblop_nsp)",
+      "binaryDir": "${sourceDir}/build/switch",
+      "toolchainFile": "$env{DEVKITPRO}/cmake/Switch.cmake",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "BB_BUILD_TESTS": "OFF",
+        "BB_BUILD_TOOLS": "OFF"
+      }
+    },
+    {
       "name": "default",
-      "displayName": "Debug build",
+      "displayName": "Debug build on a Mac or Linux (tests, tools, editor)",
       "binaryDir": "${sourceDir}/build/default",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug"
@@ -16,7 +27,7 @@
     },
     {
       "name": "release",
-      "displayName": "Release build",
+      "displayName": "Release build on a Mac or Linux (tests, tools, editor)",
       "binaryDir": "${sourceDir}/build/release",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "RelWithDebInfo"
@@ -24,7 +35,7 @@
     },
     {
       "name": "asan",
-      "displayName": "Debug build with AddressSanitizer and UBSan",
+      "displayName": "Debug build on a Mac or Linux with AddressSanitizer and UBSan",
       "binaryDir": "${sourceDir}/build/asan",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
@@ -34,6 +45,10 @@
     }
   ],
   "buildPresets": [
+    {
+      "name": "switch",
+      "configurePreset": "switch"
+    },
     {
       "name": "default",
       "configurePreset": "default",

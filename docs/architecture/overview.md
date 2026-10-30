@@ -67,7 +67,8 @@ with `core::gfx::draw()`, which keeps the 2002 clipping; fonts are
 840-pixel ring filled two columns at a time ahead of the camera, which
 also takes the decals (corpses, blood). Entities draw through
 `bb::game::Canvas`, which knows the back buffer, the fonts and the
-strings. The platform's `Display` only presents finished frames.
+strings. The platform's `Display` only presents finished frames, scaled
+to the screen (the Switch's 1280x720 or 1920x1080: switch-port.md).
 
 ## Determinism
 
@@ -87,8 +88,8 @@ files of the data directory (`data/`, extracted from
 `vc-projects/Blip_n_Blop_3/data.zip` by the build) or a runtime pack
 (`blipblop.bbpack`, built by `bbassets` from `assets/source`, `--pack`).
 Without `--data` or `--pack`, `bb::app::locateGameData()` takes `./data`
-when it holds the game's files, else the pack next to the executable (the
-packages; `Contents/Resources` in the macOS bundle), else a `data`
+when it holds the game's files, else the pack next to the executable (on
+the Switch, the pack at the root of the RomFS, `romfs:/`), else a `data`
 directory next to the executable.
 Images and sounds are named in the source manifests; `bbassets ids`
 generates the constants of `src/assets` (see

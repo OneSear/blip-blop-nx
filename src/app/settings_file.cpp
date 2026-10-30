@@ -23,28 +23,11 @@ int aliasOf(int player, int action) {
     return game::AliasControls::firstOf(player) + action;
 }
 
-void apply(const core::Settings& settings, game::Options& options, game::Input& in) {
-    options.vsync = settings.vsync;
-    options.fullscreen = settings.fullscreen;
-    options.language = settings.language;
-    options.integerScaling = settings.integerScaling;
-    options.smoothFilter = settings.smoothFilter;
-    options.smoothMotion = settings.smoothMotion;
-    for (int p = 0; p < input::kPlayerCount; ++p) {
-        for (int a = 0; a < input::kActionCount; ++a) {
-            in.setAlias(aliasOf(p, a),
-                        settings.bindings.get(p, input::kActions[static_cast<std::size_t>(a)]));
-        }
-    }
-}
-
 core::Settings current(const game::Options& options, const game::Input& in) {
     core::Settings settings;
-    settings.vsync = options.vsync;
-    settings.fullscreen = options.fullscreen;
     settings.language = options.language;
     settings.integerScaling = options.integerScaling;
-    settings.smoothFilter = options.smoothFilter;
+    settings.filter = options.filter;
     settings.smoothMotion = options.smoothMotion;
     for (int p = 0; p < input::kPlayerCount; ++p) {
         for (int a = 0; a < input::kActionCount; ++a) {
@@ -57,15 +40,22 @@ core::Settings current(const game::Options& options, const game::Input& in) {
 
 }  // namespace
 
-void applyDefaultSettings(game::Options& options, game::Input& in) {
-    core::Settings defaults;
-    defaults.vsync = options.vsync;
-    apply(defaults, options, in);
+void applySettings(const core::Settings& settings, game::Options& options, game::Input& in) {
+    options.language = settings.language;
+    options.integerScaling = settings.integerScaling;
+    options.filter = settings.filter;
+    options.smoothMotion = settings.smoothMotion;
+    for (int p = 0; p < input::kPlayerCount; ++p) {
+        for (int a = 0; a < input::kActionCount; ++a) {
+            in.setAlias(aliasOf(p, a),
+                        settings.bindings.get(p, input::kActions[static_cast<std::size_t>(a)]));
+        }
+    }
 }
 
-void loadSettings(const std::string& settingsPath, const platform::FileSystem& fileSystem, const core::Vfs& dataFiles,
+bool loadSettings(const std::string& settingsPath, const platform::FileSystem& fileSystem, const core::Vfs& dataFiles,
                   const std::string& legacyFile, game::Options& options, game::Input& in) {
-    applyDefaultSettings(options, in);
+    applySettings(core::Settings(), options, in);
 
     const auto bytes = settingsPath.empty() ? std::nullopt : fileSystem.readAll(settingsPath);
     if (bytes) {
@@ -78,11 +68,13 @@ void loadSettings(const std::string& settingsPath, const platform::FileSystem& f
         }
         if (settings) {
             core::Log::info("Using " + settingsPath + " as settings file.");
-            apply(*settings, options, in);
+            applySettings(*settings, options, in);
         } else {
             core::Log::info(settingsPath + ": " + error + " - default settings used");
         }
-    } else if (const auto legacy = dataFiles.readAll(legacyFile)) {
+        return true;
+    }
+    if (const auto legacy = dataFiles.readAll(legacyFile)) {
         std::vector<std::string> notes;
         const auto settings = core::Settings::importLegacyCfg(*legacy, notes);
         for (const std::string& n : notes) {
@@ -90,11 +82,12 @@ void loadSettings(const std::string& settingsPath, const platform::FileSystem& f
         }
         if (settings) {
             core::Log::info("Imported " + legacyFile + " (2002 binary configuration).");
-            apply(*settings, options, in);
+            applySettings(*settings, options, in);
         }
-    } else {
-        core::Log::info("Cannot find a settings file. Will use default settings.");
+        return true;
     }
+    core::Log::info("Cannot find a settings file. Will use default settings.");
+    return false;
 }
 
 void saveSettings(const std::string& settingsPath, platform::FileSystem& fileSystem, const game::Options& options,

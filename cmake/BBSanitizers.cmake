@@ -5,20 +5,14 @@
 option(BB_SANITIZERS_RECOVER "Keep running after a sanitizer finding (to collect them all)" OFF)
 
 if(BB_SANITIZERS)
-    if(MSVC)
-        if("address" IN_LIST BB_SANITIZERS)
-            add_compile_options(/fsanitize=address)
-        endif()
-    else()
-        string(REPLACE ";" "," _bb_san "${BB_SANITIZERS}")
-        add_compile_options(-fsanitize=${_bb_san} -fno-omit-frame-pointer)
-        if(NOT BB_SANITIZERS_RECOVER)
-            # CI: the first finding fails the run.
-            add_compile_options(-fno-sanitize-recover=all)
-        endif()
-        add_link_options(-fsanitize=${_bb_san})
-        unset(_bb_san)
+    string(REPLACE ";" "," _bb_san "${BB_SANITIZERS}")
+    add_compile_options(-fsanitize=${_bb_san} -fno-omit-frame-pointer)
+    if(NOT BB_SANITIZERS_RECOVER)
+        # The first finding fails the run.
+        add_compile_options(-fno-sanitize-recover=all)
     endif()
+    add_link_options(-fsanitize=${_bb_san})
+    unset(_bb_san)
     message(STATUS "Sanitizers enabled: ${BB_SANITIZERS}")
 endif()
 
@@ -26,7 +20,7 @@ endif()
 # section 6): a read of an uninitialised local then changes the replays'
 # fingerprints instead of passing by luck. On in the asan preset.
 option(BB_POISON_LOCALS "Fill uninitialised locals with a pattern (-ftrivial-auto-var-init=pattern)" OFF)
-if(BB_POISON_LOCALS AND NOT MSVC)
+if(BB_POISON_LOCALS)
     include(CheckCXXCompilerFlag)
     check_cxx_compiler_flag(-ftrivial-auto-var-init=pattern BB_HAS_AUTO_VAR_INIT)
     if(BB_HAS_AUTO_VAR_INIT)

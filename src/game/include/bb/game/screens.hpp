@@ -92,8 +92,12 @@ public:
 
 private:
     void drawTitle();
+    // The name typed on the on-screen keyboard: in capitals, without the
+    // characters the menu font lacks, 19 at most.
+    void setName(const std::string& text);
 
-    enum class Step { SlideIn, NextKey, KeyTyped, SlideOut };
+    // Keyboard: the system's on-screen keyboard (the Switch's) is shown.
+    enum class Step { SlideIn, NextKey, KeyTyped, Keyboard, SlideOut };
 
     Services& services_;
     int score_;
@@ -106,6 +110,7 @@ private:
     int key_ = -1;
     unsigned int typed_ = 0;
     bool noted_ = false;
+    bool keyboardAsked_ = false;
 };
 
 class Player;

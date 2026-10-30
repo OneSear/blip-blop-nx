@@ -95,6 +95,20 @@ TEST_CASE(
     }
     CHECK(moved);
 
+    // The triggers come as buttons (the Switch's ZL and ZR).
+    SDL_JoystickSetVirtualAxis(pad, SDL_CONTROLLER_AXIS_TRIGGERRIGHT, 32767);
+    bool pressed = false;
+    while (!pressed && next(source, InputEvent::Type::PadButtonDown, e)) {
+        pressed = e.code == input::kPadButtonRightTrigger;
+    }
+    CHECK(pressed);
+    SDL_JoystickSetVirtualAxis(pad, SDL_CONTROLLER_AXIS_TRIGGERRIGHT, -32768);
+    bool released = false;
+    while (!released && next(source, InputEvent::Type::PadButtonUp, e)) {
+        released = e.code == input::kPadButtonRightTrigger;
+    }
+    CHECK(released);
+
     SDL_JoystickClose(pad);
     REQUIRE(SDL_JoystickDetachVirtual(index) == 0);
     REQUIRE(next(source, InputEvent::Type::PadRemoved, e));

@@ -4,9 +4,10 @@
 images, in the source asset tree (`assets/source`,
 [formats/source-assets.md](formats/source-assets.md)). It replaces the 2002
 MFC editors (`vc-projects/BB3_level_editor`, `GFX Editor`), which only ran
-on Windows and worked on the 2002 files. It runs on Windows, macOS and
-Linux (SDL 2 and Dear ImGui) and is built with the tools
-(`build/<preset>/tools/bbedit`).
+on Windows and worked on the 2002 files. It runs on a Mac or Linux (SDL 2
+and Dear ImGui) and is built with the tools of the local builds
+(`build/<preset>/tools/bbedit`); its test play (F5) runs the local build of
+the game.
 
 ```
 bbedit [source-dir] [level]

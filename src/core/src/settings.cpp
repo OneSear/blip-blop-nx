@@ -37,14 +37,20 @@ std::int32_t readInt32(const std::vector<std::uint8_t>& b, std::size_t offset) {
 
 }  // namespace
 
+Settings Settings::reference() {
+    Settings s;
+    s.smoothMotion = false;
+    return s;
+}
+
 std::string Settings::serialize() const {
     std::ostringstream out;
     out << "blipblop-settings 1\n";
-    out << "vsync " << (vsync ? "on" : "off") << "\n";
-    out << "fullscreen " << (fullscreen ? "on" : "off") << "\n";
     out << "language " << (language == input::Language::French ? "french" : "english") << "\n";
     out << "scaling " << (integerScaling ? "integer" : "fit") << "\n";
-    out << "filter " << (smoothFilter ? "smooth" : "sharp") << "\n";
+    out << "filter "
+        << (filter == gfx::Filter::Sharp ? "sharp" : filter == gfx::Filter::Smooth ? "smooth" : "crisp")
+        << "\n";
     out << "smooth-motion " << (smoothMotion ? "on" : "off") << "\n";
     for (int p = 0; p < kPlayerCount; ++p) {
         for (const Action a : kActions) {
@@ -89,22 +95,6 @@ std::optional<Settings> Settings::parse(std::string_view text, std::string& erro
             warnings.push_back(where + "expected a name and a value");
             continue;
         }
-        if (w[0] == "vsync") {
-            if (w[1] != "on" && w[1] != "off") {
-                error = where + "vsync must be on or off";
-                return std::nullopt;
-            }
-            s.vsync = w[1] == "on";
-            continue;
-        }
-        if (w[0] == "fullscreen") {
-            if (w[1] != "on" && w[1] != "off") {
-                error = where + "fullscreen must be on or off";
-                return std::nullopt;
-            }
-            s.fullscreen = w[1] == "on";
-            continue;
-        }
         if (w[0] == "language") {
             if (w[1] == "english") {
                 s.language = input::Language::English;
@@ -116,11 +106,24 @@ std::optional<Settings> Settings::parse(std::string_view text, std::string& erro
             }
             continue;
         }
-        if (w[0] == "scaling" || w[0] == "filter" || w[0] == "smooth-motion") {
+        if (w[0] == "filter") {
+            if (w[1] == "sharp") {
+                s.filter = gfx::Filter::Sharp;
+            } else if (w[1] == "crisp") {
+                s.filter = gfx::Filter::Crisp;
+            } else if (w[1] == "smooth") {
+                s.filter = gfx::Filter::Smooth;
+            } else {
+                error = where + "filter must be sharp, crisp or smooth";
+                return std::nullopt;
+            }
+            continue;
+        }
+        if (w[0] == "scaling" || w[0] == "smooth-motion") {
             // Each takes one of two values; the second sets the option.
-            const char* values[3][2] = {{"fit", "integer"}, {"sharp", "smooth"}, {"off", "on"}};
-            bool* options[3] = {&s.integerScaling, &s.smoothFilter, &s.smoothMotion};
-            const int i = w[0] == "scaling" ? 0 : w[0] == "filter" ? 1 : 2;
+            const char* values[2][2] = {{"fit", "integer"}, {"off", "on"}};
+            bool* options[2] = {&s.integerScaling, &s.smoothMotion};
+            const int i = w[0] == "scaling" ? 0 : 1;
             if (w[1] != values[i][0] && w[1] != values[i][1]) {
                 error = where + std::string(w[0]) + " must be " + values[i][0] + " or " + values[i][1];
                 return std::nullopt;
@@ -162,7 +165,6 @@ std::optional<Settings> Settings::importLegacyCfg(const std::vector<std::uint8_t
         return std::nullopt;
     }
     Settings s;
-    s.vsync = bytes[0] != 0;
     s.language = input::Language::English;
     std::size_t offset = 5;
     for (int p = 0; p < 2; ++p) {  // the 2002 file holds two players

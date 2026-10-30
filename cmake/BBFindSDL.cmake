@@ -1,9 +1,14 @@
 # Locates SDL2 and exposes the imported target SDL2::SDL2 (SDL2_mixer is
 # no longer used: the game mixes its sound itself, Phase 9).
-# CMake package configs are tried first (vcpkg, Homebrew, recent distros);
-# pkg-config is the fallback for distributions that do not ship them.
+#
+# The Switch: devkitPro's SDL 2 through pkg-config (Switch.cmake sets it to
+# aarch64-none-elf-pkg-config, which links statically: EGL, Mesa, libnx).
+# A Mac or Linux: CMake package configs first (Homebrew, recent distros),
+# pkg-config for the distributions that do not ship them.
 
-find_package(SDL2 CONFIG QUIET)
+if(NOT NINTENDO_SWITCH)
+    find_package(SDL2 CONFIG QUIET)
+endif()
 if(NOT TARGET SDL2::SDL2)
     find_package(PkgConfig REQUIRED)
     pkg_check_modules(BB_PC_SDL2 REQUIRED IMPORTED_TARGET sdl2)
@@ -12,16 +17,4 @@ if(NOT TARGET SDL2::SDL2)
     message(STATUS "SDL2 found through pkg-config: ${BB_PC_SDL2_VERSION}")
 else()
     message(STATUS "SDL2 found through its CMake package: ${SDL2_VERSION}")
-endif()
-
-if(TARGET SDL2::SDL2main)
-    set(BB_SDL2MAIN SDL2::SDL2main)
-    # SDL2main calls SDL2, which its package does not declare: with it,
-    # CMake puts SDL2 after SDL2main, as GNU ld (MinGW) needs.
-    get_target_property(bb_sdl2main_alias SDL2::SDL2main ALIASED_TARGET)
-    if(NOT bb_sdl2main_alias)
-        set_property(TARGET SDL2::SDL2main APPEND PROPERTY INTERFACE_LINK_LIBRARIES SDL2::SDL2)
-    endif()
-else()
-    set(BB_SDL2MAIN "")
 endif()

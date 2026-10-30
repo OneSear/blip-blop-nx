@@ -11,7 +11,8 @@ namespace bb::game {
 // What the two menus of the game share (menu_main.cpp and menu_game.cpp of
 // 2002, which were copies of each other): pages of items drawn centred over
 // a darkened band of the screen, chosen with up, down and return (or the
-// first player's aliases), the options page and the two key pages.
+// first player's aliases), the options page and the key pages. A pad's back
+// button (the Switch's B) goes up one page.
 //
 // The 2002 update() blocked while it waited for a key or for its release;
 // update() here stops at those points (wait() says what for) and goes on
@@ -45,17 +46,23 @@ protected:
     // The items of the current page.
     virtual void updateItems() = 0;
 
+    // Leaving the options page or a key page saves the settings.
     void setPage(int page, int items, int focusedItem);
+    // Back from an options or key page: the page above it; false on another
+    // page (each menu handles its own).
+    bool backFromOptions();
+    // The menu closes: the settings are saved if it was on the options page
+    // or a key page (Escape resumes the game from any page).
+    void saveIfOnOptions();
     bool waitFor(MenuWait w);
     bool done(int& result, int value);
     bool keyHeld(unsigned int key) const;
     bool aliasHeld(int alias) const;
     void setItem(int i, const char* text);
-    // The items of the options page: the vsync of 2002, the display
-    // options and the language (Phase 9; 2002 had a commented-out language
-    // choice), the two key pages and return.
+    // The items of the options page: the display options and the language
+    // (Phase 9; 2002 had a commented-out language choice; its vsync went
+    // with the desktop versions), the key pages and return.
     enum OptionItem {
-        kVsyncItem,
         kScalingItem,
         kFilterItem,
         kMotionItem,
@@ -148,7 +155,7 @@ public:
 
     void start();
     bool update(int& result);
-    void stop() { bandPage_ = -1; }
+    void stop();
 
 private:
     void updateItems() override;

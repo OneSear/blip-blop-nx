@@ -112,11 +112,52 @@ bool isKnownCode(Code code) {
     return isPadCode(code);
 }
 
+namespace {
+
+// The Switch's name of a game controller's button (SDL's number, by
+// position: codes.hpp), or null.
+const char* switchButtonName(Code button) {
+    switch (button) {
+        case kPadButtonA:
+            return "B";
+        case kPadButtonB:
+            return "A";
+        case kPadButtonX:
+            return "Y";
+        case kPadButtonY:
+            return "X";
+        case kPadButtonBack:
+            return "-";
+        case kPadButtonGuide:
+            return "HOME";
+        case kPadButtonStart:
+            return "+";
+        case kPadButtonLeftStick:
+            return "L STICK";
+        case kPadButtonRightStick:
+            return "R STICK";
+        case kPadButtonLeftShoulder:
+            return "L";
+        case kPadButtonRightShoulder:
+            return "R";
+        case kPadButtonLeftTrigger:
+            return "ZL";
+        case kPadButtonRightTrigger:
+            return "ZR";
+        default:
+            return nullptr;
+    }
+}
+
+}  // namespace
+
 std::string displayName(Code code, Language language) {
     const int slot = padSlot(code);
     if (slot >= 0) {
-        // Same wording in both languages; the French table numbered the
-        // buttons from 1, the English one from 0 (kept as it was).
+        // The Switch's names, the pad's number being the player's (the
+        // controller's lights): "P1 A", "P2 ZR", "P3 UP". Same wording in
+        // both languages; buttons without a Switch name (a pad that is not a
+        // game controller) by number.
         const Code button = padButton(code);
         char buffer[40];
         if (const char* dir = padDirectionName(button)) {
@@ -124,10 +165,11 @@ std::string displayName(Code code, Language language) {
             for (auto& c : upper) {
                 c = static_cast<char>(c - 'a' + 'A');
             }
-            std::snprintf(buffer, sizeof(buffer), "JOY%d %s", slot + 1, upper.c_str());
+            std::snprintf(buffer, sizeof(buffer), "P%d %s", slot + 1, upper.c_str());
+        } else if (const char* name = switchButtonName(button)) {
+            std::snprintf(buffer, sizeof(buffer), "P%d %s", slot + 1, name);
         } else {
-            std::snprintf(buffer, sizeof(buffer), "JOY%d BUTTON%u", slot + 1,
-                          static_cast<unsigned>(language == Language::French ? button + 1 : button));
+            std::snprintf(buffer, sizeof(buffer), "P%d BUTTON%u", slot + 1, static_cast<unsigned>(button));
         }
         return buffer;
     }

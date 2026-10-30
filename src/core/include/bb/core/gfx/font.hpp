@@ -36,6 +36,8 @@ public:
     void printWordWrapped(Pixmap& dst, int x, int y, const char* text, int right) const;
     // The width of text in pixels.
     int width(const char* text) const;
+    // Whether the font has a glyph for the character (a space always prints).
+    bool has(std::uint32_t codePoint) const { return codePoint == ' ' || glyph(codePoint) != nullptr; }
 
 private:
     const Sprite* glyph(std::uint32_t codePoint) const;

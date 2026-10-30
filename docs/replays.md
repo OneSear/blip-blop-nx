@@ -81,19 +81,17 @@ cmake --build --preset default --target update_replay_hashes
 and commit them in a dedicated, reviewed commit that says why the frames
 changed.
 
-The same replays can be played with the game installed from a release
-package, run from an empty directory so it finds its data the way a
-player's copy does (CI does it with `campaign` and `smoke` on the three
-platforms):
+The same replays play on a Switch: a Debug build of the `.nro` carries
+them in its RomFS, and nxlink passes the arguments
+(`nxlink -s build/switch/blipblop.nro -- --replay romfs:/replays/campaign.bbreplay
+--hash sdmc:/switch/blipblop/campaign.bbhash`); compare the hashes with
+`tests/replays/expected/` on the PC. The same fingerprints show that the
+game plays the same on the Switch's processor.
 
-```sh
-tools/replays/package-replay.sh build/release/packages/BlipBlop-0.1.0-Darwin.dmg campaign smoke
-```
-
-It takes the `.dmg`, the Linux `.tar.gz` or the Windows `.zip`.
-
-Deterministic runs start from the default settings, so the smooth motion
-option (Phase 9) is off in every replay but `menus`, which switches it on.
+Deterministic runs start from the reference settings (`core::Settings::
+reference()`: the defaults with smooth motion off, as the replays were
+recorded), so the smooth motion option (Phase 9) is off in every replay but
+`menus`, which switches it on.
 `--smooth-motion` turns it on from the start; `replay.smurf.smooth` plays
 the `smurf` replay so and compares only its `tick` lines: drawing between
 ticks must show other frames (the test fails if none differs) and change

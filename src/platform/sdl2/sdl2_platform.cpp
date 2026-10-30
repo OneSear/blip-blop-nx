@@ -3,12 +3,11 @@
 #include <SDL.h>
 
 #include "bb/core/audio/mixer.hpp"
+#include "bb/core/gfx/viewport.hpp"
+#include "bb/core/log.hpp"
 
-#if defined(_WIN32)
-// clang-format off
-#include <windows.h>
-#include <psapi.h>
-// clang-format on
+#if defined(__SWITCH__)
+#include "switch/switch_system.hpp"
 #else
 #include <sys/resource.h>
 #endif
@@ -55,12 +54,8 @@ public:
     }
 
     std::uint64_t peakMemoryBytes() const override {
-#if defined(_WIN32)
-        PROCESS_MEMORY_COUNTERS counters;
-        if (GetProcessMemoryInfo(GetCurrentProcess(), &counters, sizeof(counters))) {
-            return counters.PeakWorkingSetSize;
-        }
-        return 0;
+#if defined(__SWITCH__)
+        return nx::memoryInUse();  // the Switch keeps no peak
 #else
         rusage usage{};
         if (getrusage(RUSAGE_SELF, &usage) != 0) {
@@ -74,11 +69,35 @@ public:
 #endif
     }
 
+    std::string languageCode() const override {
+#if defined(__SWITCH__)
+        return nx::languageCode();
+#else
+        std::string code;
+        if (SDL_Locale* locales = SDL_GetPreferredLocales()) {
+            if (locales[0].language != nullptr) {
+                code = locales[0].language;
+            }
+            SDL_free(locales);
+        }
+        return code;
+#endif
+    }
+
 private:
     void show(Uint32 flags, const std::string& title, const std::string& message) const {
-        if (!headless_ && SDL_ShowSimpleMessageBox(flags, title.c_str(), message.c_str(), nullptr) != 0) {
+        if (headless_) {
+            return;
+        }
+#if defined(__SWITCH__)
+        // SDL has no message boxes there: the system's error applet.
+        (void)flags;
+        nx::showError(title, message);
+#else
+        if (SDL_ShowSimpleMessageBox(flags, title.c_str(), message.c_str(), nullptr) != 0) {
             SDL_Log("%s: %s (no message box: %s)", title.c_str(), message.c_str(), SDL_GetError());
         }
+#endif
     }
 
     bool headless_;
@@ -157,7 +176,7 @@ public:
     }
 
     std::string baseDirectory() const override {
-        char* path = SDL_GetBasePath();
+        char* path = SDL_GetBasePath();  // romfs:/ on the Switch
         if (path == nullptr) {
             return {};
         }
@@ -167,6 +186,11 @@ public:
     }
 
     std::string preferencesDirectory() const override {
+#if defined(__SWITCH__)
+        // SDL's is the current directory: the folder of the .nro, or none
+        // for an installed title.
+        return nx::preferencesDirectory();
+#else
         char* path = SDL_GetPrefPath("LOADED Studio", "Blip and Blop");
         if (path == nullptr) {
             return {};
@@ -174,8 +198,8 @@ public:
         std::string result(path);
         SDL_free(path);
         return result;
+#endif
     }
-
 };
 
 class Sdl2Input final : public InputSource {
@@ -186,7 +210,8 @@ public:
         SDL_JoystickEventState(SDL_ENABLE);
         SDL_GameControllerEventState(SDL_ENABLE);
         // Pads already connected at start-up get slots 0, 1, ... in SDL's
-        // device order; they also arrive as SDL_JOYDEVICEADDED events.
+        // device order; they also arrive as SDL_JOYDEVICEADDED events. On
+        // the Switch SDL always has 8, the system's players 1 to 8.
         for (int i = 0; i < SDL_NumJoysticks(); ++i) {
             open(i);
         }
@@ -199,6 +224,86 @@ public:
     }
 
     bool poll(InputEvent& out) override {
+        // A focus loss and its return in the same update would cancel out
+        // (DeviceInput): the return waits for the next update. That is the
+        // case of a game the Switch suspended in the background, which
+        // reads both when it comes back.
+        if (pendingFocusGain_ && !focusLostInUpdate_) {
+            pendingFocusGain_ = false;
+            out = {};
+            out.type = InputEvent::Type::FocusGained;
+            return true;
+        }
+        while (next(out)) {
+            if (out.type == InputEvent::Type::FocusLost) {
+                focusLostInUpdate_ = true;
+                pendingFocusGain_ = false;
+            } else if (out.type == InputEvent::Type::FocusGained && focusLostInUpdate_) {
+                pendingFocusGain_ = true;
+                continue;
+            }
+            return true;
+        }
+        focusLostInUpdate_ = false;
+        return false;
+    }
+
+    int padSlots() const override { return slots_; }
+    bool padConnected(int slot) const override {
+        return slot >= 0 && slot < kMaxPads && pads_[slot].handle != nullptr;
+    }
+    std::string padName(int slot) const override {
+        return padConnected(slot) ? pads_[slot].name : std::string();
+    }
+    bool padIsController(int slot) const override {
+        return padConnected(slot) && pads_[slot].controller != nullptr;
+    }
+
+    void requestPlayers(int count) override {
+#if defined(__SWITCH__)
+        nx::requestPlayers(count);
+#else
+        (void)count;
+#endif
+    }
+
+    bool beginTextEntry() override {
+        if (!SDL_HasScreenKeyboardSupport()) {
+            return false;
+        }
+        textEntry_ = true;
+        SDL_StartTextInput();
+        return true;
+    }
+
+    bool textEntryShown() const override { return textEntry_ && SDL_IsTextInputActive() == SDL_TRUE; }
+
+private:
+    // The triggers are axes of 0 to 32767; as buttons they are held from
+    // half their travel and released under a quarter.
+    static constexpr int kTriggerPress = 16384;
+    static constexpr int kTriggerRelease = 8192;
+
+    struct Pad {
+        SDL_Joystick* handle = nullptr;
+        SDL_GameController* controller = nullptr;  // for a recognised game controller
+        SDL_JoystickID id = -1;
+        std::string name;
+        int dpad = 0;  // InputEvent::kHat* bits of the controller's D-pad
+        bool leftTrigger = false;
+        bool rightTrigger = false;
+    };
+
+    // The next event of the system, translated; false when there is none.
+    bool next(InputEvent& out) {
+#if defined(__SWITCH__)
+        // HOME and sleep, seen while SDL pumped its events.
+        if (bool focused = false; focus_.take(focused)) {
+            out = {};
+            out.type = focused ? InputEvent::Type::FocusGained : InputEvent::Type::FocusLost;
+            return true;
+        }
+#endif
         SDL_Event e;
         while (SDL_PollEvent(&e)) {
             switch (e.type) {
@@ -229,6 +334,16 @@ public:
                     out.type = e.type == SDL_KEYDOWN ? InputEvent::Type::KeyDown : InputEvent::Type::KeyUp;
                     out.code = core::input::fromSdl2Key(e.key.keysym.sym);
                     return true;
+                case SDL_TEXTINPUT:
+                    // Only for the on-screen keyboard: desktop systems send
+                    // text for every key typed.
+                    if (textEntry_) {
+                        out = {};
+                        out.type = InputEvent::Type::Text;
+                        out.text = e.text.text;
+                        return true;
+                    }
+                    break;
                 case SDL_JOYDEVICEADDED: {
                     const int slot = open(e.jdevice.which);
                     if (slot >= 0) {
@@ -291,7 +406,8 @@ public:
                     break;
                 }
                 // Game controllers: SDL's button numbers (codes.hpp), the
-                // D-pad as a hat and the left stick as axes 0 and 1.
+                // D-pad as a hat, the left stick as axes 0 and 1, the
+                // triggers as buttons.
                 case SDL_CONTROLLERBUTTONDOWN:
                 case SDL_CONTROLLERBUTTONUP: {
                     const int slot = controllerSlotOf(e.cbutton.which);
@@ -316,8 +432,10 @@ public:
                 }
                 case SDL_CONTROLLERAXISMOTION: {
                     const int slot = controllerSlotOf(e.caxis.which);
-                    if (slot >= 0 && (e.caxis.axis == SDL_CONTROLLER_AXIS_LEFTX ||
-                                      e.caxis.axis == SDL_CONTROLLER_AXIS_LEFTY)) {
+                    if (slot < 0) {
+                        break;
+                    }
+                    if (e.caxis.axis == SDL_CONTROLLER_AXIS_LEFTX || e.caxis.axis == SDL_CONTROLLER_AXIS_LEFTY) {
                         out = {};
                         out.type = InputEvent::Type::PadAxis;
                         out.pad = slot;
@@ -325,34 +443,33 @@ public:
                         out.value = e.caxis.value;
                         return true;
                     }
+                    if (e.caxis.axis == SDL_CONTROLLER_AXIS_TRIGGERLEFT ||
+                        e.caxis.axis == SDL_CONTROLLER_AXIS_TRIGGERRIGHT) {
+                        const bool left = e.caxis.axis == SDL_CONTROLLER_AXIS_TRIGGERLEFT;
+                        bool& held = left ? pads_[slot].leftTrigger : pads_[slot].rightTrigger;
+                        const bool now = e.caxis.value > (held ? kTriggerRelease : kTriggerPress);
+                        if (now != held) {
+                            held = now;
+                            out = {};
+                            out.type = now ? InputEvent::Type::PadButtonDown : InputEvent::Type::PadButtonUp;
+                            out.pad = slot;
+                            out.code =
+                                left ? core::input::kPadButtonLeftTrigger : core::input::kPadButtonRightTrigger;
+                            return true;
+                        }
+                    }
                     break;
                 }
                 default:
                     break;
             }
         }
+        // The on-screen keyboard closed: its text, if any, came before.
+        if (textEntry_ && SDL_IsTextInputActive() == SDL_FALSE) {
+            textEntry_ = false;
+        }
         return false;
     }
-
-    int padSlots() const override { return slots_; }
-    bool padConnected(int slot) const override {
-        return slot >= 0 && slot < kMaxPads && pads_[slot].handle != nullptr;
-    }
-    std::string padName(int slot) const override {
-        return padConnected(slot) ? pads_[slot].name : std::string();
-    }
-    bool padIsController(int slot) const override {
-        return padConnected(slot) && pads_[slot].controller != nullptr;
-    }
-
-private:
-    struct Pad {
-        SDL_Joystick* handle = nullptr;
-        SDL_GameController* controller = nullptr;  // for a recognised game controller
-        SDL_JoystickID id = -1;
-        std::string name;
-        int dpad = 0;  // InputEvent::kHat* bits of the controller's D-pad
-    };
 
     static int dpadBit(Uint8 button) {
         switch (button) {
@@ -418,8 +535,8 @@ private:
                 }
                 const char* name =
                     controller != nullptr ? SDL_GameControllerName(controller) : SDL_JoystickName(handle);
-                pads_[i] =
-                    Pad{handle, controller, SDL_JoystickInstanceID(handle), name != nullptr ? name : "", 0};
+                pads_[i] = Pad{handle, controller, SDL_JoystickInstanceID(handle), name != nullptr ? name : "",
+                               0, false, false};
                 if (i + 1 > slots_) {
                     slots_ = i + 1;
                 }
@@ -431,12 +548,19 @@ private:
 
     Pad pads_[kMaxPads];
     int slots_ = 0;
+    bool textEntry_ = false;  // the on-screen keyboard was asked for
+    bool focusLostInUpdate_ = false;
+    bool pendingFocusGain_ = false;
+#if defined(__SWITCH__)
+    nx::FocusWatch focus_;
+#endif
 };
 
 class Sdl2Audio final : public Audio {
 public:
     // The output the 2014 port asked SDL_mixer for: 44.1 kHz stereo 16-bit,
-    // 1024 frames per callback. SDL converts it when the device differs.
+    // 1024 frames per callback. The mixer runs at the rate the device has
+    // (48 kHz on the Switch), so that SDL converts nothing.
     static constexpr int kRate = 44100;
 
     Sdl2Audio() {
@@ -448,11 +572,15 @@ public:
         wanted.callback = &Sdl2Audio::callback;
         wanted.userdata = this;
         SDL_AudioSpec obtained{};
-        device_ = SDL_OpenAudioDevice(nullptr, 0, &wanted, &obtained, 0);
+        // Opened paused: the callback does not run before the mixer exists.
+        device_ = SDL_OpenAudioDevice(nullptr, 0, &wanted, &obtained, SDL_AUDIO_ALLOW_FREQUENCY_CHANGE);
         if (device_ == 0) {
             SDL_Log("SDL_OpenAudioDevice: %s", SDL_GetError());
+            mixer_ = std::make_unique<core::audio::Mixer>(kRate);
             return;
         }
+        rate_ = obtained.freq;
+        mixer_ = std::make_unique<core::audio::Mixer>(rate_);
         SDL_PauseAudioDevice(device_, 0);
     }
 
@@ -473,27 +601,27 @@ public:
         }
         // Converted outside the lock: the callback goes on meanwhile.
         std::vector<std::int16_t> samples;
-        if (!core::audio::decodeWav(data, size, kRate, samples)) {
+        if (!core::audio::decodeWav(data, size, rate_, samples)) {
             SDL_Log("loadSample: not a PCM WAV file");
             return -1;
         }
         const Lock lock(device_);
-        return mixer_.addSound(std::move(samples));
+        return mixer_->addSound(std::move(samples));
     }
 
     void freeSample(Sample sample) override {
         const Lock lock(device_);
-        mixer_.freeSound(sample);
+        mixer_->freeSound(sample);
     }
 
     int play(Sample sample, bool loop) override {
         const Lock lock(device_);
-        return mixer_.play(sample, loop);
+        return mixer_->play(sample, loop);
     }
 
     void stop(int voice) override {
         const Lock lock(device_);
-        mixer_.stop(voice);
+        mixer_->stop(voice);
     }
 
     Music openMusic(std::vector<std::uint8_t> file) override {
@@ -507,27 +635,27 @@ public:
             return -1;
         }
         const Lock lock(device_);
-        return mixer_.addMusic(std::move(bytes), std::move(stream));
+        return mixer_->addMusic(std::move(bytes), std::move(stream));
     }
 
     void freeMusic(Music music) override {
         const Lock lock(device_);
-        mixer_.freeMusic(music);
+        mixer_->freeMusic(music);
     }
 
     void playMusic(Music music, bool loop) override {
         const Lock lock(device_);
-        mixer_.playMusic(music, loop);
+        mixer_->playMusic(music, loop);
     }
 
     void stopMusic() override {
         const Lock lock(device_);
-        mixer_.stopMusic();
+        mixer_->stopMusic();
     }
 
     bool voicePlaying(int voice) {
         const Lock lock(device_);
-        return mixer_.playing(voice);
+        return mixer_->playing(voice);
     }
 
 private:
@@ -552,12 +680,25 @@ private:
     };
 
     static void SDLCALL callback(void* self, Uint8* stream, int bytes) {
-        static_cast<Sdl2Audio*>(self)->mixer_.mix(reinterpret_cast<std::int16_t*>(stream), bytes / 4);
+        static_cast<Sdl2Audio*>(self)->mixer_->mix(reinterpret_cast<std::int16_t*>(stream), bytes / 4);
     }
 
     SDL_AudioDeviceID device_ = 0;
-    core::audio::Mixer mixer_{kRate};
+    int rate_ = kRate;
+    std::unique_ptr<core::audio::Mixer> mixer_;
 };
+
+const char* filterName(core::gfx::Filter filter) {
+    switch (filter) {
+        case core::gfx::Filter::Sharp:
+            return "sharp";
+        case core::gfx::Filter::Crisp:
+            return "crisp";
+        case core::gfx::Filter::Smooth:
+            return "smooth";
+    }
+    return "?";
+}
 
 class Sdl2Display final : public Display {
 public:
@@ -566,9 +707,15 @@ public:
         SDL_RendererInfo info;
         vsync_ = renderer_ != nullptr && SDL_GetRendererInfo(renderer_, &info) == 0 &&
                  (info.flags & SDL_RENDERER_PRESENTVSYNC) != 0;
+        if (renderer_ != nullptr) {
+            SDL_GetRendererOutputSize(renderer_, &outputWidth_, &outputHeight_);
+        }
     }
 
     ~Sdl2Display() override {
+        if (enlarged_ != nullptr) {
+            SDL_DestroyTexture(enlarged_);
+        }
         if (texture_ != nullptr) {
             SDL_DestroyTexture(texture_);
         }
@@ -584,29 +731,42 @@ public:
         if (renderer_ == nullptr || frame.width() != width_ || frame.height() != height_) {
             return;
         }
+        // The output follows the window: resized on the desktop, 1280x720
+        // or 1920x1080 as the Switch is undocked or docked.
+        int w = 0;
+        int h = 0;
+        SDL_GetRendererOutputSize(renderer_, &w, &h);
+        if (w != outputWidth_ || h != outputHeight_) {
+            outputWidth_ = w;
+            outputHeight_ = h;
+            core::Log::info("Display: " + describe());
+        }
+        const core::gfx::Viewport view = viewport();
+        const SDL_Rect picture{view.picture.x, view.picture.y, view.picture.w, view.picture.h};
+
         // One upload per frame; the frame is opaque, so no blending.
         SDL_UpdateTexture(texture_, nullptr, frame.data(), static_cast<int>(frame.pitch()));
-        SDL_RenderClear(renderer_);
-        SDL_RenderCopy(renderer_, texture_, nullptr, nullptr);
+        SDL_SetRenderDrawColor(renderer_, 0, 0, 0, 255);
+        if (view.prescale > 1 && enlarge(view.prescale)) {
+            // CRISP: sharp pixels up to a whole multiple, then filtered down.
+            SDL_SetTextureScaleMode(texture_, SDL_ScaleModeNearest);
+            SDL_SetRenderTarget(renderer_, enlarged_);
+            SDL_RenderCopy(renderer_, texture_, nullptr, nullptr);
+            SDL_SetRenderTarget(renderer_, nullptr);
+            SDL_RenderClear(renderer_);
+            SDL_RenderCopy(renderer_, enlarged_, nullptr, &picture);
+        } else {
+            SDL_SetTextureScaleMode(texture_, view.smooth || view.prescale > 1 ? SDL_ScaleModeLinear
+                                                                               : SDL_ScaleModeNearest);
+            SDL_RenderClear(renderer_);
+            SDL_RenderCopy(renderer_, texture_, nullptr, &picture);
+        }
         SDL_RenderPresent(renderer_);
     }
 
-    void setScaling(bool integer, bool smooth) override {
-        if (renderer_ == nullptr) {
-            return;
-        }
-        SDL_RenderSetIntegerScale(renderer_, integer ? SDL_TRUE : SDL_FALSE);
-        SDL_SetTextureScaleMode(texture_, smooth ? SDL_ScaleModeLinear : SDL_ScaleModeNearest);
-    }
-
-    void setFullscreen(bool fullscreen) override {
-        if (window_ != nullptr) {
-            SDL_SetWindowFullscreen(window_, fullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
-        }
-    }
-
-    bool fullscreen() const override {
-        return window_ != nullptr && (SDL_GetWindowFlags(window_) & SDL_WINDOW_FULLSCREEN_DESKTOP) != 0;
+    void setScaling(bool integer, core::gfx::Filter filter) override {
+        integer_ = integer;
+        filter_ = filter;
     }
 
     int refreshRate() const override {
@@ -623,28 +783,23 @@ public:
         }
         int w = 0;
         int h = 0;
-        int pw = 0;
-        int ph = 0;
         SDL_GetWindowSize(window_, &w, &h);
-        SDL_GetRendererOutputSize(renderer_, &pw, &ph);
         SDL_RendererInfo info;
         const char* name = SDL_GetRendererInfo(renderer_, &info) == 0 ? info.name : "?";
-        SDL_ScaleMode mode = SDL_ScaleModeNearest;
-        SDL_GetTextureScaleMode(texture_, &mode);
-        return "window " + std::to_string(w) + "x" + std::to_string(h) + ", drawn at " + std::to_string(pw) +
-               "x" + std::to_string(ph) + " pixels, renderer " + name + ", scaling " +
-               (SDL_RenderGetIntegerScale(renderer_) == SDL_TRUE ? "integer" : "fit") + ", filter " +
-               (mode == SDL_ScaleModeNearest ? "sharp" : "smooth");
+        const core::gfx::Viewport view = viewport();
+        std::string text = "window " + std::to_string(w) + "x" + std::to_string(h) + ", drawn at " +
+                           std::to_string(outputWidth_) + "x" + std::to_string(outputHeight_) +
+                           " pixels, renderer " + name + ", picture " + std::to_string(view.picture.w) + "x" +
+                           std::to_string(view.picture.h) + " at " + std::to_string(view.picture.x) + "," +
+                           std::to_string(view.picture.y) + ", scaling " + (integer_ ? "integer" : "fit") +
+                           ", filter " + filterName(filter_);
+        if (view.prescale > 1) {
+            text += " (x" + std::to_string(view.prescale) + " first)";
+        }
+        return text;
     }
 
     bool vsync() const override { return vsync_; }
-
-    bool setVsync(bool on) override {
-        if (renderer_ != nullptr && SDL_RenderSetVSync(renderer_, on ? 1 : 0) == 0) {
-            vsync_ = on;
-        }
-        return vsync_ == on;
-    }
 
     bool readBack(core::gfx::Pixmap& out) const {
         if (renderer_ == nullptr) {
@@ -661,11 +816,47 @@ public:
     }
 
 private:
+    core::gfx::Viewport viewport() const {
+        return core::gfx::viewport(width_, height_, outputWidth_, outputHeight_, integer_, filter_);
+    }
+
+    // The texture CRISP enlarges the frame into, `factor` times its size;
+    // false when the renderer cannot draw into a texture (CRISP is then
+    // drawn smoothed).
+    bool enlarge(int factor) {
+        if (enlarged_ != nullptr && enlargedFactor_ == factor) {
+            return true;
+        }
+        if (enlarged_ != nullptr) {
+            SDL_DestroyTexture(enlarged_);
+            enlarged_ = nullptr;
+        }
+        if (SDL_RenderTargetSupported(renderer_) != SDL_TRUE) {
+            return false;
+        }
+        enlarged_ = SDL_CreateTexture(renderer_, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET,
+                                      width_ * factor, height_ * factor);
+        if (enlarged_ == nullptr) {
+            SDL_Log("CRISP texture %dx%d: %s", width_ * factor, height_ * factor, SDL_GetError());
+            return false;
+        }
+        SDL_SetTextureBlendMode(enlarged_, SDL_BLENDMODE_NONE);
+        SDL_SetTextureScaleMode(enlarged_, SDL_ScaleModeLinear);
+        enlargedFactor_ = factor;
+        return true;
+    }
+
     SDL_Window* window_;
     SDL_Renderer* renderer_;
     SDL_Texture* texture_;
+    SDL_Texture* enlarged_ = nullptr;
+    int enlargedFactor_ = 0;
     int width_;
     int height_;
+    int outputWidth_ = 0;
+    int outputHeight_ = 0;
+    bool integer_ = false;
+    core::gfx::Filter filter_ = core::gfx::Filter::Crisp;
     bool vsync_ = false;
 };
 
@@ -676,11 +867,22 @@ public:
 
     std::unique_ptr<Display> createDisplay(const DisplayOptions& options, std::string& error) override {
         const bool headless = headless_ || options.headless;
+        int width = options.width;
+        int height = options.height;
+#if defined(__SWITCH__)
+        // The window is the screen: created at the size of the console's
+        // mode (SDL would otherwise let the system stretch a 640x480 one to
+        // 16:9), and resizable, so that SDL resizes it when the console is
+        // docked or undocked.
+        if (!headless) {
+            nx::screenSize(width, height);
+        }
+#endif
         SDL_Window* window =
-            SDL_CreateWindow(options.title.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-                             options.width, options.height,
-                             // Drawn at the screen's resolution (Retina, high-DPI
-                             // Windows); the frame keeps its 4:3 shape when resized.
+            SDL_CreateWindow(options.title.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width,
+                             height,
+                             // Drawn at the screen's resolution (Retina); the
+                             // frame keeps its 4:3 shape when resized.
                              headless ? SDL_WINDOW_HIDDEN
                                       : SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
         if (window == nullptr) {
@@ -691,11 +893,7 @@ public:
             // Headless runs never present anything.
             return std::make_unique<Sdl2Display>(window, nullptr, nullptr, options.width, options.height);
         }
-        Uint32 flags = SDL_RENDERER_ACCELERATED;
-        if (options.vsync) {
-            flags |= SDL_RENDERER_PRESENTVSYNC;
-        }
-        SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, flags);
+        SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
         if (renderer == nullptr) {
             SDL_Log("Accelerated renderer unavailable (%s), using the software renderer", SDL_GetError());
             renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);
@@ -705,7 +903,6 @@ public:
             SDL_DestroyWindow(window);
             return nullptr;
         }
-        SDL_RenderSetLogicalSize(renderer, options.width, options.height);
         // Pixmap pixels are 0xAABBGGRR integers: SDL's ABGR8888 on any byte order.
         SDL_Texture* texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ABGR8888,
                                                  SDL_TEXTUREACCESS_STREAMING, options.width, options.height);
@@ -718,10 +915,7 @@ public:
         SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_NONE);
         auto display =
             std::make_unique<Sdl2Display>(window, renderer, texture, options.width, options.height);
-        display->setScaling(options.integerScaling, options.smoothFilter);
-        if (options.fullscreen) {
-            display->setFullscreen(true);
-        }
+        display->setScaling(options.integerScaling, options.filter);
         return display;
     }
 
@@ -757,12 +951,10 @@ std::unique_ptr<Platform> createPlatform(const Options& options, std::string& er
         SDL_setenv("SDL_VIDEODRIVER", "dummy", 1);
         SDL_setenv("SDL_AUDIODRIVER", "dummy", 1);
     }
-#if defined(SDL_HINT_WINDOWS_DPI_AWARENESS) && defined(SDL_HINT_WINDOWS_DPI_SCALING)
-    // Windows: draw at the screen's resolution, with window sizes in points
-    // as on macOS (SDL 2.24 and later). Not yet checked on Windows.
-    SDL_SetHint(SDL_HINT_WINDOWS_DPI_AWARENESS, "permonitorv2");
-    SDL_SetHint(SDL_HINT_WINDOWS_DPI_SCALING, "1");
-#endif
+    // Every pad by position, Nintendo's too (SDL 2 lays them out by label by
+    // default): the bottom button is SDL's A everywhere, which the Switch
+    // calls B (codes.hpp).
+    SDL_SetHint(SDL_HINT_GAMECONTROLLER_USE_BUTTON_LABELS, "0");
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER | SDL_INIT_EVENTS |
                  SDL_INIT_TIMER) != 0) {
         error = SDL_GetError();

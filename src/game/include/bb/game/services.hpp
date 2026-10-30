@@ -6,6 +6,7 @@
 
 #include "bb/core/gfx/font.hpp"
 #include "bb/core/gfx/sprite.hpp"
+#include "bb/core/gfx/viewport.hpp"
 #include "bb/core/input/names.hpp"
 #include "bb/game/audio.hpp"
 #include "bb/game/input.hpp"
@@ -36,6 +37,22 @@ public:
     virtual bool takeFocusLost() = 0;
     virtual void setAlias(int alias, unsigned int code) = 0;
 
+    // Whether a pad's back button is held: the Switch's B, the bottom
+    // button (the menus go back one page; it jumps in a level).
+    virtual bool backHeld() const = 0;
+
+    // Lets `count` players take their controllers before a game (the
+    // Switch's controller applet); nothing in deterministic runs.
+    virtual void requestPlayers(int count) = 0;
+
+    // The system's on-screen keyboard (the Switch's) for a short text: false
+    // where there is none, and in deterministic runs, where keys are typed.
+    // After each update(), textEntry() says whether the text came (Done,
+    // with it), the player cancelled, or the keyboard is still shown.
+    enum class TextEntry { Typing, Done, Cancelled };
+    virtual bool beginTextEntry() = 0;
+    virtual TextEntry textEntry(std::string& text) = 0;
+
     // update() then anyHeld() (the 2002 anyKeyPressed()).
     bool anyPressed() {
         update();
@@ -60,18 +77,21 @@ public:
     virtual void onTick(std::uint64_t fingerprint) = 0;
     virtual std::FILE* traceStream() const = 0;
     virtual unsigned long long frame() const = 0;
+    // Writes the settings, or the hi-scores, now: a console may sleep or
+    // lose power before the game exits. Nothing in deterministic runs.
+    virtual void saveSettings() = 0;
+    virtual void saveHiScores() = 0;
 };
 
-// The options the menus change (the 2002 vSyncOn and language; the
-// display options are Phase 9 additions).
+// The options the menus change (the 2002 language; the display options are
+// Phase 9 additions, and the 2002 vsync went with the desktop versions:
+// the game always syncs).
 struct Options {
-    bool vsync = true;
-    bool fullscreen = false;  // F10 (not a menu option)
-    bool cheats = false;      // the /cheat switch: the F keys of CheatKeys
+    bool cheats = false;  // the /cheat switch: the F keys of CheatKeys
     core::input::Language language = core::input::Language::English;
-    bool integerScaling = false;  // whole multiples of 640x480, with borders
-    bool smoothFilter = false;    // bilinear scaling instead of sharp pixels
-    bool smoothMotion = false;    // draws between the last two ticks (World::Motion)
+    bool integerScaling = false;  // whole multiples of 640x480 (2 or more), with borders
+    core::gfx::Filter filter = core::gfx::Filter::Crisp;
+    bool smoothMotion = true;  // draws between the last two ticks (World::Motion)
 };
 
 // The banks and fonts of the game, owned by the application: some live as

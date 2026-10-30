@@ -23,6 +23,7 @@ add_executable(bb_unit_tests
     unit/audio_test.cpp
     unit/hi_scores_test.cpp
     unit/mixer_test.cpp
+    unit/viewport_test.cpp
 )
 target_link_libraries(bb_unit_tests PRIVATE bb::core bb::game bb_doctest)
 bb_set_strict_warnings(bb_unit_tests)
@@ -130,5 +131,5 @@ endif()
 
 # Benchmarks: built with the tests, run by hand (they open windows).
 add_executable(bb_present_bench bench/present_bench.cpp)
-target_link_libraries(bb_present_bench PRIVATE ${BB_SDL2MAIN} SDL2::SDL2)
+target_link_libraries(bb_present_bench PRIVATE SDL2::SDL2)
 bb_set_strict_warnings(bb_present_bench)

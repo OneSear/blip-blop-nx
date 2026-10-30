@@ -1,167 +1,31 @@
 name: CI
 
+# The Switch's .nro on every push and pull request, and nothing else
+# (switch-port.md, 6.5): the tests run by hand on a Mac or Linux (README,
+# "Local builds"), and the .nsp is packed on the maintainer's machine with
+# their console's keys (tools/switch/make-nsp.sh).
 on:
   push:
   pull_request:
 
 jobs:
-  build:
-    name: ${{ matrix.name }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: Linux (GCC)
-            os: ubuntu-24.04
-          - name: macOS (Apple Clang)
-            os: macos-14
-          - name: Windows (MSVC)
-            os: windows-2022
-            triplet: x64-windows
-          # 32-bit Windows: the Win32 platform and vcpkg's x86 SDL 2.
-          - name: Windows 32-bit (MSVC)
-            os: windows-2022
-            triplet: x86-windows
-            configure: -A Win32 -DVCPKG_TARGET_TRIPLET=x86-windows
+  switch:
+    name: Nintendo Switch (.nro)
+    runs-on: ubuntu-24.04
+    # devkitA64, libnx, devkitPro's SDL 2, and a C++ compiler and CMake for
+    # the container itself: the build makes bbassets and the runtime pack
+    # first (cmake/BBSwitch.cmake).
+    container: devkitpro/devkita64
     steps:
       - uses: actions/checkout@v5
 
-      - name: Install dependencies (Linux)
-        if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y libsdl2-dev
-
-      # SDL 2 universal (Apple silicon and Intel) for macOS 11 and later,
-      # built from source: Homebrew's runs on this runner's processor and
-      # macOS version only. CMake reads the three variables.
-      - name: Install dependencies (macOS)
-        if: runner.os == 'macOS'
-        shell: bash
-        run: |
-          tools/macos/sdl2-universal.sh "$RUNNER_TEMP/sdl2"
-          echo "CMAKE_PREFIX_PATH=$RUNNER_TEMP/sdl2" >> "$GITHUB_ENV"
-          echo "CMAKE_OSX_ARCHITECTURES=arm64;x86_64" >> "$GITHUB_ENV"
-          echo "MACOSX_DEPLOYMENT_TARGET=11.0" >> "$GITHUB_ENV"
-
-      - name: Install dependencies (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          & "$env:VCPKG_INSTALLATION_ROOT\vcpkg" install sdl2 --triplet ${{ matrix.triplet }}
-          "CMAKE_TOOLCHAIN_FILE=$env:VCPKG_INSTALLATION_ROOT\scripts\buildsystems\vcpkg.cmake" >> $env:GITHUB_ENV
-
       - name: Configure
-        run: cmake --preset release ${{ matrix.configure }}
+        run: cmake --preset switch
 
       - name: Build
-        run: cmake --build --preset release --parallel
-
-      - name: Unit tests
-        run: ctest --preset release -LE replay
-
-      - name: Regression replays
-        run: ctest --preset release -L replay
-
-      # Windows: NSIS installer and zip; macOS: disk image; Linux: .tar.gz
-      # (cmake/BBPackaging.cmake).
-      # -C: the Visual Studio generator builds every configuration in one tree.
-      - name: Package
-        run: cpack --config build/release/CPackConfig.cmake -C RelWithDebInfo -B build/release/packages
-
-      # The first macOS run failed here; the same command works on an Intel
-      # Mac, so show CPack's logs (install, bundle fix-up, hdiutil).
-      - name: Show packaging logs on failure
-        if: failure()
-        shell: bash
-        run: find build/release/packages/_CPack_Packages -name '*.log' -exec sh -c 'echo "== $1"; cat "$1"' sh {} \; || true
-
-      # The definition of done asks for the campaign completed from the
-      # release packages: install each package (the zip on Windows, not the
-      # installer, which needs a desktop session) and replay it there.
-      - name: Replays from the package
-        shell: bash
-        run: |
-          case "$RUNNER_OS" in
-            Linux) package=$(ls build/release/packages/BlipBlop-*.tar.gz) ;;
-            macOS) package=$(ls build/release/packages/BlipBlop-*.dmg) ;;
-            Windows) package=$(ls build/release/packages/BlipBlop-*.zip) ;;
-          esac
-          tools/replays/package-replay.sh "$package" campaign smoke
-
-      # The Intel half of the universal app, under Rosetta (when the runner
-      # has it).
-      - name: Replay from the package, Intel (macOS)
-        if: runner.os == 'macOS'
-        shell: bash
-        run: |
-          if arch -x86_64 /usr/bin/true 2> /dev/null; then
-            BB_RUN_WITH="arch;-x86_64" tools/replays/package-replay.sh "$(ls build/release/packages/BlipBlop-*.dmg)" smoke
-          else
-            echo "No Rosetta on this runner: the Intel half is not run"
-          fi
-
-      # The present paths (D-08) on a hosted Windows VM: no GPU, so the
-      # numbers only show that the paths work; real hardware is measured
-      # with docs/release-checklist.md.
-      - name: Present benchmark (Windows, informative)
-        if: runner.os == 'Windows'
-        continue-on-error: true
-        shell: bash
-        run: build/release/tests/RelWithDebInfo/bb_present_bench.exe 600
+        run: cmake --build --preset switch --parallel
 
       - uses: actions/upload-artifact@v6
         with:
-          name: package-${{ matrix.name }}
-          path: build/release/packages/BlipBlop-*
-
-      - name: Keep fingerprints on failure
-        if: failure()
-        uses: actions/upload-artifact@v6
-        with:
-          name: replay-fingerprints-${{ matrix.name }}
-          path: build/release/tests/replays/out/
-
-  sanitizers:
-    name: Linux (Clang, ASan + UBSan)
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v5
-      - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y clang libsdl2-dev
-      - name: Configure
-        run: cmake --preset asan -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
-      - name: Build
-        run: cmake --build --preset asan --parallel
-      - name: Tests
-        env:
-          ASAN_OPTIONS: detect_leaks=0
-          UBSAN_OPTIONS: print_stacktrace=1
-        run: ctest --preset asan
-
-  static-analysis:
-    name: Static analysis (report only)
-    runs-on: ubuntu-24.04
-    continue-on-error: true
-    steps:
-      - uses: actions/checkout@v5
-      - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y clang-tidy cppcheck libsdl2-dev
-      - name: Configure
-        run: cmake --preset default
-      - name: clang-tidy
-        run: |
-          # src/core/codecs builds the third-party decoders (stb_vorbis, dr_mp3).
-          find src tests tools -name '*.cpp' -not -path 'tests/bench/*' -not -path 'src/core/codecs/*' -print0 |
-            xargs -0 clang-tidy -p build/default --quiet 2>&1 | tee clang-tidy.txt || true
-          grep -c 'warning:' clang-tidy.txt || true
-      - name: cppcheck
-        run: |
-          cppcheck --enable=warning,portability --inline-suppr --quiet \
-            -I src/core/include -I src/game/include -I src/platform/include src 2> cppcheck.txt || true
-          wc -l cppcheck.txt
-      - uses: actions/upload-artifact@v6
-        with:
-          name: static-analysis-reports
-          path: |
-            clang-tidy.txt
-            cppcheck.txt
+          name: blipblop-nro
+          path: build/switch/blipblop.nro

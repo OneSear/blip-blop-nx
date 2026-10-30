@@ -100,6 +100,12 @@ std::FILE* App::SessionView::traceStream() const {
 unsigned long long App::SessionView::frame() const {
     return session_.frame();
 }
+void App::SessionView::saveSettings() {
+    app_.saveSettingsNow();
+}
+void App::SessionView::saveHiScores() {
+    app_.saveHiScoresNow();
+}
 
 //-----------------------------------------------------------------------------
 // App
@@ -252,12 +258,17 @@ bool App::init() {
     }
 
     // Deterministic runs (replays, regression tests) start from the
-    // built-in settings and hi-scores, so that saved ones cannot change
-    // their outcome; they never write them back either.
+    // reference settings and the built-in hi-scores, so that saved ones
+    // cannot change their outcome; they never write them back either.
     if (session_.deterministic()) {
-        applyDefaultSettings(options_, input_);
-    } else {
-        loadSettings(settingsPath_, platform_.files(), files_.dataFiles(), kLegacySettingsFile, options_, input_);
+        applySettings(core::Settings::reference(), options_, input_);
+    } else if (!loadSettings(settingsPath_, platform_.files(), files_.dataFiles(), kLegacySettingsFile, options_,
+                             input_)) {
+        // The first run speaks the system's language.
+        if (platform_.system().languageCode() == "fr") {
+            options_.language = core::input::Language::French;
+            core::Log::info("First run: French, the system's language.");
+        }
     }
     if (session_.smoothMotion()) {
         options_.smoothMotion = true;
@@ -277,17 +288,16 @@ bool App::init() {
 
     input_.open();
 
-    // The 2002 game switched the screen to 640x480x16 at 85 Hz; the window
-    // now shows the 640x480 frames scaled to the screen.
+    // The 2002 game switched the screen to 640x480x16 at 85 Hz; the display
+    // now shows the 640x480 frames scaled to the screen (the Switch's, 1280x720
+    // or 1920x1080, or a window).
     platform::DisplayOptions display;
     display.title = "Blip & Blop";
     display.width = 640;
     display.height = 480;
     display.headless = session_.headless();
-    display.vsync = options_.vsync;
-    display.fullscreen = options_.fullscreen;
     display.integerScaling = integerScaling_ = options_.integerScaling;
-    display.smoothFilter = smoothFilter_ = options_.smoothFilter;
+    display.filter = filter_ = options_.filter;
     std::string reason;
     display_ = platform_.createDisplay(display, reason);
     if (!display_) {
@@ -361,34 +371,21 @@ void App::present() {
         return;
     }
 
-    // The VSYNC option (D-75): the display follows it when it can. The
-    // frames are also paced to 60 per second here, vsync or not: the screens
-    // that move by frame (the character choice) were made for 60 frames per
-    // second, the rate the replays are recorded at, and vsync does not hold
-    // them there (measured on macOS with vsync on: 120 frames per second on
-    // a 120 Hz screen, and once 717 per second). At 60 Hz with vsync the
-    // pacing never waits. (Deterministic runs are paced by the session.)
-    if (display_->vsync() != options_.vsync) {
-        display_->setVsync(options_.vsync);
-    }
-    if (integerScaling_ != options_.integerScaling || smoothFilter_ != options_.smoothFilter) {
+    // The display always syncs with the screen. The frames are also paced to
+    // 60 per second here: the screens that move by frame (the character
+    // choice) were made for 60 frames per second, the rate the replays are
+    // recorded at, and vsync does not hold them there on a faster screen
+    // (measured on macOS: 120 frames per second on a 120 Hz screen, and once
+    // 717 per second). At 60 Hz, the Switch's rate, the pacing never waits.
+    // (Deterministic runs are paced by the session.)
+    if (integerScaling_ != options_.integerScaling || filter_ != options_.filter) {
         integerScaling_ = options_.integerScaling;
-        smoothFilter_ = options_.smoothFilter;
-        display_->setScaling(integerScaling_, smoothFilter_);
+        filter_ = options_.filter;
+        display_->setScaling(integerScaling_, filter_);
         core::Log::info("Display: " + display_->describe());
     }
     display_->present(screen_);
 
-    // F10 switches between the window and the full screen (F11 is a cheat
-    // key); the system's own
-    // controls (the green button on macOS) also do, so the settings save
-    // what the display is in. Not in deterministic runs: recorded input
-    // must not change the display.
-    const bool fullscreenKey = input_.held(core::input::kKeyF10);
-    if (fullscreenKey && !fullscreenKey_ && !session_.deterministic()) {
-        display_->setFullscreen(!display_->fullscreen());
-    }
-    fullscreenKey_ = fullscreenKey;
     if (presented_++ == 0) {
         firstPresent_ = platform_.clock().microseconds();
     }
@@ -454,20 +451,25 @@ int App::run() {
                         std::to_string(elapsed > 0 ? (presented_ - 1) * 1000000 / elapsed : 0) +
                         " per second");
     }
-    if (display_) {
-        options_.fullscreen = display_->fullscreen();
-    }
     core::Log::info("Releasing Blip & Blop");
     release();
 
-    if (!session_.deterministic()) {
-        if (!saveHiScores(hiScoresPath_, platform_.files(), files_, hiScores_)) {
-            core::Log::info("Cannot save hi-scores");
-        }
-        saveSettings(settingsPath_, platform_.files(), options_, input_);
-    }
+    saveHiScoresNow();
+    saveSettingsNow();
 
     return session_.finish();
+}
+
+void App::saveSettingsNow() {
+    if (!session_.deterministic()) {
+        saveSettings(settingsPath_, platform_.files(), options_, input_);
+    }
+}
+
+void App::saveHiScoresNow() {
+    if (!session_.deterministic() && !saveHiScores(hiScoresPath_, platform_.files(), files_, hiScores_)) {
+        core::Log::info("Cannot save hi-scores");
+    }
 }
 
 }  // namespace bb::app

@@ -124,18 +124,24 @@ constexpr Code kPadRight = 103;
 
 // Buttons of the pads the platform recognises as game controllers (SDL 2's
 // SDL_GameControllerButton): the same numbers for every such pad, on every
-// system. Other pads report their own button numbers.
-constexpr Code kPadButtonA = 0;  // bottom face button (Xbox A, PlayStation cross)
-constexpr Code kPadButtonB = 1;  // right
-constexpr Code kPadButtonX = 2;  // left
-constexpr Code kPadButtonY = 3;  // top
-constexpr Code kPadButtonBack = 4;
+// system, by position. Other pads report their own button numbers. The
+// Switch's labels are not SDL's: its A is SDL's B (right), its B SDL's A
+// (bottom), its X SDL's Y (top), its Y SDL's X (left).
+constexpr Code kPadButtonA = 0;  // bottom face button (Switch B, Xbox A, PlayStation cross)
+constexpr Code kPadButtonB = 1;  // right (Switch A)
+constexpr Code kPadButtonX = 2;  // left (Switch Y)
+constexpr Code kPadButtonY = 3;  // top (Switch X)
+constexpr Code kPadButtonBack = 4;  // Switch -
 constexpr Code kPadButtonGuide = 5;
-constexpr Code kPadButtonStart = 6;
+constexpr Code kPadButtonStart = 6;  // Switch +
 constexpr Code kPadButtonLeftStick = 7;
 constexpr Code kPadButtonRightStick = 8;
-constexpr Code kPadButtonLeftShoulder = 9;
-constexpr Code kPadButtonRightShoulder = 10;
+constexpr Code kPadButtonLeftShoulder = 9;   // Switch L
+constexpr Code kPadButtonRightShoulder = 10;  // Switch R
+// The triggers, which SDL reports as axes: as buttons, past SDL 2's 21
+// buttons so that a later SDL cannot take their numbers.
+constexpr Code kPadButtonLeftTrigger = 32;   // Switch ZL (SL on a single Joy-Con)
+constexpr Code kPadButtonRightTrigger = 33;  // Switch ZR (SR on a single Joy-Con)
 
 constexpr Code padCode(int slot, Code button) noexcept {
     return (static_cast<Code>(slot + 1) << 10) | button;
