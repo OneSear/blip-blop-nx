@@ -23,3 +23,10 @@ Thumbs.db
 
 # Python
 __pycache__/
+
+# Nintendo's keys, which hacBrewPack encrypts the .nsp with
+# (tools/switch/make-nsp.sh): your own console's, never committed
+*.keys
+keys.dat
+keys.txt
+keys.ini

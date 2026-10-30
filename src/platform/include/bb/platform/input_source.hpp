@@ -20,6 +20,7 @@ struct InputEvent {
         Quit,        // the window was closed or the system asks to quit
         FocusLost,   // the window lost the focus or the application is suspended
         FocusGained,
+        Text,        // text: what the on-screen keyboard typed (UTF-8)
     };
 
     static constexpr int kHatUp = 1;
@@ -32,6 +33,7 @@ struct InputEvent {
     int pad = -1;
     int axis = 0;
     int value = 0;
+    std::string text;
 };
 
 // Keyboard, joysticks and window events. Joysticks are identified by a
@@ -49,8 +51,22 @@ public:
     virtual std::string padName(int slot) const = 0;
     // Whether the pad is a recognised game controller, whose buttons have
     // the numbers of codes.hpp (kPadButtonA...); other pads report their
-    // own numbers.
+    // own numbers. Its triggers come as the buttons kPadButtonLeftTrigger
+    // and kPadButtonRightTrigger.
     virtual bool padIsController(int slot) const = 0;
+
+    // Lets `count` players take their controllers before a game: the
+    // Switch's controller applet (each player presses L and R, the lights
+    // then show the player's number, single Joy-Cons allowed); blocks until
+    // it closes. Nothing where the system has no such screen.
+    virtual void requestPlayers(int count) = 0;
+
+    // Shows the system's on-screen keyboard (the Switch's) for a short
+    // text, which then comes as a Text event; false where there is none (a
+    // keyboard types instead). textEntryShown() is false again once the
+    // text came or the player cancelled.
+    virtual bool beginTextEntry() = 0;
+    virtual bool textEntryShown() const = 0;
 };
 
 }  // namespace bb::platform

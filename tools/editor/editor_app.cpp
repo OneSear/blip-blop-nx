@@ -1694,16 +1694,11 @@ void EditorApp::playLevel(bool rebuild) {
     // The game and bbassets next to bbedit in a build tree (tools/ under
     // the game's directory) or in a package.
     const fs::path tools = fs::u8path(toolDir_);
-#ifdef _WIN32
-    const std::string exe = ".exe";
-#else
-    const std::string exe;
-#endif
-    fs::path game = tools.parent_path() / ("blipblop" + exe);
+    fs::path game = tools.parent_path() / "blipblop";
     if (!fs::exists(game)) {
-        game = tools / ("blipblop" + exe);
+        game = tools / "blipblop";
     }
-    const fs::path bbassets = tools / ("bbassets" + exe);
+    const fs::path bbassets = tools / "bbassets";
     if (!fs::exists(game) || (rebuild && !fs::exists(bbassets))) {
         status("Test play needs blipblop (and bbassets to rebuild the assets) next to bbedit or one directory up", true);
         return;
@@ -1756,13 +1751,6 @@ void EditorApp::playLevel(bool rebuild) {
                                                         : " --data " + quote((game.parent_path() / "data").u8string());
         playCommand = quote(game.u8string()) + assets + " --overlay " + quote(overlay.u8string()) + play;
     }
-#ifdef _WIN32
-    // cmd.exe removes the outer quotes of a command that starts with one.
-    if (!packCommand.empty()) {
-        packCommand = quote(packCommand);
-    }
-    playCommand = quote(playCommand);
-#endif
     if (player_.joinable()) {
         player_.join();
     }

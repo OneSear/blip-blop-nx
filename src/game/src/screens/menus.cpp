@@ -21,7 +21,6 @@ enum Text {
     kResumeText = 800,
     kOptionsText = 801,
     kExitGameText = 805,
-    kVsyncText = 806,
     kReturnText = 808,
     kOnText = 809,
     kOffText = 810,
@@ -33,6 +32,7 @@ enum Text {
     kLanguageText = 816,
     kFilterText = 817,
     kSharpText = 818,
+    kCrispText = 862,
     kSmoothText = 802,
     kMotionText = 804,
     kPlayer1KeysText = 819,
@@ -66,10 +66,33 @@ Menu::Menu(Services& services, int pauseOptionsPage, int lineHeight) noexcept
     : services_(services), optionsPage_(pauseOptionsPage), lineHeight_(lineHeight) {}
 
 void Menu::setPage(int page, int items, int focusedItem) {
+    // What the options and key pages changed is written when they are left,
+    // not only when the game exits: a console may sleep or lose power first.
+    if (page != page_ && (page_ == optionsPage_ || keysPlayer(page_) >= 0)) {
+        services_.session->saveSettings();
+    }
     page_ = page;
     items_ = items;
     focus_ = focusedItem;
     updateItems();
+}
+
+void Menu::saveIfOnOptions() {
+    if (page_ == optionsPage_ || keysPlayer(page_) >= 0) {
+        services_.session->saveSettings();
+    }
+}
+
+bool Menu::backFromOptions() {
+    if (page_ == optionsPage_) {
+        setPage(kMainPage, 3, 1);  // on OPTIONS
+        return true;
+    }
+    if (const int player = keysPlayer(page_); player >= 0) {
+        setPage(optionsPage_, kOptionItems, kKeys1Item + player);
+        return true;
+    }
+    return false;
 }
 
 bool Menu::waitFor(MenuWait w) {
@@ -99,14 +122,14 @@ void Menu::setItem(int i, const char* text) {
 bool Menu::switchOption() {
     Options& o = *services_.options;
     switch (focus_) {
-        case kVsyncItem:
-            o.vsync = !o.vsync;
-            break;
         case kScalingItem:
             o.integerScaling = !o.integerScaling;
             break;
         case kFilterItem:
-            o.smoothFilter = !o.smoothFilter;
+            // SHARP, CRISP, SMOOTH and round again.
+            o.filter = o.filter == core::gfx::Filter::Sharp   ? core::gfx::Filter::Crisp
+                       : o.filter == core::gfx::Filter::Crisp ? core::gfx::Filter::Smooth
+                                                              : core::gfx::Filter::Sharp;
             break;
         case kMotionItem:
             o.smoothMotion = !o.smoothMotion;
@@ -162,9 +185,11 @@ void Menu::optionsItems() {
         std::snprintf(text_[static_cast<std::size_t>(item)].data(), text_[0].size(), "%s %s", t.text(label),
                       t.text(value));
     };
-    option(kVsyncItem, kVsyncText, o.vsync ? kOnText : kOffText);
     option(kScalingItem, kScalingText, o.integerScaling ? kIntegerText : kFitText);
-    option(kFilterItem, kFilterText, o.smoothFilter ? kSmoothText : kSharpText);
+    option(kFilterItem, kFilterText,
+           o.filter == core::gfx::Filter::Sharp   ? kSharpText
+           : o.filter == core::gfx::Filter::Crisp ? kCrispText
+                                                  : kSmoothText);
     option(kMotionItem, kMotionText, o.smoothMotion ? kOnText : kOffText);
     option(kLanguageItem, kLanguageText, o.language == input::Language::French ? kFrenchText : kEnglishText);
     setItem(kKeys1Item, t.text(kPlayer1KeysText));
@@ -267,7 +292,9 @@ enum MainStage {
     kReturnKey,
     kReturnAction,
     kSideKeys,
-    kSideAction
+    kSideAction,
+    kBackKey,
+    kBackAction
 };
 
 }  // namespace
@@ -438,12 +465,31 @@ bool MainMenu::update(int& result) {
                     stage_ = kSideAction;
                     return waitFor(MenuWait::Release);
                 }
-                return done(result, kContinue);
+                stage_ = kBackKey;
+                break;
 
             case kSideAction:
                 // Right and left do the same: they switch the option.
                 if (page_ == kOptionsPage) {
                     switchOption();
+                }
+                return done(result, kContinue);
+
+            case kBackKey:
+                if (services_.input->backHeld()) {
+                    stage_ = kBackAction;
+                    return waitFor(MenuWait::Release);
+                }
+                return done(result, kContinue);
+
+            case kBackAction:
+                // Up one page; the first page has nothing above it.
+                if (!backFromOptions()) {
+                    if (page_ == kStartPage) {
+                        setPage(kMainPage, 3, 0);
+                    } else if (page_ == kExitPage) {
+                        setPage(kMainPage, 3, 2);
+                    }
                 }
                 return done(result, kContinue);
 
@@ -482,6 +528,7 @@ void MainMenu::stop() {
         }
     }
 
+    saveIfOnOptions();
     bandPage_ = -1;
 }
 
@@ -504,12 +551,19 @@ enum PauseStage {
     kPauseLeftAction,
     kPauseEscapeKey,
     kPauseEscapeAction,
+    kPauseBackKey,
+    kPauseBackAction,
 };
 
 }  // namespace
 
 void PauseMenu::start() {
     setPage(kMainPage, 3, 0);
+}
+
+void PauseMenu::stop() {
+    saveIfOnOptions();
+    bandPage_ = -1;
 }
 
 void PauseMenu::updateItems() {
@@ -639,10 +693,26 @@ bool PauseMenu::update(int& result) {
                     stage_ = kPauseEscapeAction;
                     return waitFor(MenuWait::Release);
                 }
-                return done(result, kStay);
+                stage_ = kPauseBackKey;
+                break;
 
             case kPauseEscapeAction:
                 return done(result, kResume);
+
+            case kPauseBackKey:
+                if (services_.input->backHeld()) {
+                    stage_ = kPauseBackAction;
+                    return waitFor(MenuWait::Release);
+                }
+                return done(result, kStay);
+
+            case kPauseBackAction:
+                // Up one page; from the first, back to the game.
+                if (page_ == kMainPage) {
+                    return done(result, kResume);
+                }
+                backFromOptions();
+                return done(result, kStay);
 
             default:
                 return done(result, kStay);

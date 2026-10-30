@@ -41,24 +41,24 @@ Bindings Bindings::defaults() {
     return b;
 }
 
-Code Bindings::defaultPadCode(int player, Action action) {
+std::array<Code, 2> Bindings::defaultPadCodes(int player, Action action) {
     switch (action) {
         case Action::Up:
-            return padCode(player, kPadUp);
+            return {padCode(player, kPadUp), 0};
         case Action::Down:
-            return padCode(player, kPadDown);
+            return {padCode(player, kPadDown), 0};
         case Action::Left:
-            return padCode(player, kPadLeft);
+            return {padCode(player, kPadLeft), 0};
         case Action::Right:
-            return padCode(player, kPadRight);
+            return {padCode(player, kPadRight), 0};
         case Action::Fire:
-            return padCode(player, kPadButtonX);
+            return {padCode(player, kPadButtonB), padCode(player, kPadButtonRightTrigger)};
         case Action::Jump:
-            return padCode(player, kPadButtonA);
+            return {padCode(player, kPadButtonA), 0};
         case Action::Special:
-            return padCode(player, kPadButtonB);
+            return {padCode(player, kPadButtonX), padCode(player, kPadButtonLeftTrigger)};
     }
-    return 0;
+    return {0, 0};
 }
 
 bool Bindings::usesPad(int player) const {

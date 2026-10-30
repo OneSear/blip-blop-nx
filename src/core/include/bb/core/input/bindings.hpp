@@ -29,10 +29,12 @@ public:
     static Bindings defaults();
 
     // The pad layout a player gets without binding any pad input (see
-    // usesPad()): pad 1 for the first player, pad 2 for the second; the
-    // D-pad or the left stick to move, A to jump, X to fire, B for the
-    // special (the buttons of a recognised game controller, codes.hpp).
-    static Code defaultPadCode(int player, Action action);
+    // usesPad()): pad 1 for the first player, pad 2 for the second, and so
+    // on; the Switch's (switch-port.md, 4.2): the D-pad or the left stick to
+    // move, A (the right button) to fire, B (bottom) to jump, Y (left) for
+    // the special; ZR also fires and ZL also drops the special. Each action
+    // has up to two inputs; an unused one is 0.
+    static std::array<Code, 2> defaultPadCodes(int player, Action action);
 
     Code get(int player, Action action) const;
     // Whether one of the player's actions is bound to a pad input; the

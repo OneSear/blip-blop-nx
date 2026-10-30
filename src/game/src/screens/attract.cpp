@@ -176,6 +176,15 @@ Frame HiScoreEntryScreen::update(ScreenStack& stack) {
             [[fallthrough]];
 
         case Step::NextKey:
+            // The system's on-screen keyboard where there is one (the
+            // Switch): the whole name at once.
+            if (!quitting && !keyboardAsked_) {
+                keyboardAsked_ = true;
+                if (services_.input->beginTextEntry()) {
+                    step_ = Step::Keyboard;
+                    return update(stack);
+                }
+            }
             if (!quitting && key_ != static_cast<int>(input::kKeyReturn)) {
                 // Waits for the release, then for a key.
                 step_ = Step::KeyTyped;
@@ -212,6 +221,21 @@ Frame HiScoreEntryScreen::update(ScreenStack& stack) {
             return Frame::Present;
         }
 
+        case Step::Keyboard: {
+            services_.input->update();
+            std::string text;
+            const Input::TextEntry entry = services_.input->textEntry(text);
+            if (entry == Input::TextEntry::Typing && !quitting) {
+                drawTitle();
+                return Frame::Present;
+            }
+            if (entry == Input::TextEntry::Done) {
+                setName(text);
+            }
+            step_ = Step::SlideOut;
+            return update(stack);
+        }
+
         case Step::SlideOut:
             if (!quitting && x_ < 640) {
                 x_ += 20;
@@ -223,8 +247,27 @@ Frame HiScoreEntryScreen::update(ScreenStack& stack) {
     }
 
     services_.hiScores->add(score_, name_);
+    services_.session->saveHiScores();
     stack.finish();
     return Frame::Continue;
+}
+
+void HiScoreEntryScreen::setName(const std::string& text) {
+    // The key-by-key entry types what the keys are named: capitals, digits,
+    // a few signs. The same here, in the hi-score file's single bytes.
+    const core::gfx::BitmapFont& font = *services_.fonts->menu;
+    length_ = 0;
+    for (const char c : text) {
+        if (length_ >= 19) {
+            break;
+        }
+        const auto u = static_cast<unsigned char>(c);
+        const char upper = u >= 'a' && u <= 'z' ? static_cast<char>(u - 'a' + 'A') : c;
+        if (u >= 0x20 && u < 0x7F && font.has(static_cast<unsigned char>(upper))) {
+            name_[length_++] = upper;
+        }
+    }
+    name_[length_] = '\0';
 }
 
 }  // namespace bb::game

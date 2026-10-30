@@ -21,10 +21,11 @@ std::optional<Code> codeFromName(std::string_view name);
 // True for the codes of codes.hpp and for valid joystick codes.
 bool isKnownCode(Code code);
 
-// The name shown to the player (key binding menu, name entry), exactly as
-// the 2002 game printed it: "LEFT CONTROL", "A", "JOY1 BUTTON3"...
-// "UNDEFINED" / "INDEFINIE" for codes without a name. UTF-8 (one French
-// name has a non-ASCII letter: "\u00f9" for the quote key).
+// The name shown to the player (key binding menu, name entry): keys as the
+// 2002 game printed them, "LEFT CONTROL", "A"...; pad inputs by the
+// Switch's names, "P1 A", "P2 ZR", "P3 UP". "UNDEFINED" / "INDEFINIE" for
+// codes without a name. UTF-8 (one French name has a non-ASCII letter:
+// "\u00f9" for the quote key).
 std::string displayName(Code code, Language language);
 
 }  // namespace bb::core::input

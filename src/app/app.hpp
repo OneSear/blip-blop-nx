@@ -46,7 +46,7 @@ private:
     // The session as the screens see it.
     class SessionView : public game::Session {
     public:
-        explicit SessionView(app::Session& session) : session_(session) {}
+        SessionView(app::Session& session, App& app) : session_(session), app_(app) {}
         void note(const char* text) override;
         std::uint64_t nowMicroseconds() const override;
         bool quitRequested() const override;
@@ -54,9 +54,12 @@ private:
         void onTick(std::uint64_t fingerprint) override;
         std::FILE* traceStream() const override;
         unsigned long long frame() const override;
+        void saveSettings() override;
+        void saveHiScores() override;
 
     private:
         app::Session& session_;
+        App& app_;
     };
 
     bool init();
@@ -64,6 +67,10 @@ private:
     void connectServices();
     void runScreens(game::ScreenStack& stack);
     void present();
+    // Write the settings and the hi-scores (not in deterministic runs: they
+    // start from the reference settings and never write).
+    void saveSettingsNow();
+    void saveHiScoresNow();
     // Loads the string table of the language (fr.dat or uk.dat); English
     // when the French table is missing (the 2002 data has none).
     bool loadStrings(core::input::Language language);
@@ -75,13 +82,12 @@ private:
     Session& session_;
     GameFiles& files_;
     std::unique_ptr<platform::Display> display_;
-    // When the next frame may be presented, without vsync (microseconds of
-    // the platform clock).
+    // When the next frame may be presented (microseconds of the platform
+    // clock).
     std::uint64_t nextFrame_ = 0;
-    bool fullscreenKey_ = false;  // F10 held at the last frame
     // The options the display and the strings were last set up for.
     bool integerScaling_ = false;
-    bool smoothFilter_ = false;
+    core::gfx::Filter filter_ = core::gfx::Filter::Crisp;
     core::input::Language language_ = core::input::Language::English;
     // Presented frames and when the first was (for the log).
     std::uint64_t presented_ = 0;
@@ -102,7 +108,7 @@ private:
     game::AudioOutput audio_;
     game::Options options_;
     game::HiScores hiScores_;
-    SessionView sessionView_{session_};
+    SessionView sessionView_{session_, *this};
 
     // The banks and fonts (the pbk_*, fnt_*, sbk_*, mbk_* of 2002).
     core::gfx::SpriteBank interface_, decorScreens_, props_, enemies_, dialogueFaces_;

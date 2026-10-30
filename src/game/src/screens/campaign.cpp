@@ -156,6 +156,13 @@ Frame AttractScreen::update(ScreenStack& stack) {
                 }
                 if (result_ == MainMenu::kStartOnePlayer || result_ == MainMenu::kStartTwoPlayers ||
                     result_ == MainMenu::kStartThreePlayers || result_ == MainMenu::kStartFourPlayers) {
+                    // Each player takes a controller (the Switch's applet:
+                    // its lights then show the player's number).
+                    if (result_ != MainMenu::kStartOnePlayer) {
+                        services_.input->requestPlayers(result_ == MainMenu::kStartTwoPlayers     ? 2
+                                                        : result_ == MainMenu::kStartThreePlayers ? 3
+                                                                                                  : 4);
+                    }
                     step_ = Step::StartGame;
                     stack.push(std::make_unique<CharacterSelectScreen>(services_, character_));
                     return Frame::Continue;

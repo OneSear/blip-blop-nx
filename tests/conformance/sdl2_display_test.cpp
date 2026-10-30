@@ -9,6 +9,7 @@
 #include <string>
 
 #include "bb/core/gfx/pixmap.hpp"
+#include "bb/core/gfx/viewport.hpp"
 #include "bb/platform/sdl2/sdl2_platform.hpp"
 
 namespace gfx = bb::core::gfx;
@@ -22,7 +23,6 @@ TEST_CASE("the SDL 2 display shows frames unchanged") {
     REQUIRE_MESSAGE(platform != nullptr, error);
 
     bb::platform::DisplayOptions options;
-    options.vsync = false;
     auto display = platform->createDisplay(options, error);
     REQUIRE_MESSAGE(display != nullptr, error);
 
@@ -56,7 +56,7 @@ TEST_CASE("the SDL 2 display shows frames unchanged") {
     CHECK(gfx::blue(shown.at(15, 15)) == 0);
 }
 
-TEST_CASE("the SDL 2 display scales by whole factors when asked") {
+TEST_CASE("the SDL 2 display fits the frame, by whole factors when asked, CRISP with square pixels") {
     SDL_setenv("SDL_VIDEODRIVER", "dummy", 1);
     SDL_setenv("SDL_AUDIODRIVER", "dummy", 1);
 
@@ -65,59 +65,81 @@ TEST_CASE("the SDL 2 display scales by whole factors when asked") {
     REQUIRE_MESSAGE(platform != nullptr, error);
 
     bb::platform::DisplayOptions options;
-    options.vsync = false;
     auto display = platform->createDisplay(options, error);
     REQUIRE_MESSAGE(display != nullptr, error);
 
-    // A window 1.5 frames wide and tall: fit scales by 1.5, integer by 1
-    // with a border.
     // The display's window: the only one open (ids grow from test to test).
     SDL_Window* window = nullptr;
     for (Uint32 id = 1; id < 100 && window == nullptr; ++id) {
         window = SDL_GetWindowFromID(id);
     }
     REQUIRE(window != nullptr);
-    SDL_SetWindowSize(window, 960, 720);
-    SDL_PumpEvents();
-
-    gfx::Pixmap frame(640, 480);
-    gfx::Rect all{0, 0, 640, 480};
-    gfx::fill(frame, &all, gfx::makePixel(255, 255, 255));
-    SDL_Renderer* renderer = SDL_GetRenderer(window);
-    REQUIRE(renderer != nullptr);
-
-    // Where the frame goes, in window pixels (the read-back only covers
-    // this viewport, so the border is checked through it).
-    const auto placed = [&](SDL_Rect& at) {
-        float scaleX = 0;
-        float scaleY = 0;
-        SDL_RenderGetViewport(renderer, &at);
-        SDL_RenderGetScale(renderer, &scaleX, &scaleY);
-        at.x = static_cast<int>(static_cast<float>(at.x) * scaleX);
-        at.y = static_cast<int>(static_cast<float>(at.y) * scaleY);
-        at.w = static_cast<int>(static_cast<float>(at.w) * scaleX);
-        at.h = static_cast<int>(static_cast<float>(at.h) * scaleY);
+    const auto resize = [&](int w, int h) {
+        SDL_SetWindowSize(window, w, h);
+        SDL_PumpEvents();
     };
 
-    SDL_Rect at{};
+    // Red on the left half, blue on the right: the edge shows the filter.
+    gfx::Pixmap frame(640, 480);
+    gfx::Rect left{0, 0, 320, 480};
+    gfx::Rect right{320, 0, 320, 480};
+    gfx::fill(frame, &left, gfx::makePixel(255, 0, 0));
+    gfx::fill(frame, &right, gfx::makePixel(0, 0, 255));
+    const auto isRed = [](gfx::Pixel p) { return gfx::red(p) == 255 && gfx::blue(p) == 0; };
+    const auto isBlue = [](gfx::Pixel p) { return gfx::red(p) == 0 && gfx::blue(p) == 255; };
+    const auto isBlack = [](gfx::Pixel p) { return (p & gfx::kRgbMask) == 0; };
     gfx::Pixmap shown;
-    display->setScaling(false, false);
-    display->present(frame);
-    placed(at);
-    CHECK(at.x == 0);  // fills the window, scaled by 1.5
-    CHECK(at.y == 0);
-    CHECK(at.w == 960);
-    CHECK(at.h == 720);
-    CHECK(display->describe().find("scaling fit, filter sharp") != std::string::npos);
 
-    display->setScaling(true, true);
+    // The Switch's handheld screen: fit, 960x720 between 160-pixel bars.
+    resize(1280, 720);
+    display->setScaling(false, gfx::Filter::Sharp);
     display->present(frame);
-    placed(at);
-    CHECK(at.x == 160);  // scale 1, centred: a 160-pixel border
-    CHECK(at.y == 120);
-    CHECK(at.w == 640);
-    CHECK(at.h == 480);
     REQUIRE(bb::platform::sdl2::readBack(*display, shown));
-    CHECK(gfx::red(shown.at(0, 0)) == 255);  // the frame's corner is in the viewport
-    CHECK(display->describe().find("scaling integer, filter smooth") != std::string::npos);
+    REQUIRE(shown.width() == 1280);
+    REQUIRE(shown.height() == 720);
+    CHECK(isBlack(shown.at(159, 360)));
+    CHECK(isRed(shown.at(160, 360)));
+    CHECK(isBlue(shown.at(1119, 360)));
+    CHECK(isBlack(shown.at(1120, 360)));
+    CHECK(display->describe().find("picture 960x720 at 160,0, scaling fit, filter sharp") != std::string::npos);
+
+    // CRISP: enlarged by 2 with sharp pixels, then down to 960x720; the edge
+    // between the halves blends over one pixel at most.
+    display->setScaling(false, gfx::Filter::Crisp);
+    display->present(frame);
+    REQUIRE(bb::platform::sdl2::readBack(*display, shown));
+    int blended = 0;
+    for (int x = 160; x < 1120; ++x) {
+        const gfx::Pixel p = shown.at(x, 360);
+        if (!isRed(p) && !isBlue(p)) {
+            ++blended;
+        }
+        if (x < 638) {
+            CHECK(isRed(p));
+        } else if (x > 641) {
+            CHECK(isBlue(p));
+        }
+    }
+    CHECK(blended <= 1);
+    CHECK(display->describe().find("filter crisp (x2 first)") != std::string::npos);
+
+    // Integer scaling with a whole factor of 1 would leave most of the
+    // screen empty: fit instead.
+    display->setScaling(true, gfx::Filter::Crisp);
+    display->present(frame);
+    REQUIRE(bb::platform::sdl2::readBack(*display, shown));
+    CHECK(isRed(shown.at(160, 360)));
+
+    // Docked, 1920x1080: integer gives 1280x960 at 320,60.
+    resize(1920, 1080);
+    display->present(frame);
+    REQUIRE(bb::platform::sdl2::readBack(*display, shown));
+    REQUIRE(shown.width() == 1920);
+    CHECK(isBlack(shown.at(319, 540)));
+    CHECK(isRed(shown.at(320, 540)));
+    CHECK(isBlack(shown.at(960, 59)));
+    CHECK(isBlue(shown.at(960, 60)));
+    CHECK(isBlue(shown.at(1599, 1019)));
+    CHECK(isBlack(shown.at(1600, 1019)));
+    CHECK(display->describe().find("picture 1280x960 at 320,60, scaling integer") != std::string::npos);
 }

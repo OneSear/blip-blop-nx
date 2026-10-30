@@ -1,5 +1,6 @@
-# The game executable: the entry point of the SDL 2 backend and the
-# application (bbMain, App): the session, the device input, the settings,
+# The game executable (an ELF on the Switch, which cmake/BBSwitch.cmake
+# makes the .nro and the .nsp of): the entry point of the SDL 2 backend and
+# the application (bbMain, App): the session, the device input, the settings,
 # the string table and the files; the game itself is bb::game.
 add_executable(blipblop
     main.cpp
@@ -23,7 +24,8 @@ bb_set_strict_warnings(blipblop)
 # Debug/ or Release/), next to the extracted data/ folder.
 set_target_properties(blipblop PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${BB_RUN_DIR}/$<0:>"
-    VS_DEBUGGER_WORKING_DIRECTORY "${BB_RUN_DIR}"
     XCODE_SCHEME_WORKING_DIRECTORY "${BB_RUN_DIR}")
 
-add_dependencies(blipblop legacy_data)
+if(TARGET legacy_data)
+    add_dependencies(blipblop legacy_data)
+endif()

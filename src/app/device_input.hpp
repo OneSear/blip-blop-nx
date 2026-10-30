@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <string>
 
 #include "bb/game/services.hpp"
 
@@ -36,6 +37,10 @@ public:
     bool anyHeld() const override;
     bool firstHeld(unsigned int& code) const override;
     bool takeFocusLost() override;
+    bool backHeld() const override;
+    void requestPlayers(int count) override;
+    bool beginTextEntry() override;
+    TextEntry textEntry(std::string& text) override;
 
 private:
     struct Pad {
@@ -74,6 +79,10 @@ private:
     bool liveUnfocused_ = false;
     bool unfocused_ = false;
     bool focusLost_ = false;
+    // The on-screen keyboard: shown, and the text it typed.
+    bool textEntry_ = false;
+    bool textTyped_ = false;
+    std::string text_;
 };
 
 }  // namespace bb::app

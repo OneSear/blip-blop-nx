@@ -18,8 +18,13 @@ public:
     virtual void showWarning(const std::string& title, const std::string& message) = 0;
 
     // The process's peak resident memory in bytes, 0 if unknown (for the
-    // benchmark line of headless runs).
+    // benchmark line of headless runs). On the Switch, the memory in use.
     virtual std::uint64_t peakMemoryBytes() const = 0;
+
+    // The language the user chose for the system, as two lower-case
+    // letters ("fr", "en"), "" when unknown: the game's language on its
+    // first run.
+    virtual std::string languageCode() const = 0;
 };
 
 }  // namespace bb::platform

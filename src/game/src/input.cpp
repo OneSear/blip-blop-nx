@@ -21,8 +21,13 @@ bool InputState::aliasHeld(int a) const {
             }
         }
         // The offsets of AliasControls follow the order of input::kActions.
-        return held(
-            input::Bindings::defaultPadCode(player, input::kActions[static_cast<std::size_t>(a - first)]));
+        for (const input::Code code :
+             input::Bindings::defaultPadCodes(player, input::kActions[static_cast<std::size_t>(a - first)])) {
+            if (code != 0 && held(code)) {
+                return true;
+            }
+        }
+        return false;
     }
     return false;
 }

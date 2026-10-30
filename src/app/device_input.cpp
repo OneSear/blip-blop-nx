@@ -69,6 +69,12 @@ void DeviceInput::update() {
             case Event::Type::FocusGained:
                 liveUnfocused_ = e.type == Event::Type::FocusLost;
                 break;
+            case Event::Type::Text:
+                if (textEntry_) {
+                    text_ += e.text;
+                    textTyped_ = true;
+                }
+                break;
             case Event::Type::KeyDown:
             case Event::Type::KeyUp: {
                 const char down = e.type == Event::Type::KeyDown ? 1 : 0;
@@ -240,15 +246,60 @@ bool DeviceInput::takeFocusLost() {
     return lost;
 }
 
+bool DeviceInput::backHeld() const {
+    // The Switch's B: the bottom button.
+    for (int k = 0; k < pads_; ++k) {
+        if (visible_.pads[k].buttons[core::input::kPadButtonA] != 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void DeviceInput::requestPlayers(int count) {
+    // The applet blocks and changes nothing a recording could replay.
+    if (!session_.deterministic()) {
+        source_.requestPlayers(count);
+    }
+}
+
+bool DeviceInput::beginTextEntry() {
+    // Recordings hold keys, not text: deterministic runs type the name.
+    if (session_.deterministic() || !source_.beginTextEntry()) {
+        return false;
+    }
+    textEntry_ = true;
+    textTyped_ = false;
+    text_.clear();
+    return true;
+}
+
+game::Input::TextEntry DeviceInput::textEntry(std::string& text) {
+    if (!textEntry_) {
+        return TextEntry::Cancelled;
+    }
+    if (textTyped_) {
+        textEntry_ = false;
+        text = text_;
+        return TextEntry::Done;
+    }
+    if (!source_.textEntryShown()) {
+        textEntry_ = false;
+        return TextEntry::Cancelled;
+    }
+    return TextEntry::Typing;
+}
+
 bool DeviceInput::held(unsigned int code) const {
     namespace input = core::input;
-    // The pads also confirm and go back in the menus: A as Return, Start
-    // and Back as Escape (pause, skip a cutscene).
+    // The pads also confirm and go back in the menus as the Switch does: A
+    // (the right button) as Return, + and - (Start and Back) as Escape
+    // (pause, skip a cutscene).
     if (code == input::kKeyReturn || code == input::kKeyEscape) {
         for (int k = 0; k < pads_; ++k) {
             const Pad& p = visible_.pads[k];
             if (code == input::kKeyReturn
-                    ? p.buttons[input::kPadButtonA] != 0
+                    ? p.buttons[input::kPadButtonB] != 0
                     : p.buttons[input::kPadButtonStart] != 0 || p.buttons[input::kPadButtonBack] != 0) {
                 return true;
             }

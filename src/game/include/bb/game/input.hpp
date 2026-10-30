@@ -13,9 +13,9 @@ public:
     virtual bool held(unsigned int code) const = 0;
     // The code bound to alias `alias`.
     virtual unsigned int alias(int alias) const = 0;
-    // Whether the code bound to `a` is held, or, for a player's alias, the
+    // Whether the code bound to `a` is held, or, for a player's alias, an
     // input of the default pad layout (core::input::Bindings::
-    // defaultPadCode()) unless the player bound one of its actions to a pad.
+    // defaultPadCodes()) unless the player bound one of its actions to a pad.
     bool aliasHeld(int a) const;
 };
 

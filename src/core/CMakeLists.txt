@@ -7,6 +7,7 @@ add_library(bb_core STATIC
     src/gfx_font.cpp
     src/gfx_sprite.cpp
     src/gfx_fingerprint.cpp
+    src/gfx_viewport.cpp
     src/file_reader.cpp
     src/vfs.cpp
     src/input_names.cpp

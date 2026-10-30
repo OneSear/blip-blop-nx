@@ -1,15 +1,13 @@
 name: Release
-
-# Builds the packages on the three platforms (Windows in 64 and 32 bits) and
-# attaches them to the GitHub release of a tag:
+# Builds the Switch's .nro with the tag's version and attaches it to the
+# GitHub release of a tag (switch-port.md, 6.5):
 # - a pushed tag v* (creating a release with a new tag in GitHub pushes the
 #   tag too);
 # - by hand (Actions > Release > Run workflow) for an existing tag.
 # A release that does not exist yet is created as a draft with generated
-# notes, and published once every package is attached; one made in GitHub
-# is left as it is. Each package is tested before it is attached (unit
-# tests, then the campaign and smoke replays played from the package).
-
+# notes, and published once the .nro is attached; one made in GitHub is left
+# as it is. The .nsp needs the maintainer's console keys, which CI never
+# has: they attach it afterwards with tools/switch/make-nsp.sh --upload <tag>.
 on:
   push:
     tags: ['v*']
@@ -44,99 +42,39 @@ jobs:
             echo "created=true" >> "$GITHUB_OUTPUT"
           fi
 
-  packages:
-    name: ${{ matrix.name }}
+  nro:
+    name: Nintendo Switch (.nro)
     needs: release
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: Linux
-            os: ubuntu-24.04
-          - name: macOS
-            os: macos-14
-          - name: Windows
-            os: windows-2022
-            triplet: x64-windows
-          - name: Windows 32-bit
-            os: windows-2022
-            triplet: x86-windows
-            configure: -A Win32 -DVCPKG_TARGET_TRIPLET=x86-windows
-    defaults:
-      run:
-        shell: bash
+    runs-on: ubuntu-24.04
+    container: devkitpro/devkita64
     steps:
       - uses: actions/checkout@v5
         with:
           ref: ${{ env.TAG }}
 
-      - name: Install dependencies (Linux)
-        if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y libsdl2-dev
-
-      # SDL 2 universal (Apple silicon and Intel) for macOS 11 and later,
-      # built from source: Homebrew's runs on this runner's processor and
-      # macOS version only. CMake reads the three variables.
-      - name: Install dependencies (macOS)
-        if: runner.os == 'macOS'
-        shell: bash
-        run: |
-          tools/macos/sdl2-universal.sh "$RUNNER_TEMP/sdl2"
-          echo "CMAKE_PREFIX_PATH=$RUNNER_TEMP/sdl2" >> "$GITHUB_ENV"
-          echo "CMAKE_OSX_ARCHITECTURES=arm64;x86_64" >> "$GITHUB_ENV"
-          echo "MACOSX_DEPLOYMENT_TARGET=11.0" >> "$GITHUB_ENV"
-
-      - name: Install dependencies (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          & "$env:VCPKG_INSTALLATION_ROOT\vcpkg" install sdl2 --triplet ${{ matrix.triplet }}
-          "CMAKE_TOOLCHAIN_FILE=$env:VCPKG_INSTALLATION_ROOT\scripts\buildsystems\vcpkg.cmake" >> $env:GITHUB_ENV
-
-      # The packages carry the tag's version (v1.2.0 -> 1.2.0).
+      # The .nro carries the tag's version (v1.2.0 -> 1.2.0).
       - name: Configure
-        run: cmake --preset release ${{ matrix.configure }} -DBB_PACKAGE_VERSION="${TAG#v}"
+        run: cmake --preset switch -DBB_PACKAGE_VERSION="${TAG#v}"
 
       - name: Build
-        run: cmake --build --preset release --parallel
+        run: cmake --build --preset switch --parallel
 
-      - name: Unit tests
-        run: ctest --preset release -LE replay
-
-      # Windows: NSIS installer and zip; macOS: disk image; Linux: .tar.gz.
-      - name: Package
-        run: cpack --config build/release/CPackConfig.cmake -C RelWithDebInfo -B build/release/packages
-
-      - name: Replays from the package
+      # The folder to copy to the SD card's root: switch/blipblop/blipblop.nro.
+      - name: Zip
         run: |
-          case "$RUNNER_OS" in
-            Linux) package=$(ls build/release/packages/BlipBlop-*.tar.gz) ;;
-            macOS) package=$(ls build/release/packages/BlipBlop-*.dmg) ;;
-            Windows) package=$(ls build/release/packages/BlipBlop-*.zip) ;;
-          esac
-          tools/replays/package-replay.sh "$package" campaign smoke
+          mkdir -p sd/switch/blipblop
+          cp build/switch/blipblop.nro sd/switch/blipblop/
+          cd sd && zip -r "../blipblop-${TAG#v}-switch-nro.zip" switch
 
-      # The Intel half of the universal app, under Rosetta (when the runner
-      # has it).
-      - name: Replay from the package, Intel (macOS)
-        if: runner.os == 'macOS'
-        shell: bash
+      # The container has no GitHub CLI: Debian's.
+      - name: Attach the .nro to the release
         run: |
-          if arch -x86_64 /usr/bin/true 2> /dev/null; then
-            BB_RUN_WITH="arch;-x86_64" tools/replays/package-replay.sh "$(ls build/release/packages/BlipBlop-*.dmg)" smoke
-          else
-            echo "No Rosetta on this runner: the Intel half is not run"
-          fi
-
-      - name: Attach the packages to the release
-        run: |
-          find build/release/packages -maxdepth 1 -type f -name 'BlipBlop-*' -print0 |
-            xargs -0 gh release upload "$TAG" --repo "$GITHUB_REPOSITORY" --clobber
+          apt-get update -qq && apt-get install -y -qq gh > /dev/null
+          gh release upload "$TAG" --repo "$GITHUB_REPOSITORY" --clobber blipblop-*-switch-nro.zip
 
   publish:
     name: Publish
-    needs: [release, packages]
+    needs: [release, nro]
     if: needs.release.outputs.created == 'true'
     runs-on: ubuntu-24.04
     steps:

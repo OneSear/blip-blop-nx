@@ -48,6 +48,11 @@ And the four-player mode (players 3 and 4, Bleach and Blitz, 29 October
   uk.dat gains the start and controls items of players 3 and 4 (ids
         858-861), before id 1000.
 
+And the Switch port (switch-port.md, 30 October 2026):
+  uk.dat gains the CRISP value of the filter option (id 862), before id
+        1000, and the briefings ask for a button (id 852, "Press a button
+        to start.").
+
 The script is idempotent: running it on a fixed archive changes nothing.
 Every other entry keeps its content, compression method and timestamp.
 
@@ -213,6 +218,11 @@ FOUR_PLAYER_STRINGS = [
     (860, 'PLAYER 3 CONTROL'),
     (861, 'PLAYER 4 CONTROL'),
 ]
+# The Switch port: the third filter value, and a button rather than a key.
+SWITCH_STRINGS = [
+    (862, 'CRISP'),
+]
+SWITCH_WORDING = (b"\n852^Press a key to start.", b"\n852^Press a button to start.")
 FRENCH_SOURCE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "assets", "source",
                              "strings", "fr.json")
 
@@ -289,6 +299,14 @@ def fix_entry(name, data):
         data = data[:at] + added.encode("cp1252") + data[at:]
         more, _ = fix_entry(name, data)
         return more, "added %d four-player strings" % len(FOUR_PLAYER_STRINGS)
+    if name == "data/uk.dat" and b"\n862^" not in data and b"\n861^" in data:
+        added = "".join("\n%d^%s" % (i, text) for i, text in SWITCH_STRINGS)
+        at = data.index(b"\n1000^")
+        data = data[:at] + added.encode("cp1252") + data[at:]
+        more, _ = fix_entry(name, data)
+        return more, "added %d Switch strings" % len(SWITCH_STRINGS)
+    if name == "data/uk.dat" and SWITCH_WORDING[0] in data:
+        return data.replace(SWITCH_WORDING[0], SWITCH_WORDING[1]), "the Switch's wording of id 852"
     if name == "data/uk.dat" and b"\n811^\n" in data:
         for i, text in PHASE9_STRINGS:
             empty = b"\n%d^\n" % i

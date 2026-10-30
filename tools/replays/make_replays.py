@@ -135,16 +135,18 @@ def menus():
     tap(s, "RETURN")                  # NO: back to the main menu on EXIT
     tap(s, "DOWN")                    # wraps to START
     tap(s, "DOWN")                    # OPTIONS
-    tap(s, "RETURN")                  # options (VSYNC, SCALING, FILTER, SMOOTH
-                                      # MOTION, LANGUAGE, P1 to P4 KEYS, RETURN)
-    tap(s, "DOWN")                    # wraps to VSYNC
+    tap(s, "RETURN")                  # options (SCALING, FILTER, SMOOTH MOTION,
+                                      # LANGUAGE, P1 to P4 KEYS, RETURN)
+    tap(s, "DOWN")                    # wraps to SCALING
     tap(s, "RIGHT")
     tap(s, "LEFT")
-    tap(s, "RETURN")                  # vsync toggled three times
+    tap(s, "RETURN")                  # integer scaling: switched three times, on
+                                      # (headless: not shown)
+    s.hold(24)                        # the two taps of the VSYNC item, gone with
+                                      # the desktop versions: the frames after
+                                      # the options page are the same as before
     tap(s, "DOWN")
-    tap(s, "RIGHT")                   # integer scaling (headless: not shown)
-    tap(s, "DOWN")
-    tap(s, "LEFT")                    # smooth filter (headless: not shown)
+    tap(s, "LEFT")                    # crisp to smooth filter (headless: not shown)
     tap(s, "DOWN")
     tap(s, "RETURN")                  # smooth motion on
     tap(s, "DOWN")
@@ -235,7 +237,8 @@ def menus():
 
 def four_players():
     """A four-player game: Blip and Blop on the keyboard, Bleach and Blitz on
-    pads 3 and 4 (their default layout: d-pad, X fires, A jumps). All four
+    pads 3 and 4 (the Switch's layout: d-pad, A - SDL's B1, the right
+    button - fires, B - B0, the bottom one - jumps). All four
     run, jump and fire through the first level and its dialogue; F9 wins it
     and the second one (whose level summary is the table of four); then part
     of the third level, the pause menu's EXIT and a quit."""
@@ -251,7 +254,7 @@ def four_players():
     s.hold(140)                       # character select: Blip slides in
     s.hold(10, "RETURN")              # player 1 is Blip
     s.hold(60)
-    run = ("RIGHT", "LCTRL", "F", "TAB", "JOY3_RIGHT", "JOY3_B2", "JOY4_RIGHT", "JOY4_B2")
+    run = ("RIGHT", "LCTRL", "F", "TAB", "JOY3_RIGHT", "JOY3_B1", "JOY4_RIGHT", "JOY4_B1")
     jump = ("LALT", "G", "JOY3_B0", "JOY4_B0")
     back = ("LEFT", "D", "JOY3_LEFT", "JOY4_LEFT")
 
