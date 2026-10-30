@@ -172,9 +172,9 @@ TEST_CASE("uk.dat reads as UTF-8 strings and writes back unchanged") {
     const auto table = readDat(original, error);
     REQUIRE_MESSAGE(table.has_value(), error);
     // 136 strings in 2002, plus the 109 that game.cpp printed (Phase 2),
-    // the 8 of the screens and the HUD (Phase 3) and the 4 menu items of
-    // the four-player mode.
-    CHECK(table->strings.size() == 253 + 4);
+    // the 8 of the screens and the HUD (Phase 3), the 4 menu items of the
+    // four-player mode and the CRISP filter of the Switch port.
+    CHECK(table->strings.size() == 253 + 4 + 1);
     REQUIRE(table->find(854) != nullptr);
     CHECK(*table->find(854) == "PLAYER %d GOT A HIGH SCORE!");
     REQUIRE(table->find(1013) != nullptr);
