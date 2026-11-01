@@ -102,7 +102,8 @@ tools/switch/make-nsp.sh --upload v1.2.0   # from the tag, attached to its relea
 It needs hacBrewPack (not part of devkitPro: build it with `make` from a
 mirror of the deleted The-4n/hacBrewPack, for example
 <https://github.com/rlaphoenix/hacBrewPack>) and the keys it encrypts with,
-dumped from your own console (Lockpick_RCM) into `~/.switch/prod.keys`.
+dumped from your own console (Lockpick_RCM) into `tools/switch/prod.keys`
+(gitignored; `~/.switch/prod.keys` or `BB_SWITCH_KEYS=<file>` work too).
 The keys are Nintendo's: they never go into the repository or CI
 (`.gitignore` lists the usual key files). The title ID, `0x011142be60644000`
 (`cmake/BBSwitch.cmake`), is the installed game's identity: never change it.

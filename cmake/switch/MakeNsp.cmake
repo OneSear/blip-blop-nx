@@ -12,7 +12,8 @@ if(NOT HACBREWPACK)
 endif()
 if(NOT EXISTS "${KEYS}")
     message(FATAL_ERROR
-        "No keys at ${KEYS}: dump them from your own console (Lockpick_RCM) into ~/.switch/prod.keys, "
+        "No keys at ${KEYS}: dump them from your own console (Lockpick_RCM) into tools/switch/prod.keys "
+        "(gitignored) or ~/.switch/prod.keys, "
         "or pass -DBB_SWITCH_KEYS=<file>. Never commit them.")
 endif()
 

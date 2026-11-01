@@ -14,7 +14,14 @@ include(ExternalProject)
 # The identity of the installed game: chosen once at random (an
 # application's own ID: bits 0 to 12 clear), never changed. Not a secret.
 set(BB_SWITCH_TITLE_ID "0x011142be60644000" CACHE STRING "Title ID of the .nsp")
-set(BB_SWITCH_KEYS "$ENV{HOME}/.switch/prod.keys" CACHE FILEPATH
+# The keys: tools/switch/prod.keys (gitignored) if it is there, else
+# ~/.switch/prod.keys.
+if(EXISTS "${CMAKE_SOURCE_DIR}/tools/switch/prod.keys")
+    set(bb_default_keys "${CMAKE_SOURCE_DIR}/tools/switch/prod.keys")
+else()
+    set(bb_default_keys "$ENV{HOME}/.switch/prod.keys")
+endif()
+set(BB_SWITCH_KEYS "${bb_default_keys}" CACHE FILEPATH
     "Keys hacBrewPack encrypts the .nsp with (header_key, key_area_key_application_00), from your own console")
 set(BB_SWITCH_PACK "" CACHE FILEPATH "A runtime pack to use instead of the one built here (empty: built)")
 set(BB_SWITCH_ICON "${CMAKE_SOURCE_DIR}/assets/switch/icon.jpg")
