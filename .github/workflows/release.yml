@@ -38,7 +38,7 @@ jobs:
             echo "created=false" >> "$GITHUB_OUTPUT"
           else
             gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --verify-tag --draft \
-              --title "Blip & Blop $TAG" --generate-notes
+              --title "$TAG" --generate-notes
             echo "created=true" >> "$GITHUB_OUTPUT"
           fi
 
