@@ -154,30 +154,28 @@ Frame AttractScreen::update(ScreenStack& stack) {
                 if (result_ == MainMenu::kExit) {
                     session.note("main menu: exit");
                 }
-                if (result_ == MainMenu::kStartOnePlayer || result_ == MainMenu::kStartTwoPlayers ||
-                    result_ == MainMenu::kStartThreePlayers || result_ == MainMenu::kStartFourPlayers) {
-                    // Each player takes a controller (the Switch's applet:
-                    // its lights then show the player's number).
-                    if (result_ != MainMenu::kStartOnePlayer) {
-                        services_.input->requestPlayers(result_ == MainMenu::kStartTwoPlayers     ? 2
-                                                        : result_ == MainMenu::kStartThreePlayers ? 3
-                                                                                                  : 4);
-                    }
+                if (result_ == MainMenu::kStartGame) {
+                    // The players join and each takes a hero.
                     step_ = Step::StartGame;
-                    stack.push(std::make_unique<CharacterSelectScreen>(services_, character_));
+                    stack.push(std::make_unique<CharacterSelectScreen>(services_, lineup_));
                     return Frame::Continue;
                 }
                 step_ = Step::OuterEnd;
                 break;
 
             case Step::StartGame:
+                if (lineup_.count == 0) {
+                    // Back from the hero choice: the main menu again.
+                    session.note("main menu");
+                    menu_.stop();
+                    menu_.start();
+                    lastInput_ = now();
+                    step_ = Step::OuterEnd;
+                    stack.push(std::make_unique<WaitReleaseScreen>(services_));
+                    return Frame::Continue;
+                }
                 step_ = Step::AfterGame;
-                stack.push(std::make_unique<CampaignScreen>(services_, game_,
-                                                            result_ == MainMenu::kStartOnePlayer      ? 1
-                                                            : result_ == MainMenu::kStartTwoPlayers   ? 2
-                                                            : result_ == MainMenu::kStartThreePlayers ? 3
-                                                                                                      : 4,
-                                                            character_));
+                stack.push(std::make_unique<CampaignScreen>(services_, game_, lineup_));
                 return Frame::Continue;
 
             case Step::AfterGame:
@@ -220,7 +218,7 @@ Frame CampaignScreen::update(ScreenStack& stack) {
     for (;;) {
         switch (step_) {
             case Step::Start:
-                if (session.quitRequested() || !game_.startCampaign(players_, character_)) {
+                if (session.quitRequested() || !game_.startCampaign(lineup_)) {
                     stack.finish();
                     return Frame::Continue;
                 }

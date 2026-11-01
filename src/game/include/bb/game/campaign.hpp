@@ -51,16 +51,15 @@ private:
     int result_ = MainMenu::kContinue;
     int attract_ = 0;              // the next screen of the cycle
     std::uint32_t lastInput_ = 0;  // when a key was last pressed
-    int character_ = 0;
+    Lineup lineup_;                // who plays (none: back from the hero choice)
 };
 
 // A campaign: the parts of bb.lst in turn, the ending after the last
 // level, then game over and the hi-scores (the 2002 jouePartie).
 class CampaignScreen : public Screen {
 public:
-    // players: 1 or 2; character: 0 Blip, 1 Blop for player 1.
-    CampaignScreen(Services& services, Game& game, int players, int character)
-        : services_(services), game_(game), players_(players), character_(character) {}
+    CampaignScreen(Services& services, Game& game, const Lineup& lineup)
+        : services_(services), game_(game), lineup_(lineup) {}
     // Plays one level only ("data/xxx.lvl", a level kind of bb.lst), then
     // stops: no ending, game over or hi-scores (the level editor's test).
     void playOnly(std::string file, int kind) {
@@ -109,8 +108,7 @@ private:
 
     Services& services_;
     Game& game_;
-    int players_;
-    int character_;
+    Lineup lineup_;
     Step step_ = Step::Start;
     CutscenePlayer cutscene_{services_};
     bool won_ = true;

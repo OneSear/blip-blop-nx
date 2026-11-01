@@ -37,8 +37,7 @@ protected:
         kKeys2Page = 6,
         kKeys3Page = 10,  // the four-player mode
         kKeys4Page = 11,
-        kExitPage = 8,
-        kStartPage = 9
+        kExitPage = 8
     };
 
     Menu(Services& services, int pauseOptionsPage, int lineHeight) noexcept;
@@ -114,15 +113,10 @@ protected:
 // The main menu of the attract loop (MenuMain).
 class MainMenu : public Menu {
 public:
-    // What update() returns in its result (RET_*).
-    enum Result {
-        kContinue = 0,
-        kStartOnePlayer = 1,
-        kExit = 3,
-        kStartTwoPlayers = 5,
-        kStartThreePlayers = 6,  // the four-player mode
-        kStartFourPlayers = 7
-    };
+    // What update() returns in its result (RET_*). START GAME opens the
+    // hero choice, where the players join (2002 had a page of 1 or 2
+    // PLAYERS, then 3 and 4 in the four-player mode).
+    enum Result { kContinue = 0, kStartGame = 1, kExit = 3 };
 
     explicit MainMenu(Services& services) noexcept : Menu(services, kOptionsPage, 30) {}
 

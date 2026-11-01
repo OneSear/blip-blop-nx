@@ -36,7 +36,8 @@ void showError(const std::string& title, const std::string& message) {
 void requestPlayers(int count) {
     HidLaControllerSupportArg arg;
     hidLaCreateControllerSupportArg(&arg);
-    arg.hdr.player_count_min = static_cast<s8>(count);
+    // One controller is enough to close it: the players join afterwards.
+    arg.hdr.player_count_min = 1;
     arg.hdr.player_count_max = static_cast<s8>(count);
     // Joy-Con pairs and single Joy-Cons held sideways (the style set and the
     // horizontal hold SDL configures) are both allowed.

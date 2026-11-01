@@ -53,6 +53,14 @@ And the Switch port (switch-port.md, 30 October 2026):
         1000, and the briefings ask for a button (id 852, "Press a button
         to start.").
 
+And the hero choice (each player joins and takes a hero, 1 November
+2026):
+  inter.gfx gains the four heroes' portraits (12 -> 16 images), made from
+        its select_blip and select_blop by tools/art/hero_portraits.py,
+        and written again whenever it changes them;
+  uk.dat gains the texts of the hero choice (ids 863-866), before id
+        1000.
+
 The script is idempotent: running it on a fixed archive changes nothing.
 Every other entry keeps its content, compression method and timestamp.
 
@@ -223,6 +231,14 @@ SWITCH_STRINGS = [
     (862, 'CRISP'),
 ]
 SWITCH_WORDING = (b"\n852^Press a key to start.", b"\n852^Press a button to start.")
+# The hero choice: a player who has not joined, one who has taken a hero,
+# the buttons, and a player's tag (1P to 4P).
+HERO_CHOICE_STRINGS = [
+    (863, 'Press +'),
+    (864, 'READY!'),
+    (865, 'A = choose   B = back   X = controllers'),
+    (866, '%dP'),
+]
 FRENCH_SOURCE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "assets", "source",
                              "strings", "fr.json")
 
@@ -305,6 +321,12 @@ def fix_entry(name, data):
         data = data[:at] + added.encode("cp1252") + data[at:]
         more, _ = fix_entry(name, data)
         return more, "added %d Switch strings" % len(SWITCH_STRINGS)
+    if name == "data/uk.dat" and b"\n863^" not in data and b"\n862^" in data:
+        added = "".join("\n%d^%s" % (i, text) for i, text in HERO_CHOICE_STRINGS)
+        at = data.index(b"\n1000^")
+        data = data[:at] + added.encode("cp1252") + data[at:]
+        more, _ = fix_entry(name, data)
+        return more, "added %d hero choice strings" % len(HERO_CHOICE_STRINGS)
     if name == "data/uk.dat" and SWITCH_WORDING[0] in data:
         return data.replace(SWITCH_WORDING[0], SWITCH_WORDING[1]), "the Switch's wording of id 852"
     if name == "data/uk.dat" and b"\n811^\n" in data:
@@ -359,6 +381,16 @@ def main():
             k = names.index(new_name)
             out_entries[k] = (out_entries[k][0], data, True)
             changes.append(f"{new_name}: written again by new_heroes.py")
+
+    # The portraits of the hero choice, from the 2002 select pictures.
+    import hero_portraits  # noqa: E402
+    names = [info.filename for info, _, _ in out_entries]
+    k = names.index("data/inter.gfx")
+    info, data, changed = out_entries[k]
+    portraits = hero_portraits.with_portraits(data)
+    if portraits != data:
+        out_entries[k] = (info, portraits, True)
+        changes.append("data/inter.gfx: portraits written by hero_portraits.py")
 
     french = french_dat()
     if french is not None:

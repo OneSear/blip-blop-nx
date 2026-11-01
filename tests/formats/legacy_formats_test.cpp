@@ -79,8 +79,9 @@ TEST_CASE("every .gfx bank round-trips bit for bit") {
     }
     // migration.md A.2: 3,755 images in 2002, 191 of them LGX version 0;
     // plus the 34 Big Smurf images added to snufenn in Phase 5a (version 1)
-    // and Bleach's and Blitz's 149 each (recoloured blip.gfx and blop.gfx).
-    CHECK(images == 3755 + 34 + 2 * 149);
+    // and Bleach's and Blitz's 149 each (recoloured blip.gfx and blop.gfx),
+    // and the 4 portraits of the hero choice (inter.gfx, version 1).
+    CHECK(images == 3755 + 34 + 2 * 149 + 4);
     CHECK(rgb565 == 191);
 }
 
@@ -173,8 +174,9 @@ TEST_CASE("uk.dat reads as UTF-8 strings and writes back unchanged") {
     REQUIRE_MESSAGE(table.has_value(), error);
     // 136 strings in 2002, plus the 109 that game.cpp printed (Phase 2),
     // the 8 of the screens and the HUD (Phase 3), the 4 menu items of the
-    // four-player mode and the CRISP filter of the Switch port.
-    CHECK(table->strings.size() == 253 + 4 + 1);
+    // four-player mode, the CRISP filter of the Switch port and the 4 texts
+    // of the hero choice.
+    CHECK(table->strings.size() == 253 + 4 + 1 + 4);
     REQUIRE(table->find(854) != nullptr);
     CHECK(*table->find(854) == "PLAYER %d GOT A HIGH SCORE!");
     REQUIRE(table->find(1013) != nullptr);

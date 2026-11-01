@@ -128,8 +128,9 @@ fingerprints included.
 | `attract` | The intro and the attract cycle, no input. |
 | `smoke` | Menus, the first two levels briefly (pause menu once), quit. |
 | `campaign` | All 12 levels played briefly then won with F9, the ending and the credits. |
-| `menus` | The menu paths the others do not reach, key redefinition, Blop, dialogue skip, a focus loss. |
+| `menus` | The menu paths the others do not reach, key redefinition, the hero choice (two players; Blop), dialogue skip, a focus loss. |
 | `gameover` | Two players, level summaries, game over, both names, the hi-score table. |
+| `fourplayers` | Four players join (two on the keyboard, two on pads 3 and 4) and take Blip, Blop, Bleach and Blitz; the first level and its dialogue, the second won (the table of four), part of the third, the pause menu's EXIT. |
 | `smurf` | snuf1 and snuf2 played to the end without F9, including the Big Smurf fight. |
 | `dork` | snuf1 and snuf2 won with F9, then the Pokémon bonus level won through its script: the three switches, both lifts, the falling crate and its platforms, the three bombs, then every enemy killed. |
 | `lemmings` | The first eight levels won with F9, then the Lemmings bonus level won: fights with cow bombs at each scroll lock, a somersault over the pit, the 200-kill nuke. |

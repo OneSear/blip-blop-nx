@@ -9,11 +9,28 @@ namespace bb::game {
 
 // Blip and Blop (ID_BLIP, ID_BLOP): the same player with its own images
 // and starting weapon.
-// Bleach and Blitz are the third and fourth players of the four-player mode.
+// Bleach and Blitz, added with the four-player mode, can be chosen as well.
 enum class Hero { Blip = 0, Blop = 1, Bleach = 2, Blitz = 3 };
 
 // Players in a game: 1 or 2 as in 2002, 3 or 4 in the four-player mode.
 constexpr int kMaxPlayers = 4;
+
+// Who plays a campaign (the hero choice): players 1 to `count` in order,
+// each with its hero and the controls it plays with (the aliases of input
+// player 0 to 3: AliasControls::firstOf()). Any hero may be any player.
+struct Lineup {
+    int count = 0;
+    Hero heroes[kMaxPlayers] = {};
+    int controls[kMaxPlayers] = {};
+
+    void add(Hero hero, int controlsOf) noexcept {
+        if (count < kMaxPlayers) {
+            heroes[count] = hero;
+            controls[count] = controlsOf;
+            count += 1;
+        }
+    }
+};
 
 // Bleach is a pink Blip and Blitz a green Blop: the same weapons, poses and
 // dialogue faces as the hero they are made from.

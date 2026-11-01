@@ -32,6 +32,7 @@ public:
     // game::Input
     void update() override;
     bool held(unsigned int code) const override;
+    bool keyHeld(unsigned int code) const override;
     unsigned int alias(int a) const override { return aliases_[a]; }
     void setAlias(int a, unsigned int code) override { aliases_[a] = code; }
     bool anyHeld() const override;

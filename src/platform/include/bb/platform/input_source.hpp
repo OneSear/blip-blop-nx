@@ -55,10 +55,11 @@ public:
     // and kPadButtonRightTrigger.
     virtual bool padIsController(int slot) const = 0;
 
-    // Lets `count` players take their controllers before a game: the
-    // Switch's controller applet (each player presses L and R, the lights
-    // then show the player's number, single Joy-Cons allowed); blocks until
-    // it closes. Nothing where the system has no such screen.
+    // Lets up to `count` players take their controllers: the Switch's
+    // controller applet (each player presses L and R, the lights then show
+    // the player's number, single Joy-Cons allowed; one controller is
+    // enough to close it); blocks until it closes. Nothing where the system
+    // has no such screen.
     virtual void requestPlayers(int count) = 0;
 
     // Shows the system's on-screen keyboard (the Switch's) for a short

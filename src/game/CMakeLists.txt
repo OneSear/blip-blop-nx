@@ -23,6 +23,7 @@ add_library(bb_game STATIC
     src/effects.cpp
     src/game.cpp
     src/generators.cpp
+    src/hero_choice.cpp
     src/hi_scores.cpp
     src/hud.cpp
     src/input.cpp

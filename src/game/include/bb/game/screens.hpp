@@ -2,6 +2,7 @@
 
 #include <cstdint>
 
+#include "bb/game/hero_choice.hpp"
 #include "bb/game/screen.hpp"
 #include "bb/game/services.hpp"
 
@@ -10,28 +11,56 @@ namespace bb::game {
 // "LOADING" in the middle of the screen (Game::drawLoading()).
 void drawLoading(Services& services);
 
-// Choose Blip or Blop: each slides in over a scrolling starfield; right and
-// left switch, return (or fire) chooses. Stores 0 for Blip, 1 for Blop (0
-// if the application closes).
+// The hero choice, where the players join (the main menu's START GAME;
+// 2002 asked for 1 or 2 PLAYERS, then for Blip or Blop): the four heroes
+// side by side over a scrolling starfield, under them a panel for each
+// player. Each player uses its own controls (HeroChoice has the rules):
+//   * joins with + or - of its pad, or its fire (Return too for player 1);
+//   * moves its tag over the heroes with left and right;
+//   * takes the hero under it with its fire (the Switch's A) or +;
+//   * gives it back, then leaves, with its jump (the Switch's B).
+// X on a pad opens the controller applet (the Switch's), to connect or
+// reorder controllers. kStartDelay frames after everyone who joined took a
+// hero, the game starts. Escape, or B before anyone joined, goes back to
+// the main menu. Stores the players and their heroes: none when they went
+// back or the application closes.
 class CharacterSelectScreen : public Screen {
 public:
-    CharacterSelectScreen(Services& services, int& character) noexcept
-        : services_(services), character_(character) {}
+    // Frames from the last hero taken to the start (tools/replays/
+    // make_replays.py knows it too).
+    static constexpr int kStartDelay = 40;
+
+    CharacterSelectScreen(Services& services, Lineup& lineup) noexcept
+        : services_(services), lineup_(lineup) {}
     Frame update(ScreenStack& stack) override;
     const char* name() const override { return "character select"; }
 
 private:
-    enum class Step { BlipAppears, BlipLeaves, BlopAppears, BlopLeaves };
+    // What a player's controls hold this frame.
+    struct Keys {
+        bool left = false;
+        bool right = false;
+        bool take = false;
+        bool join = false;
+        bool back = false;
+        bool applet = false;
+    };
+    Keys keys(int player) const;
+    // Applies the keys pressed this frame (held now, not at the last
+    // frame); true when the players go back to the main menu.
+    bool apply(const Keys* now, bool escape);
+    void draw();
+    void drawHero(int hero);
+    void drawPanel(int player);
 
     Services& services_;
-    int& character_;
+    Lineup& lineup_;
+    HeroChoice choice_;
     bool started_ = false;
-    Step step_ = Step::BlipAppears;
-    int blinkTick_ = 0;
-    int x_ = -300;  // the character
-    int y_ = 255;
-    int nameX_ = 1040;
-    int nameY_ = 255;
+    Keys before_[kMaxPlayers];
+    bool escapeBefore_ = false;
+    int countdown_ = -1;  // frames before the start; -1: not everyone is ready
+    int frames_ = 0;      // frames shown (the blinking)
     int titleY_ = -50;
     int background1X_ = 0;
     int background2X_ = 640;
