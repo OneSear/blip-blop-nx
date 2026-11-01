@@ -43,7 +43,11 @@ std::string GameFiles::writablePath(const std::string& path) const {
 }
 
 void GameFiles::locateGameData(const std::string& baseDirectory) {
-    if (chosen_ || baseDirectory.empty() || vfs_->resolve(kProbeFile)) {
+    if (chosen_ || vfs_->resolve(kProbeFile)) {
+        return;
+    }
+    if (baseDirectory.empty()) {
+        core::Log::warning("No game data: no data directory here, and the executable's directory is unknown");
         return;
     }
     const std::string packPath = baseDirectory + "blipblop.bbpack";
@@ -61,7 +65,9 @@ void GameFiles::locateGameData(const std::string& baseDirectory) {
     if (core::Vfs(dataRoot, reader_).resolve(kProbeFile)) {
         core::Log::info("Game data: " + dataRoot);
         setDataRoot(dataRoot);
+        return;
     }
+    core::Log::warning("No game data: neither " + packPath + " nor " + dataRoot);
 }
 
 void GameFiles::setAssetSource(std::unique_ptr<core::assets::AssetSource> source) {

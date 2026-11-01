@@ -176,13 +176,21 @@ public:
     }
 
     std::string baseDirectory() const override {
-        char* path = SDL_GetBasePath();  // romfs:/ on the Switch
+#if defined(__SWITCH__)
+        // The RomFS, which switch_main.cpp mounts: the .nro's or the
+        // installed title's. Not SDL_GetBasePath(): devkitPro's SDL 2 is
+        // built with the dummy filesystem driver, whose base path is NULL
+        // (seen in the linked library), and the game then found no data.
+        return "romfs:/";
+#else
+        char* path = SDL_GetBasePath();
         if (path == nullptr) {
             return {};
         }
         std::string result(path);
         SDL_free(path);
         return result;
+#endif
     }
 
     std::string preferencesDirectory() const override {
