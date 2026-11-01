@@ -21,7 +21,7 @@ std::string preferencesDirectory();
 // The system's error applet (SDL has no message boxes on the Switch).
 void showError(const std::string& title, const std::string& message);
 
-// The controller applet for `count` players, single Joy-Cons allowed;
+// The controller applet for 1 to `count` players, single Joy-Cons allowed;
 // blocks until it closes.
 void requestPlayers(int count);
 

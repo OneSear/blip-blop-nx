@@ -30,6 +30,10 @@ public:
     virtual void update() = 0;
     // Whether a key, pad button or pad direction is held.
     virtual bool anyHeld() const = 0;
+    // Whether a key (a key code, not a pad's) is held on the keyboard
+    // itself: held() also reads any pad's A as Return and its + and - as
+    // Escape, the menus' confirm and back.
+    virtual bool keyHeld(unsigned int code) const = 0;
     // The first input held, in the order of the 2014 waitKey(): keys,
     // special keys, pad buttons, pad directions; false if nothing is held.
     virtual bool firstHeld(unsigned int& code) const = 0;
@@ -41,8 +45,9 @@ public:
     // button (the menus go back one page; it jumps in a level).
     virtual bool backHeld() const = 0;
 
-    // Lets `count` players take their controllers before a game (the
-    // Switch's controller applet); nothing in deterministic runs.
+    // Lets up to `count` players take their controllers (the Switch's
+    // controller applet, from the hero choice); nothing in deterministic
+    // runs.
     virtual void requestPlayers(int count) = 0;
 
     // The system's on-screen keyboard (the Switch's) for a short text: false

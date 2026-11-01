@@ -437,8 +437,10 @@ int App::run() {
         if (session_.onlyLevel().empty()) {
             screens.push(std::make_unique<game::AttractScreen>(services_, game));
         } else {
-            // One level, one player (the level editor's test).
-            auto campaign = std::make_unique<game::CampaignScreen>(services_, game, 1, 0);
+            // One level, one player: Blip (the level editor's test).
+            game::Lineup lineup;
+            lineup.add(game::Hero::Blip, 0);
+            auto campaign = std::make_unique<game::CampaignScreen>(services_, game, lineup);
             campaign->playOnly(session_.onlyLevel(), session_.onlyLevelKind());
             screens.push(std::move(campaign));
         }

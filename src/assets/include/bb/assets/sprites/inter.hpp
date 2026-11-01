@@ -5,7 +5,7 @@
 
 namespace bb::assets::sprites::inter {
 
-constexpr int kImageCount = 12;
+constexpr int kImageCount = 16;
 
 constexpr int kGameOver = 0;
 constexpr int kTitle = 1;
@@ -18,5 +18,9 @@ constexpr int kNameBlip = 8;
 constexpr int kNameBlop = 9;
 constexpr int kSelectTitle = 10;
 constexpr int kSelectTitleFr = 11;
+constexpr int kPortraitBlip = 12;
+constexpr int kPortraitBlop = 13;
+constexpr int kPortraitBleach = 14;
+constexpr int kPortraitBlitz = 15;
 
 }  // namespace bb::assets::sprites::inter

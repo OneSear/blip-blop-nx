@@ -328,6 +328,13 @@ bool DeviceInput::held(unsigned int code) const {
         }
         return p.buttons[b] != 0;
     }
+    return keyHeld(code);
+}
+
+bool DeviceInput::keyHeld(unsigned int code) const {
+    if (code < 0x40000000u && ((code >> 10) & 0xFF) > 0) {
+        return false;  // a pad's
+    }
     if (code < 255) {
         return visible_.keys[code] != 0;
     }

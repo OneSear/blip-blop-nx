@@ -13,6 +13,10 @@
     {"file": "008.png", "hotspot": [68, 21], "layout": "rgb555", "name": "name_blip"},
     {"file": "009.png", "hotspot": [68, 21], "layout": "rgb555", "name": "name_blop"},
     {"file": "010.png", "hotspot": [276, 16], "layout": "rgb555", "name": "select_title"},
-    {"file": "011.png", "hotspot": [292, 12], "layout": "rgb555", "name": "select_title_fr"}
+    {"file": "011.png", "hotspot": [292, 12], "layout": "rgb555", "name": "select_title_fr"},
+    {"file": "012.png", "hotspot": [68, 51], "layout": "rgb555", "name": "portrait_blip"},
+    {"file": "013.png", "hotspot": [68, 35], "layout": "rgb555", "name": "portrait_blop"},
+    {"file": "014.png", "hotspot": [68, 51], "layout": "rgb555", "name": "portrait_bleach"},
+    {"file": "015.png", "hotspot": [68, 35], "layout": "rgb555", "name": "portrait_blitz"}
   ]
 }

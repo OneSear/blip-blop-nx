@@ -38,19 +38,39 @@ class Script:
         return "\n".join(self.lines) + "\n"
 
 
+# Frames from the moment the last player takes a hero to the loading
+# screen (CharacterSelectScreen's kStartDelay).
+START_DELAY = 40
+
+
+def take_heroes(s, start, *keys):
+    """Takes the heroes with `keys` so that the game starts at frame
+    `start`, then waits as the 2002 menus did after the character was
+    chosen there (10 frames of Return and 60 more): the level loads at the
+    frame it loaded before the hero choice, so the frames the scripts
+    measured after it still hold."""
+    s.hold(start - START_DELAY - s.frame)
+    s.hold(10, *keys)
+    s.hold(start + 70 - s.frame)
+
+
 def menu_to_first_level(s, second_player=False):
+    """Main menu, START GAME, then the hero choice: player 1 joins with
+    Return and takes Blip; with `second_player`, player 2 joins with Tab
+    (its fire) and takes Blop. The game starts at frame 300 (330 with two
+    players), when the 2002 menus (1 or 2 PLAYERS, then Blip) started it."""
     s.hold(30)
     s.hold(10, "ESCAPE")          # skip the intro cutscene
     s.hold(60)
-    s.hold(10, "RETURN")          # main menu: START
+    s.hold(10, "RETURN")          # main menu: START GAME, the hero choice
     s.hold(40)
+    s.hold(10, "RETURN")          # player 1 joins, on Blip
     if second_player:
-        s.hold(10, "DOWN")        # start menu: 2 PLAYERS
-        s.hold(20)
-    s.hold(10, "RETURN")
-    s.hold(140)                   # character select: wait for Blip to slide in
-    s.hold(10, "RETURN")          # pick Blip
-    s.hold(60)
+        s.hold(10)
+        s.hold(10, "TAB")         # player 2 joins, on Blop
+        take_heroes(s, 330, "RETURN", "TAB")
+    else:
+        take_heroes(s, 300, "RETURN")
 
 
 def play_cycle(s, cheats=True, pause_menu=False):
@@ -119,9 +139,11 @@ def walk_right(s, until):
 
 def menus():
     """The menus the other replays do not reach: main menu wrap-around, exit
-    confirmation, options, key redefinition, Blop selection, pause menu
-    options and exit, the pause menu opened by a focus loss, dialogue skip,
-    the attract cycle interrupted by keys, and a normal quit. The Phase 9
+    confirmation, options, key redefinition, the hero choice (Escape back
+    to the main menu, X, two players joining, a hero taken from under the
+    other's tag, given back, a player leaving; Blop), pause menu options
+    and exit, the pause menu opened by a focus loss, dialogue skip, the
+    attract cycle interrupted by keys, and a normal quit. The Phase 9
     options are all switched on, so everything from the key pages on is in
     French and the level is drawn with smooth motion."""
     s = Script()
@@ -173,20 +195,30 @@ def menus():
         tap(s, "DOWN")
     tap(s, "RETURN")                  # RETURN: main menu on OPTIONS
     tap(s, "UP")
-    tap(s, "RETURN")                  # START (1 to 4 PLAYERS, RETURN)
-    for _ in range(4):
-        tap(s, "DOWN")
-    tap(s, "RETURN")                  # back to the main menu
-    tap(s, "RETURN")                  # START
-    tap(s, "RETURN")                  # 1 PLAYER: character select
-    s.hold(60)                        # Blip slides in
-    tap(s, "RIGHT")                   # Blip leaves, Blop slides in
-    s.hold(90)
-    tap(s, "LEFT")                    # back to Blip
-    s.hold(90)
-    tap(s, "RIGHT")
-    s.hold(90)
-    tap(s, "RETURN", frames=10)       # Blop
+    # The game starts 462 frames after this point, as the 2002 menus (the
+    # 1 to 4 PLAYERS page, then Blop on the character select) started it.
+    start = s.frame + 462
+    tap(s, "RETURN")                  # START GAME: the hero choice
+    s.hold(30)
+    tap(s, "ESCAPE")                  # Escape: back to the main menu
+    s.hold(20)
+    tap(s, "RETURN")                  # START GAME again
+    s.hold(30)
+    tap(s, "JOY1_B3")                 # X: the controller applet (none in a replay)
+    tap(s, "RETURN")                  # player 1 joins, on Blip
+    tap(s, "LEFT")                    # wraps to Blitz
+    tap(s, "RIGHT")                   # Blip
+    tap(s, "RIGHT")                   # Blop
+    tap(s, "TAB")                     # player 2 joins, on Blop (free: its own hero)
+    tap(s, "RETURN")                  # player 1 takes Blop: player 2 moves on to Bleach
+    tap(s, "D")                       # player 2 left: Blip (Blop is taken)
+    tap(s, "TAB")                     # player 2 takes Blip: the start is near
+    tap(s, "G")                       # player 2 gives Blip back: called off
+    tap(s, "G")                       # player 2 leaves: the start is near again
+    tap(s, "LALT")                    # player 1 gives Blop back: called off
+    s.hold(start - START_DELAY - s.frame)
+    tap(s, "RETURN", frames=10)       # player 1 takes Blop
+    s.hold(start + 16 - s.frame)
     s.hold(260)                       # loading and the 2-second wait
     tap(s, "RETURN", frames=10)       # briefing: start
     level = s.frame
@@ -246,14 +278,14 @@ def four_players():
     s.hold(30)
     s.hold(10, "ESCAPE")              # skip the intro cutscene
     s.hold(60)
-    s.hold(10, "RETURN")              # main menu: START
+    s.hold(10, "RETURN")              # main menu: START GAME, the hero choice
     s.hold(40)
-    for _ in range(3):
-        tap(s, "DOWN")                # start menu: 4 PLAYERS
-    s.hold(10, "RETURN")
-    s.hold(140)                       # character select: Blip slides in
-    s.hold(10, "RETURN")              # player 1 is Blip
-    s.hold(60)
+    # All four join (Return and Tab, the fire of players 1 and 2; + on pads
+    # 3 and 4), each on its own hero, and take it (Return, Tab, A): the game
+    # starts at frame 336, when the 2002 menus (4 PLAYERS, then Blip)
+    # started it.
+    s.hold(10, "RETURN", "TAB", "JOY3_B6", "JOY4_B6")
+    take_heroes(s, 336, "RETURN", "TAB", "JOY3_B1", "JOY4_B1")
     run = ("RIGHT", "LCTRL", "F", "TAB", "JOY3_RIGHT", "JOY3_B1", "JOY4_RIGHT", "JOY4_B1")
     jump = ("LALT", "G", "JOY3_B0", "JOY4_B0")
     back = ("LEFT", "D", "JOY3_LEFT", "JOY4_LEFT")

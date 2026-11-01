@@ -54,10 +54,16 @@ blocks the release or becomes a known issue in the release notes.
       D-pad or the stick moves, + or − pauses.
 - [ ] In the menus: A confirms, B goes back one page and resumes from the
       pause menu, + or − pause and resume and skip a cutscene.
-- [ ] A game of 2, 3 and 4 players opens the controller applet; four
-      single Joy-Cons play a four-player game, each controller's lights
-      showing its player. Note whether SDL opens a second applet after it
-      (it does when a controller's style changes outside handheld mode).
+- [ ] The hero choice: + or − joins on each controller (and A); the stick
+      and the D-pad move the tag, A takes a hero, B gives it back and
+      leaves, B before anyone joined goes back to the main menu; a hero
+      taken cannot be taken twice; the game starts once everyone who
+      joined is READY, with each player's hero.
+- [ ] X on the hero choice opens the controller applet; one controller
+      closes it; four single Joy-Cons then join and play a four-player
+      game, each controller's lights showing its number. Note whether SDL
+      opens a second applet after it (it does when a controller's style
+      changes outside handheld mode).
 - [ ] The controls menu shows the Switch's names (`P1 A`, `P2 ZR`), and a
       binding survives a restart.
 - [ ] How often a single Joy-Con's stick click pauses the game by

@@ -41,10 +41,6 @@ enum Text {
     kPlayer4KeysText = 861,
     kUpText = 821,  // up, down, left, right, fire, jump, special
     kStartGameText = 830,
-    kOnePlayerText = 831,
-    kTwoPlayersText = 832,
-    kThreePlayersText = 858,
-    kFourPlayersText = 859,
     kExitText = 833,
     kCancelText = 834,
 };
@@ -313,13 +309,6 @@ void MainMenu::updateItems() {
             setItem(1, t.text(kOptionsText));
             setItem(2, t.text(kExitText));
             break;
-        case kStartPage:
-            setItem(0, t.text(kOnePlayerText));
-            setItem(1, t.text(kTwoPlayersText));
-            setItem(2, t.text(kThreePlayersText));
-            setItem(3, t.text(kFourPlayersText));
-            setItem(4, t.text(kReturnText));
-            break;
         case kExitPage:
             setItem(0, t.text(kExitText));
             setItem(1, t.text(kCancelText));
@@ -395,32 +384,13 @@ bool MainMenu::update(int& result) {
                     case kMainPage:
                         switch (focus_) {
                             case 0:
-                                setPage(kStartPage, 5, 0);
-                                return done(result, kContinue);
+                                return done(result, kStartGame);
                             case 1:
                                 setPage(kOptionsPage, kOptionItems, kOptionsReturnItem);
                                 return done(result, kContinue);
                             case 2:
                                 setPage(kExitPage, 2, 0);
                                 return done(result, kContinue);
-                            default:
-                                break;
-                        }
-                        break;
-
-                    case kStartPage:
-                        switch (focus_) {
-                            case 0:
-                                return done(result, kStartOnePlayer);
-                            case 1:
-                                return done(result, kStartTwoPlayers);
-                            case 2:
-                                return done(result, kStartThreePlayers);
-                            case 3:
-                                return done(result, kStartFourPlayers);
-                            case 4:
-                                setPage(kMainPage, 3, 0);  // and on to the side keys
-                                break;
                             default:
                                 break;
                         }
@@ -484,12 +454,8 @@ bool MainMenu::update(int& result) {
 
             case kBackAction:
                 // Up one page; the first page has nothing above it.
-                if (!backFromOptions()) {
-                    if (page_ == kStartPage) {
-                        setPage(kMainPage, 3, 0);
-                    } else if (page_ == kExitPage) {
-                        setPage(kMainPage, 3, 2);
-                    }
+                if (!backFromOptions() && page_ == kExitPage) {
+                    setPage(kMainPage, 3, 2);
                 }
                 return done(result, kContinue);
 

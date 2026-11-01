@@ -250,6 +250,56 @@ girly player") and Blitz ("a green boy player").
   quit; looked at in frames (the four heroes, the second HUD row, the
   table in four colours).
 
+### The hero choice (1 November 2026)
+
+Asked by the maintainer: instead of the 1 to 4 PLAYERS page, a screen
+where each player presses start to join and chooses a hero, like the
+character select of beat 'em ups for several players.
+
+* START GAME opens it (`CharacterSelectScreen`, which replaces the 2002
+  Blip-or-Blop screen; the main menu's start page is gone). The four
+  heroes side by side, each on a card under a row of tags; a panel per
+  player under them. Each player uses its own controls: + or − of its pad
+  (or its fire; Return for player 1) joins, left and right move its tag,
+  fire (A) or + takes the hero, jump (B) gives it back, then leaves. A
+  hero taken is no one else's: the tags skip it, and those on it move on.
+  40 frames after everyone who joined took a hero (`kStartDelay`), the
+  game starts; a join or a hero given back calls it off. Escape, or B
+  before anyone joined, goes back to the main menu. X opens the
+  controller applet, now for 1 to 4 players (one controller closes it).
+  The title follows the language (`select_title_fr`). The rules are
+  `HeroChoice`, apart from input and drawing (`tests/unit/
+  hero_choice_test.cpp`).
+* Any hero for any player: `Game::startCampaign()` takes a `Lineup`, the
+  players in the order of their controls with their heroes, so pads 1 and
+  3 make players 1 and 2 (the HUD, the hi-score entry), each playing with
+  its own controls. Bleach's and Blitz's banks load when one of them plays
+  (they loaded for 3 or 4 players).
+* Art: `tools/art/hero_portraits.py` scales `select_blip` and
+  `select_blop` down to fit 136x104 (an area filter; transparent where
+  less than half is opaque) and recolours them as `new_heroes.py` does
+  (Blitz's cigar stays brown); `fix_legacy_data.py` appends the four
+  portraits to `inter.gfx` (12 to 16 images) and adds strings 863 to 866
+  (the panels, the buttons, the tags "1P" or "J1").
+* Checked: every replay keeps its tick fingerprints. The replay scripts
+  take the heroes so that the game starts at the frame the 2002 menus
+  started it (`take_heroes()` in `make_replays.py`), so every frame the
+  scripts measured after it holds; `menus` now goes through the hero
+  choice (Escape, X, two players joining, a hero taken from under the
+  other's tag, given back, a player leaving) and `fourplayers` joins with
+  + on pads 3 and 4. The frame fingerprints changed from the main menu on
+  (they are chained) and were recorded again. Looked at in dumped frames:
+  four players choosing and ready, one player with the others' panels,
+  in French.
+* Return and Escape count there only from the keyboard (the new
+  `Input::keyHeld()`): `Input::held()` also reads any pad's A as Return
+  and its + and − as Escape (the menus' confirm and back), which would
+  make player 1 join on anyone's A and send everyone back to the main
+  menu on a +. Headless replays open no pad, so they never see that
+  mirroring and no replay checks it.
+* Not checked: on a console (the buttons of a single Joy-Con held
+  sideways, the applet from the hero choice).
+
 ### The in-house mixer (DEC-06)
 
 * `bb::core::audio::Mixer` (`src/core/src/audio_mixer.cpp`): 32 voices

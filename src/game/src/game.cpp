@@ -5,6 +5,7 @@
 
 #include <cstdio>
 #include <cstring>
+#include <string>
 #include <vector>
 
 #include "bb/core/assets/asset_source.hpp"
@@ -45,14 +46,14 @@ Game::Game(Services& services)
 // The campaign
 //-----------------------------------------------------------------------------
 
-bool Game::startCampaign(int players, int character) {
+bool Game::startCampaign(const Lineup& lineup) {
     Banks& banks = services_.banks;
 
     // The interface pictures are freed while the campaign runs.
     banks.interface->clear();
     banks.attractMusic->stopAll();
 
-    if (!loadCampaign(players)) {
+    if (!loadCampaign(lineup)) {
         releaseCampaign();
         return false;
     }
@@ -60,25 +61,20 @@ bool Game::startCampaign(int players, int character) {
     level_.deathWait = 0;
     world_.currentMusic = -1;
 
-    const Hero first = character == 0 ? Hero::Blip : Hero::Blop;
-    const Hero second = character == 0 ? Hero::Blop : Hero::Blip;
-
-    players_[0] = new Player(world_, first, controls_[0], 0);
-    world_.players.add(players_[0]);
-    level_.players[0] = players_[0];
-
-    // The others in order: the other of Blip and Blop, then Bleach and
-    // Blitz (the four-player mode).
-    const Hero others[] = {second, Hero::Bleach, Hero::Blitz};
-    for (int i = 1; i < players && i < kMaxPlayers; ++i) {
-        players_[i] = new Player(world_, others[i - 1], controls_[i], i);
+    // Players 1 to count, each with its hero and with the controls of the
+    // input player that chose it.
+    static const char* const kHeroNames[] = {"Blip", "Blop", "Bleach", "Blitz"};
+    std::string note = "campaign starts:";
+    for (int i = 0; i < lineup.count && i < kMaxPlayers; ++i) {
+        const int c = lineup.controls[i];
+        const int controls = c >= 0 && c < kMaxPlayers ? c : i;
+        players_[i] = new Player(world_, lineup.heroes[i], controls_[controls], i);
         world_.players.add(players_[i]);
         level_.players[i] = players_[i];
+        note += std::string(i == 0 ? " " : ", ") + kHeroNames[static_cast<int>(lineup.heroes[i])] +
+                " (controls " + std::to_string(controls + 1) + ")";
     }
-
-    char note[64];
-    std::snprintf(note, sizeof(note), "campaign starts: %d player(s), character %d", players, character);
-    services_.session->note(note);
+    services_.session->note(note.c_str());
 
     world_.cowBombUnlocked = false;
     for (bool& perfect : lastPerfect_) {
@@ -112,7 +108,7 @@ void Game::deletePlayers() {
     }
 }
 
-bool Game::loadCampaign(int players) {
+bool Game::loadCampaign(const Lineup& lineup) {
     const core::assets::AssetSource& assets = *services_.assets;
     Banks& banks = services_.banks;
 
@@ -133,8 +129,12 @@ bool Game::loadCampaign(int players) {
         }
     }
     // Bleach and Blitz, recoloured Blip and Blop (tools/art/new_heroes.py),
-    // only for the four-player mode.
-    if (players > 2 && (!loadSprites(assets, "data/bleach.gfx", *banks.bleach) ||
+    // only when one of them plays.
+    bool newHeroes = false;
+    for (int i = 0; i < lineup.count && i < kMaxPlayers; ++i) {
+        newHeroes = newHeroes || lineup.heroes[i] == Hero::Bleach || lineup.heroes[i] == Hero::Blitz;
+    }
+    if (newHeroes && (!loadSprites(assets, "data/bleach.gfx", *banks.bleach) ||
                         !loadSprites(assets, "data/blitz.gfx", *banks.blitz) ||
                         !loadFont(assets, "data/scorep.lft", *banks.scoreBleach) ||
                         !loadFont(assets, "data/scoreg.lft", *banks.scoreBlitz))) {

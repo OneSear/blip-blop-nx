@@ -44,7 +44,7 @@ public:
     // the ending if the last level was won; finishCampaign(); game over and
     // hi-scores unless the players left the game (campaignLeft());
     // deletePlayers().
-    bool startCampaign(int players, int character);
+    bool startCampaign(const Lineup& lineup);
     int partCount() const noexcept { return partCount_; }
     int partKind(int i) const noexcept { return parts_[static_cast<std::size_t>(i)].kind; }
     int partLevelKind(int i) const noexcept { return parts_[static_cast<std::size_t>(i)].levelKind; }
@@ -115,7 +115,7 @@ private:
         bool bringBack = false;
     };
 
-    bool loadCampaign(int players);  // chargePartie()
+    bool loadCampaign(const Lineup& lineup);  // chargePartie()
     void releaseCampaign();
     bool loadParts(const char* name);
     bool loadLevel(const char* name);  // chargeNiveau()

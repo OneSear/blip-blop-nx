@@ -49,16 +49,23 @@ the pause menu), + or − pauses and resumes and skips cutscenes; any button
 shows the next box of a dialogue. The hi-score name is typed on the
 console's keyboard.
 
-START offers games of 1 to 4 players. Player 1 chooses Blip or Blop and
-player 2 is the other; players 3 and 4 are Bleach (a pink Blip: SMG and
-laser) and Blitz (a green Blop: shotgun and flamethrower). Player 1 plays
-with the console's Joy-Cons in handheld mode; a game of 2 to 4 players
-opens the console's controller screen, where each player takes a
+START GAME opens the hero choice: Blip, Blop, Bleach (a pink Blip: SMG
+and laser) and Blitz (a green Blop: shotgun and flamethrower) side by side.
+Up to four players join, each on their own controller: + or − (or A)
+joins, the D-pad or the stick moves the player's tag over the heroes, A
+takes the hero under it and B gives it back, then leaves. A hero taken is
+no one else's. The game starts a moment after everyone who joined has
+taken a hero; B before anyone joined goes back to the main menu. The
+players are numbered in the order of their controllers (controllers 1 and
+3 make players 1 and 2).
+
+Player 1 plays with the console's Joy-Cons in handheld mode. X on the hero
+choice opens the console's controller screen, where each player takes a
 controller (two Joy-Cons held sideways are two players) and its lights
-show the player's number: controller *n* plays player *n*. The controls
-menu changes any player's bindings, shown with the Switch's names (`P1 A`,
-`P2 ZR`); a player who binds an action to a controller keeps only the
-bindings chosen there. A USB keyboard on the dock plays too (below).
+show the controller's number. The controls menu changes any player's
+bindings, shown with the Switch's names (`P1 A`, `P2 ZR`); a player who
+binds an action to a controller keeps only the bindings chosen there. A
+USB keyboard on the dock plays too (below).
 
 ### Display
 
@@ -185,7 +192,10 @@ executable (`romfs:/` on the Switch), then a `data` directory next to the
 executable.
 
 Keyboard defaults: arrows to move and aim, Left Ctrl to fire, Left Alt to
-jump, Space for the cow bomb, Escape for the pause menu. Cheat keys (`/cheat`):
+jump, Space for the cow bomb, Escape for the pause menu. On the hero choice,
+a player's fire joins and takes a hero and its jump gives it back (player 1
+also joins and takes with Return; player 2 has Tab and G); Escape goes back
+to the main menu. Cheat keys (`/cheat`):
 F1 ammo, F2 cow bomb, F3 extra life, F9 win the level, F12 FPS counter.
 Players 3 and 4 have no keys by default and play with game controllers 3 and
 4. Controllers have the Switch's layout everywhere, by position (A is the

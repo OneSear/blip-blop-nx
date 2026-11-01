@@ -131,9 +131,9 @@ Back is a pad button only: keyboard Escape keeps its 2002 meaning (the main menu
 ### 4.4 Players and controllers
 
 - Handheld: player 1 plays with the console's Joy-Cons. Players 2 to 4 need other controllers, always on a Switch Lite.
-- Starting a game of 2 to 4 players opens the system's controller applet for that many players, single Joy-Cons allowed: each player presses L and R (or SL and SR) on their controller, whose lights then show their number. Pad *n* is the system's player *n*, so player 3 plays with pad 3.
+- The players join on the hero choice (START GAME), each with + or − (or A) on their own controller; pad *n* is the system's player *n*, and the players are numbered in the order of their pads. X there opens the system's controller applet for 1 to 4 players, single Joy-Cons allowed: each player presses L and R (or SL and SR) on their controller, whose lights then show its number. (Until 1 November 2026, START asked for 1 to 4 PLAYERS and a game of 2 to 4 opened the applet for that many players.)
 - Two Joy-Cons held sideways are two players; two pairs, four players.
-- Pitfall: SDL's pad 1 merges the console's Joy-Cons and the system's player 1, so in handheld mode a wireless controller that becomes player 1 also moves Blip. The applet sorts the controllers out at the start of a game of several players; check on a console what it does with the attached Joy-Cons.
+- Pitfall: SDL's pad 1 merges the console's Joy-Cons and the system's player 1, so in handheld mode a wireless controller that becomes player 1 also moves player 1's hero. The applet (X on the hero choice) sorts the controllers out; check on a console what it does with the attached Joy-Cons.
 
 ### 4.5 Controls menu
 
@@ -148,7 +148,7 @@ Used as today: choose an action, press the input. The names: `P1 A`, `P2 ZR`, `P
 - `menus.cpp`: back goes up one page (a controls page to the options page, the options, start and exit pages to the first page); on the pause menu's first page it resumes.
 - `input_names.cpp`: `displayName()` with the Switch's names for pad buttons.
 - The `fourplayers` replay: `tools/replays/make_replays.py` writes the Switch layout's codes for players 3 and 4 (fire `JOY3_B1` instead of `JOY3_B2`) and the replay is generated again. Its expected fingerprints should not change, the players doing the same things: that checks the new layout. If they do change, the cause is the confirm button, which moves from jump to fire, pressed in a menu; the expected fingerprints are then recorded again (a meant change).
-- Controller applet: `InputSource::requestPlayers(count)`. On the Switch, `hidLaShowControllerSupport()` with `count` as minimum and maximum and single Joy-Cons allowed; on a Mac or Linux and in deterministic runs, nothing. The campaign calls it before a game of 2 to 4 players.
+- Controller applet: `InputSource::requestPlayers(count)`. On the Switch, `hidLaShowControllerSupport()` for 1 to `count` players, single Joy-Cons allowed; on a Mac or Linux and in deterministic runs, nothing. The hero choice calls it for 4 players when a pad's X is pressed (until 1 November 2026: the campaign, before a game of 2 to 4 players, with `count` as minimum and maximum).
 - Check on a console how often a single Joy-Con's stick click pauses by accident; if it does, the Switch code can drop Start for single Joy-Cons (`hidGetNpadStyleSet()`).
 
 ## 5. System integration
