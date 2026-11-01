@@ -9,8 +9,9 @@
 #                                             then attached to its GitHub release
 #
 # Needs: devkitPro's switch-dev and switch-sdl2 (DEVKITPRO set), hacBrewPack
-# on the PATH (or HACBREWPACK=<path>), the keys in ~/.switch/prod.keys (or
-# BB_SWITCH_KEYS=<file>), and gh for --upload.
+# on the PATH (or HACBREWPACK=<path>), the keys (BB_SWITCH_KEYS=<file>, else
+# tools/switch/prod.keys, gitignored, else ~/.switch/prod.keys), and gh for
+# --upload.
 set -e
 root=$(cd "$(dirname "$0")/../.." && pwd)
 cd "$root"
@@ -36,9 +37,14 @@ hacbrewpack=${HACBREWPACK:-$(command -v hacbrewpack || command -v hacBrewPack ||
     echo "             The-4n/hacBrewPack, for example https://github.com/rlaphoenix/hacBrewPack" >&2
     exit 1
 }
-keys=${BB_SWITCH_KEYS:-$HOME/.switch/prod.keys}
+keys=$BB_SWITCH_KEYS
+if [ -z "$keys" ]; then
+    keys=$root/tools/switch/prod.keys
+    [ -f "$keys" ] || keys=$HOME/.switch/prod.keys
+fi
 [ -f "$keys" ] || {
-    echo "make-nsp.sh: no keys at $keys: dump them from your own console (Lockpick_RCM)." >&2
+    echo "make-nsp.sh: no keys at $keys: dump them from your own console (Lockpick_RCM)" >&2
+    echo "             into tools/switch/prod.keys (gitignored) or ~/.switch/prod.keys." >&2
     echo "             They are Nintendo's: never commit them." >&2
     exit 1
 }
