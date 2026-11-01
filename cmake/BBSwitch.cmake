@@ -41,9 +41,9 @@ else()
         USES_TERMINAL_BUILD ON)
 endif()
 
-# The RomFS: the pack at its root, where the game looks first (romfs:/ is
-# SDL's base path); the replays too in debug builds, to play them on the
-# console (docs/replays.md).
+# The RomFS: the pack at its root, where the game looks first (romfs:/,
+# Sdl2FileSystem's base directory on the Switch); the replays too in debug
+# builds, to play them on the console (docs/replays.md).
 add_custom_target(blipblop_pack)
 add_dependencies(blipblop_pack bb_host_tools)
 dkp_set_target_file(blipblop_pack "${bb_pack}")

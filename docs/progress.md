@@ -77,6 +77,13 @@ console must still show is the checklist (`docs/release-checklist.md`).
   (not installable: the check of the chain only, deleted after).
 * libnx's controller applet has no option for single Joy-Cons: the style
   set SDL configures allows them.
+* devkitPro's SDL 2 library is built with the dummy filesystem driver:
+  `SDL_GetBasePath()` returns NULL (its code in the linked ELF), not the
+  `romfs:/` of the fork's source. The first `.nro` tried on a console
+  stopped on "Cannot open the file 'data/uk.dat'": with no base
+  directory, the pack in the RomFS was never looked for.
+  `Sdl2FileSystem::baseDirectory()` returns `romfs:/` on the Switch, and
+  the log says when no game data is found.
 
 ### Verification (30 October 2026)
 
