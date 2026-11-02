@@ -360,7 +360,7 @@ The release job of section 6.5; the replays on a console (section 8); the Switch
 
 ## 8. Tests
 
-- **Locally, on a Mac or Linux** (no tests in CI): `ctest --preset default` (unit and conformance tests, the 14 replays), and `ctest --preset asan` for the sanitizers, before each merge to `master` and each release; `tools/docker/linux-check.sh` runs them all in a Linux container from the Mac. New cases: the viewport function (the sizes of 3.1), the Switch layout and its second inputs, the Switch's names, `filter crisp` in the settings.
+- **Locally, on a Mac or Linux** (no tests in CI): `ctest --preset default` (unit and conformance tests, the 14 replays), and `ctest --preset asan` for the sanitizers, before each merge to `main` and each release; `tools/docker/linux-check.sh` runs them all in a Linux container from the Mac. New cases: the viewport function (the sizes of 3.1), the Switch layout and its second inputs, the Switch's names, `filter crisp` in the settings.
 - **On a console**: each replay through nxlink, `--replay romfs:/replays/<name>.bbreplay --hash sdmc:/switch/blipblop/<name>.bbhash`, the hashes compared on the Mac with `tests/replays/expected/`. The same fingerprints show that the game plays the same on the Switch's ARM processor. The same runs print the benchmark line (`bench: ... ms per frame ... peak memory`): a frame, drawing and ticks, should stay well under the 16.7 ms of a 60 Hz frame (aim for half). If SDL's dummy video driver is not in the Switch build, the replays run with the display.
 - **By hand** (`docs/release-checklist.md`): the sizes of 3.1 on the console's screen and on a TV; docking and undocking during a level and in a menu; every controller style; 1 to 4 players; HOME, sleep, closing from HOME; a name entry; French; an hour of play (heat, memory); the `.nsp`: install, icon and name on the HOME menu, settings shared with the `.nro`, install of a newer version over it, deletion; the `.nro` from the Album.
 
@@ -370,7 +370,7 @@ The release job of section 6.5; the replays on a console (section 8); the Switch
 |------|--------|
 | The installed `switch-sdl2` differs from the source read for 2.2 | S1 shows the real behaviour early; the plan leans on few of its details (the window's size, the mapping, text input). |
 | Software drawing too slow for the Switch's processor (Cortex-A57 at about 1 GHz) | Measured in S1 with the replays' benchmark line. The 2002 game drew the same frames on Pentium-class PCs. |
-| A regression reaches `master` unseen: CI runs no tests | The local tests before each merge and each release (section 8); the release checklist asks for them. |
+| A regression reaches `main` unseen: CI runs no tests | The local tests before each merge and each release (section 8); the release checklist asks for them. |
 | The local Mac or Linux build breaks unseen: CI no longer builds it | It is the maintainer's daily build; `tools/docker/linux-check.sh` covers Linux from the Mac. |
 | The `.nsp` fails where the `.nro` works (a process of its own, the NPDM's permissions) | A first `.nsp` in S1; the NPDM is the first suspect. |
 | The keys leak (they are Nintendo's) | Only on the maintainer's machine; `.gitignore`; never in CI. |
