@@ -401,7 +401,7 @@ Extrapolation (not measured on target): a gameplay frame today is one full-scree
 
 ### 4.1 Strangler fig, not big bang
 
-The legacy tree keeps building and running until parity is proven. New modules are introduced *behind* the old call sites, the old implementation is deleted only when the replacement passes the regression replays for all 12 levels. At every merge to `master` the full campaign is playable.
+The legacy tree keeps building and running until parity is proven. New modules are introduced *behind* the old call sites, the old implementation is deleted only when the replacement passes the regression replays for all 12 levels. At every merge to `main` the full campaign is playable.
 
 ### 4.2 The safety net comes first
 
