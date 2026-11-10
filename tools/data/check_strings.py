@@ -16,6 +16,12 @@ than uk.json, every string must:
     or as many as the English string (606 takes 5 in English: its last
     line runs a few pixels below the box).
 
+The text of the mission sheets (ids 870 to 939, ten per sheet: the title,
+then the objectives and the story; src/game/src/briefing.cpp) is typed in
+the faces cut from the sheets, mission (the titles) and brief: each
+string, English included, uses only their characters. Where it lands on
+the sheet is checked by the content tests (tests/content/briefings_test.cpp).
+
 Usage: check_strings.py <assets/source>
 """
 
@@ -26,6 +32,7 @@ import sys
 
 DIALOGUE_WIDTH = 515  # the bottom box: x 20 to 535 (the top one is 520)
 DIALOGUE_LINES = 4    # 18-pixel lines from 15 pixels into a 100-pixel box
+BRIEFINGS = range(870, 940)  # the mission sheets, a title every ten ids
 
 
 def load_font(root, name):
@@ -67,15 +74,25 @@ def main():
     rpg, rpg_space = load_font(root, "rpg")
     menu, _ = load_font(root, "menu")
     capitals = set(menu) & set(rpg)
+    sheet_faces = {"title": set(load_font(root, "mission")[0]), "text": set(load_font(root, "brief")[0])}
 
     english = load_table(os.path.join(root, "strings", "uk.json"))
     problems = []
     folder = os.path.join(root, "strings")
     for name in sorted(os.listdir(folder)):
-        if not name.endswith(".json") or name == "uk.json":
+        if not name.endswith(".json"):
             continue
         table = load_table(os.path.join(folder, name))
         for sid, text in sorted(table.items()):
+            if sid in BRIEFINGS:
+                face = "title" if sid % 10 == 0 else "text"
+                missing = sorted({c for c in text if c != " " and c not in sheet_faces[face]})
+                if missing:
+                    problems.append(f"{name} {sid}: no glyph in the sheets' {face} face for "
+                                    f"{' '.join(missing)}: {text!r}")
+                continue
+            if name == "uk.json":
+                continue
             reference = english.get(sid, text).replace("%d", "")
             lower = any(c.islower() for c in reference)
             allowed = set(rpg) if lower else capitals

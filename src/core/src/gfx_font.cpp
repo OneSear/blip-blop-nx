@@ -91,14 +91,16 @@ void BitmapFont::printWrapped(Pixmap& dst, int x, int y, const char* text, int r
     }
 }
 
-void BitmapFont::printWordWrapped(Pixmap& dst, int x, int y, const char* text, int right) const {
+int BitmapFont::printWordWrapped(Pixmap& dst, int x, int y, const char* text, int right) const {
     if (text == nullptr) {
-        return;
+        return 0;
     }
     // Words separated by one or more spaces (the 2002 strtok on " ").
     const std::string_view s(text);
     int curX = x;
     int curY = y;
+    int breaks = 0;
+    bool printed = false;
     std::size_t pos = 0;
     while (pos < s.size()) {
         if (s[pos] == ' ') {
@@ -115,13 +117,16 @@ void BitmapFont::printWordWrapped(Pixmap& dst, int x, int y, const char* text, i
             curY += lineHeight_;
             print(dst, x, curY, word.c_str());
             curX = x + w;
+            ++breaks;
         } else {
             print(dst, curX, curY, word.c_str());
             curX += w;
         }
         curX += spaceWidth_;
+        printed = true;
         pos = end;
     }
+    return printed ? breaks + 1 : 0;
 }
 
 int BitmapFont::width(const char* text) const {

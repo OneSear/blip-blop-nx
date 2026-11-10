@@ -78,9 +78,17 @@ TEST_CASE("A font advances by glyph widths and the space width") {
     CHECK(screen.at(105, 0) == kPaper);
 
     gfx::Pixmap wrapped(640, 480, kPaper);
-    font.printWordWrapped(wrapped, 0, 0, "AA  AA", 12);  // the second word goes on line 2
+    CHECK(font.printWordWrapped(wrapped, 0, 0, "AA  AA", 12) == 2);  // the second word goes on line 2
     CHECK(wrapped.at(0, 12) != kPaper);
     CHECK(wrapped.at(13, 0) == kPaper);
+    CHECK(font.lineHeight() == 12);
+
+    // The lines from y to the last: a first word too wide leaves line 1
+    // empty; no word, no line.
+    CHECK(font.printWordWrapped(wrapped, 0, 100, "AA AA", 640) == 1);
+    CHECK(font.printWordWrapped(wrapped, 0, 200, "AAA", 12) == 2);
+    CHECK(font.printWordWrapped(wrapped, 0, 300, "  ", 640) == 0);
+    CHECK(font.printWordWrapped(wrapped, 0, 300, nullptr, 640) == 0);
 }
 
 TEST_CASE("A sprite bank gives a transparent 1x1 sprite outside its range (D-40)") {

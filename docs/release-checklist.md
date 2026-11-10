@@ -41,10 +41,10 @@ blocks the release or becomes a known issue in the release notes.
       back after a restart.
 - [ ] SMOOTH MOTION = ON (the default): scrolling and walking look even;
       the game plays the same.
-- [ ] LANGUAGE = FRANCAIS: the menus, the controls, the dialogues, the
-      banners, the level summary and the credits are in French; after a
-      restart the game starts in French. A console set to French starts a
-      first run in French.
+- [ ] LANGUAGE = FRANCAIS: the menus, the controls, the mission sheets,
+      the dialogues, the banners, the level summary and the credits are in
+      French; after a restart the game starts in French. A console set to
+      French starts a first run in French.
 
 ## Controls
 

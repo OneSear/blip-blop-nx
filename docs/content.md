@@ -49,7 +49,10 @@ sounds, a level. The game's code is in `src/game` (see
 Levels are `assets/source/levels/<name>.json` (the format is in
 [formats/source-assets.md](formats/source-assets.md#levels)); the campaign,
 `assets/source/campaign/bb.json`, lists the levels, cutscenes and
-briefings in order. An enemy is placed by an event:
+briefings in order. A briefing with text (a mission sheet) is typed in the
+languages other than English: its strings, its place on the picture and
+the sheet without its text are listed in `src/game/src/briefing.cpp` and
+made by `tools/art/briefings.py`. An enemy is placed by an event:
 
 ```json
 {"type": "enemy", "activationX": 1102, "enemy": 400, "x": 1052, "y": 428, "facing": 1}

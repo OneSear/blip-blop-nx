@@ -5,7 +5,9 @@
 #include <string>
 
 #include "bb/core/fixed_clock.hpp"
+#include "bb/core/gfx/font.hpp"
 #include "bb/core/gfx/sprite.hpp"
+#include "bb/game/briefing.hpp"
 #include "bb/game/dialogue.hpp"
 #include "bb/game/level.hpp"
 #include "bb/game/player.hpp"
@@ -119,6 +121,10 @@ private:
     void releaseCampaign();
     bool loadParts(const char* name);
     bool loadLevel(const char* name);  // chargeNiveau()
+    // The briefing's picture on a black screen: the 2002 picture, or in
+    // another language than English the sheet without its text and the
+    // text of the language (briefing.hpp).
+    void drawBriefingPicture();
 
     Services& services_;
     World& world_;
@@ -138,6 +144,10 @@ private:
     int startY_[2] = {0, 0};
 
     core::gfx::SpriteBank briefingPicture_;
+    // The sheet whose text is typed (null: the 2002 picture), and its faces.
+    const BriefingSheet* briefingSheet_ = nullptr;
+    core::gfx::BitmapFont briefingText_;
+    core::gfx::BitmapFont briefingTitle_;
     bool briefing_ = false;
     bool skipped_ = false;
     int levelKind_ = 0;

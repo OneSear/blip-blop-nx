@@ -66,6 +66,7 @@ if(TARGET assets_pack)
     add_executable(bb_content_tests
         unit/main.cpp
         content/levels_test.cpp
+        content/briefings_test.cpp
     )
     target_link_libraries(bb_content_tests PRIVATE bb::core bb::game bb_doctest)
     target_compile_definitions(bb_content_tests PRIVATE

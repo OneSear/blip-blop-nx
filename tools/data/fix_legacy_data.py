@@ -61,6 +61,15 @@ And the hero choice (each player joins and takes a hero, 1 November
   uk.dat gains the texts of the hero choice (ids 863-866), before id
         1000.
 
+And the mission sheets in other languages (10 November 2026):
+  brief1.gfx to brief7.gfx gain the sheet without its text (1 -> 2
+        images), and brief.lft and mission.lft are added, the faces of
+        the sheets' text and titles; all made from the sheets by
+        tools/art/briefings.py, and written again whenever it changes
+        them;
+  uk.dat gains the sheets' English text (ids 870-937, ten per sheet),
+        before id 1000.
+
 The script is idempotent: running it on a fixed archive changes nothing.
 Every other entry keeps its content, compression method and timestamp.
 
@@ -239,6 +248,63 @@ HERO_CHOICE_STRINGS = [
     (865, 'A = choose   B = back   X = controllers'),
     (866, '%dP'),
 ]
+# The English of the mission sheets (brief1.gfx to brief7.gfx), as typed
+# in their pictures: ten ids a sheet from 870, the title, the objectives'
+# label, two objectives, then the paragraphs of the story
+# (src/game/src/briefing.cpp).
+BRIEFING_STRINGS = [
+    (870, 'MISSION 1'),
+    (871, 'Objective :'),
+    (872, '-Bring back Dr Gorgomel.'),
+    (874, 'Dr Gorgomel, the famous scientist, has recently disappeared.'),
+    (875, 'We suspect he has been kidnapped.'),
+    (876, 'You have to go to his laboratory near the forest and search the area in order to find him.'),
+    (881, 'Objectives:'),
+    (882, '-Defuse the 3 time bombs'),
+    (883, '-Get rid of all terrorists'),
+    (884, 'Your plane has been hijacked by dorkemon terrorists!'),
+    (885, 'Some of the creatures are hidden in the luggage room.'),
+    (886, 'They are threatening to blow up the plane.'),
+    (887, 'You have to stop them by any means!'),
+    (890, 'MISSION 2'),
+    (891, 'Objective :'),
+    (892, "-Capture the 'Snott in black'."),
+    (894, 'We have captured the leader of the Snuffs.'),
+    (895, 'After a little friendly chitchat, we learnt that the Snuffs were buying weapons from Snotty '
+          'gunrunners.'),
+    (896, 'He told us about the rendezvous point for the next weapon delivery : the notorious Honey Night '
+          'Club.'),
+    (897, 'You must go there and arrest the suspect.'),
+    (900, 'MISSION 3'),
+    (901, 'Objectives :'),
+    (902, '-Find the secret base.'),
+    (903, '-Capture the snott in black.'),
+    (904, 'Our military satellite tracked down the mysterious snott in black.'),
+    (905, "We lost his position in the middle of the Atlantic Ocean at latitude 41 46' north, longitude "
+          "50 14' west."),
+    (906, 'We suspect the snotty secret base to be somewhere nearby.'),
+    (907, 'Go there and investigate.'),
+    (911, 'Objective :'),
+    (912, '-Clean up the place'),
+    (914, 'An underground passage has been discovered after exploring the remains of the Snotty base.'),
+    (915, 'There is a huge number of vicious creatures swarming in there.'),
+    (916, 'So, we need your help to secure the area.'),
+    (920, 'MISSION 4'),
+    (921, 'Objective :'),
+    (922, '-Find the high council.'),
+    (924, 'You have discovered a way to another base.'),
+    (925, 'This one seems to be very well guarded and we suspect those responsible for all this mess to be '
+          'inside.'),
+    (926, 'Expect a very strong resistance.'),
+    (930, 'FINAL MISSION'),
+    (931, 'Objective :'),
+    (932, '-Kill Dario.'),
+    (934, 'The high council base has been destroyed.'),
+    (935, 'As a reward we give you a brand new car : the Ballsmobile.'),
+    (936, 'However, Dario is still alive and has been spotted on Big Mama - a gigantic asteroid.'),
+    (937, 'Use the flying ability of the Ballsmobile to get there and do a favour to all mankind by '
+          'eliminating this sick man.'),
+]
 FRENCH_SOURCE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "assets", "source",
                              "strings", "fr.json")
 
@@ -327,6 +393,12 @@ def fix_entry(name, data):
         data = data[:at] + added.encode("cp1252") + data[at:]
         more, _ = fix_entry(name, data)
         return more, "added %d hero choice strings" % len(HERO_CHOICE_STRINGS)
+    if name == "data/uk.dat" and b"\n870^" not in data and b"\n866^" in data:
+        added = "".join("\n%d^%s" % (i, text) for i, text in BRIEFING_STRINGS)
+        at = data.index(b"\n1000^")
+        data = data[:at] + added.encode("cp1252") + data[at:]
+        more, _ = fix_entry(name, data)
+        return more, "added %d briefing strings" % len(BRIEFING_STRINGS)
     if name == "data/uk.dat" and SWITCH_WORDING[0] in data:
         return data.replace(SWITCH_WORDING[0], SWITCH_WORDING[1]), "the Switch's wording of id 852"
     if name == "data/uk.dat" and b"\n811^\n" in data:
@@ -391,6 +463,22 @@ def main():
     if portraits != data:
         out_entries[k] = (info, portraits, True)
         changes.append("data/inter.gfx: portraits written by hero_portraits.py")
+
+    # The mission sheets without their text, and the faces to type it.
+    import briefings  # noqa: E402
+    names = [info.filename for info, _, _ in out_entries]
+    by_name = {info.filename: data for info, data, _ in out_entries}
+    template = out_entries[names.index("data/rpg.lft")][0]
+    for new_name, data in sorted(briefings.new_files(lambda n: by_name[n]).items()):
+        if new_name not in names:
+            info = zipfile.ZipInfo(new_name, date_time=(2026, 11, 10, 0, 0, 0))
+            info.external_attr = template.external_attr
+            out_entries.append((info, data, True))
+            changes.append(f"{new_name}: added")
+        elif by_name[new_name] != data:
+            k = names.index(new_name)
+            out_entries[k] = (out_entries[k][0], data, True)
+            changes.append(f"{new_name}: written again by briefings.py")
 
     french = french_dat()
     if french is not None:

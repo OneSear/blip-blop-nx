@@ -1,0 +1,21 @@
+{
+  "format": "blipblop-font",
+  "version": 1,
+  "lineHeight": 30,
+  "spaceWidth": 14,
+  "glyphs": [
+    {"char": "1", "file": "0031.png", "layout": "rgb555"},
+    {"char": "2", "file": "0032.png", "layout": "rgb555"},
+    {"char": "3", "file": "0033.png", "layout": "rgb555"},
+    {"char": "4", "file": "0034.png", "layout": "rgb555"},
+    {"char": "A", "file": "0041.png", "layout": "rgb555"},
+    {"char": "E", "file": "0045.png", "layout": "rgb555"},
+    {"char": "F", "file": "0046.png", "layout": "rgb555"},
+    {"char": "I", "file": "0049.png", "layout": "rgb555"},
+    {"char": "L", "file": "004C.png", "layout": "rgb555"},
+    {"char": "M", "file": "004D.png", "layout": "rgb555"},
+    {"char": "N", "file": "004E.png", "layout": "rgb555"},
+    {"char": "O", "file": "004F.png", "layout": "rgb555"},
+    {"char": "S", "file": "0053.png", "layout": "rgb555"}
+  ]
+}

@@ -418,7 +418,21 @@ void Game::releaseLevel() {
 }
 
 void Game::showBriefing(const char* name) {
-    loadSprites(*services_.assets, name, briefingPicture_, false);
+    const core::assets::AssetSource& assets = *services_.assets;
+    loadSprites(assets, name, briefingPicture_, false);
+
+    // The 2002 pictures hold the English: another language types its own
+    // text on the sheet without text, when the strings and the data have it.
+    briefingSheet_ = nullptr;
+    briefingText_.clear();
+    briefingTitle_.clear();
+    const BriefingSheet* sheet = findBriefingSheet(name);
+    if (services_.options->language != core::input::Language::English && sheet != nullptr &&
+        hasBriefingText(*sheet, *services_.texts) && briefingPicture_.size() > kSheetWithoutText &&
+        loadFont(assets, kBriefingTextFont, briefingText_) &&
+        loadFont(assets, kBriefingTitleFont, briefingTitle_)) {
+        briefingSheet_ = sheet;
+    }
 
     char note[256];
     std::snprintf(note, sizeof(note), "briefing %s", name);
@@ -426,22 +440,32 @@ void Game::showBriefing(const char* name) {
 
     briefing_ = true;
 
-    core::gfx::Pixmap& screen = *services_.screen;
-    core::gfx::fill(screen, nullptr, core::gfx::kAlphaMask);
-    core::gfx::draw(screen, *briefingPicture_[0], 0, 0);
-    services_.fonts->rpg->printCentred(screen, 320, 460, services_.texts->text(kLoadingDotsText));
+    drawBriefingPicture();
+    services_.fonts->rpg->printCentred(*services_.screen, 320, 460, services_.texts->text(kLoadingDotsText));
     // The caller presents the frame.
 }
 
 void Game::drawBriefingPrompt() {
+    drawBriefingPicture();
+    services_.fonts->rpg->printCentred(*services_.screen, 320, 460, services_.texts->text(kPressKeyText));
+}
+
+void Game::drawBriefingPicture() {
     core::gfx::Pixmap& screen = *services_.screen;
     core::gfx::fill(screen, nullptr, core::gfx::kAlphaMask);
-    core::gfx::draw(screen, *briefingPicture_[0], 0, 0);
-    services_.fonts->rpg->printCentred(screen, 320, 460, services_.texts->text(kPressKeyText));
+    if (briefingSheet_ == nullptr) {
+        core::gfx::draw(screen, *briefingPicture_[0], 0, 0);
+        return;
+    }
+    core::gfx::draw(screen, *briefingPicture_[kSheetWithoutText], 0, 0);
+    typeBriefing(screen, *briefingSheet_, briefingTitle_, briefingText_, *services_.texts);
 }
 
 void Game::closeBriefing() {
     briefingPicture_.clear();
+    briefingText_.clear();
+    briefingTitle_.clear();
+    briefingSheet_ = nullptr;
     briefing_ = false;
 }
 
