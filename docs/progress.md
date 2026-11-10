@@ -155,8 +155,11 @@ comes from the string table (it was a literal).
   804, 811–815, 817, 818, empty until now).
 * D-96 (fixed): the French key names of 2002 named AZERTY key positions;
   letters now show the key's character (SDL key codes follow the layout).
-* Not translated: words drawn in pictures (the character choice's
-  "SELECT YOUR CHARACTER", the briefing pictures).
+* Words drawn in pictures: the character choice's title has a French
+  picture of 2002 (`select_title_fr`, drawn since the hero choice); the
+  mission sheets are typed in French since 10 November (below). Still in
+  English: the BONUS STAGE stamp of the two bonus stages' sheets, and the
+  words of the art ("COW BOMB", "Honey Night Club").
 * Checked in frames: the options and key pages, the pause menu and a
   dialogue ("Oh non! Le pauvre vieux a été tué!") in French.
 * To proofread: change `fr.json`, run `fix_legacy_data.py` on `data.zip`
@@ -299,6 +302,66 @@ character select of beat 'em ups for several players.
   mirroring and no replay checks it.
 * Not checked: on a console (the buttons of a single Joy-Con held
   sideways, the applet from the hero choice).
+
+### The mission sheets in French (10 November 2026)
+
+Reported by the maintainer: in French, the sheet that tells the mission
+before a level is still in English. The seven sheets (`brief1.gfx` to
+`brief7.gfx`, the briefings of `bb.lst` with a text; `brief1_1`,
+`brief3_1` and `brief6_1` are pictures without one) have their English
+typed into the picture, and no French picture was ever made.
+
+* In a language other than English, the game draws the sheet without its
+  text and types the language's strings where the English was
+  (`bb/game/briefing.hpp`, `Game::drawBriefingPicture()`): the title
+  centred, the story's paragraphs word-wrapped one blank line apart up to
+  x 636, the objectives' label, a blank line and the objectives. English
+  keeps the 2002 pictures. Strings 870 to 937, ten per sheet (the title,
+  the label, two objectives, up to six paragraphs); the English, in
+  `uk.json`, is the text of the pictures, and the reference of the
+  translations.
+* `tools/art/briefings.py` makes, from the sheets, what that needs, and
+  `fix_legacy_data.py` puts it into `data.zip`: each sheet's bank gains
+  the sheet without its text (1 to 2 images), and two fonts are new,
+  `brief.lft` (the typewriter face of the story) and `mission.lft` (the
+  titles'). The text is what is not the art (the largest region of
+  non-black pixels) nor the stamp in the sheet's text areas; the glyphs
+  are cut from the lines, matched with the English as typed.
+* French adds to the faces what the sheets lack: the accents over or
+  under the letter (drawn as strokes, anti-aliased), `q` (a mirrored
+  `p`), `0` and `5` (cut apart in "50"), a no-break space (the space
+  before a colon, so that the colon never begins a line), and the title's
+  `E` (the `F` and the `L` of FINAL, over each other). The sheets have no
+  I, J, L, P, Q, R, V, X or Z capital: the translation starts no sentence
+  with one (`strings.fonts` checks the characters of every table, English
+  included, against the two faces).
+* Tests: `tests/content/briefings_test.cpp` types each sheet in every
+  table, from the data and from the pack: every character has a glyph,
+  and the text lands only on the sheet's black or on the stamp, inside
+  the picture (moving a sheet's story onto its art makes it fail). The format tests count
+  the 7 images, 2 fonts and 46 strings more.
+* Checked: the `menus` replay switches to French before its game, so its
+  first briefing is now typed in French (frames 833 and 834). Its tick
+  fingerprints are unchanged, as are every other replay's; its frame
+  fingerprints changed from there on (they are chained) and were recorded
+  again. Looked at in dumped frames: the seven sheets in French, the text
+  over the stamp of the two bonus stages as it was in English.
+
+Facts learnt:
+
+* The sheets' face is proportional, not monospaced as it looks: the
+  letters are 1 pixel apart (nearly always; serifs touch in "rr", "oo",
+  "ff"), the space is 9 pixels between the inks, and the lines alternate
+  21 and 22 pixels apart. The title letters are 3 to 6 pixels apart; the
+  title face sets them 2 apart with a 14-pixel space, so that MISSION
+  FINALE fits right of the art of `brief7` (303 pixels).
+* The BONUS STAGE stamp is pure reds (no green, no blue) and the letters
+  typed over it are not: the script tells them apart exactly, and fills
+  the stamp in under the letters from the pixels around.
+* `BitmapFont::printWordWrapped()` now returns the number of lines from
+  its y to its last (2002 wraps even a first word too wide, leaving the
+  first line empty), and `lineHeight()` is public, to set paragraphs one
+  under the other.
 
 ### The in-house mixer (DEC-06)
 

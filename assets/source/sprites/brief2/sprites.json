@@ -2,6 +2,7 @@
   "format": "blipblop-sprites",
   "version": 1,
   "images": [
-    {"file": "000.png", "hotspot": [0, 0], "layout": "rgb565"}
+    {"file": "000.png", "hotspot": [0, 0], "layout": "rgb565"},
+    {"file": "001.png", "hotspot": [0, 0], "layout": "rgb565"}
   ]
 }

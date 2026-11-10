@@ -2,6 +2,7 @@
 # and the C++17 standard library only (no platform); it grows as the legacy game
 # migrates (Phase 3: the screen stack; Phase 4: the world and entities).
 add_library(bb_game STATIC
+    src/briefing.cpp
     src/content.cpp
     src/screen_stack.cpp
     src/screens/attract.cpp

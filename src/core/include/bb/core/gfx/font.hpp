@@ -32,10 +32,13 @@ public:
     // at or past right (printM).
     void printWrapped(Pixmap& dst, int x, int y, const char* text, int right) const;
     // The same, word by word (printMW): a word goes on the next line when
-    // it would end past right.
-    void printWordWrapped(Pixmap& dst, int x, int y, const char* text, int right) const;
+    // it would end past right (the first one too). Returns the number of
+    // lines from y to the last one (0 for a text without words).
+    int printWordWrapped(Pixmap& dst, int x, int y, const char* text, int right) const;
     // The width of text in pixels.
     int width(const char* text) const;
+    // The vertical advance from one line to the next.
+    int lineHeight() const noexcept { return lineHeight_; }
     // Whether the font has a glyph for the character (a space always prints).
     bool has(std::uint32_t codePoint) const { return codePoint == ' ' || glyph(codePoint) != nullptr; }
 
