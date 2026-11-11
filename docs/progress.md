@@ -3,6 +3,44 @@
 Status of the phases of [migration.md](../migration.md), with the facts
 learnt while implementing them. Newest phase first.
 
+## Widescreen: the view stops where the 2002 screen did (11 November 2026)
+
+Reported by the maintainer with a screenshot: at the end of `snuf1`, in
+16:9, the decor showed a seam and its last houses again on the right. The
+level is 13 screens wide and its last two are the same picture; the 2002
+camera never got there, held by the final scroll lock (x 7037, never
+released) with its right edge at 7677. The 854-pixel camera stopped at the
+lock too, but its right edge was then 7891, 214 pixels into the repeat.
+
+* **`Camera::limit`**: the level x that the view never shows past.
+  `viewLimit()` sets it when a level loads: the level's width in 4:3; in a
+  wider view the furthest of the victory X and the scroll locks, plus 640,
+  where the 2002 screen stopped for good. The camera's clamps
+  (`Level::updateCamera()`, `Decor::clampCamera()`), the start position,
+  the GO arrow, the victory X and the wake points (`reachableCameraX()`)
+  use it instead of the level's width. In 4:3 it is the level's width:
+  every 4:3 fingerprint holds.
+* `snuf1` now ends with the camera at 6823, its right edge at 7677. The
+  limit cuts 97 to 654 pixels off the other levels' ends (3176 off
+  `snuf2`, whose last screens and events lie beyond its final lock), and
+  1 off `snorkniv2`.
+* **Fingerprints.** Five 16:9 replays reach a level's end and were recorded
+  again (`campaign`, `carebears`, `smurf`, `snorks`, `videoboss`, their
+  `.wide` files only). Traced against the old code on `smurf`, the world
+  is identical until the camera reaches x 6823, where the final lock now
+  wakes (it woke at 7037).
+
+Facts learnt:
+
+* The last scroll lock of every level but `snorkniv2` waits for a flag
+  value that nothing in its world sets (666 or 123456 in most; 10 in `lem`
+  and `bisous2`; the fourth bomb of `dork`, which has three; the zombie
+  shaman's state in `bisous1`, whose shaman is in `bisous3`).
+  `snorkniv2`'s opens, and its victory X is at the level's end. So the
+  2002 screen never went past the last lock, or the victory X. `dork` and
+  `lem` repeat their first screen at their end, `bisous2` and `snuf1`
+  their last: the same seam in 16:9 before this change.
+
 ## Shader filters (11 November 2026)
 
 Asked by the maintainer: better pictures on the Switch. Its outputs are

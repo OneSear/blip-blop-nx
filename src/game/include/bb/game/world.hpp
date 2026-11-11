@@ -109,6 +109,9 @@ struct Camera {
 
     int x = 0;      // left edge of the screen in level pixels
     int width = kNarrowWidth;  // of the view
+    // The level x the view never shows past: the level's width; in a wider
+    // view, where the 2002 screen stopped for good (Game::loadLevel()).
+    int limit = 0;
     int speed = 0;  // scroll speed (scroll events)
     // Scrolling stops while a player dies or comes back (one flag per
     // player, four in the four-player mode).

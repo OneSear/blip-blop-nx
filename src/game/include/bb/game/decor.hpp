@@ -28,8 +28,8 @@ public:
     // width (Camera::width), set before.
     void rewind();
 
-    // Keeps the camera inside the level (from 0 to its width less the
-    // view's), as the 2002 drawScrolling() did before drawing.
+    // Keeps the camera inside the level (from 0 to Camera::limit less the
+    // view's width), as the 2002 drawScrolling() did before drawing.
     void clampCamera() noexcept;
     // Fills the ring up to the camera, then copies the screen into dst.
     // Clamps the camera to the level first.

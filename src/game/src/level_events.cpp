@@ -62,13 +62,30 @@ bool appearsOnTheRight(const LevelEventRecord& r) {
 
 }  // namespace
 
-int reachableCameraX(int x, int levelWidth, int viewWidth) {
+int reachableCameraX(int x, int levelWidth, int viewWidth, int viewLimit) {
     const int lastCamera2002 = levelWidth - Camera::kNarrowWidth;
-    const int lastCamera = std::max(0, levelWidth - viewWidth);
+    const int lastCamera = std::max(0, viewLimit - viewWidth);
     return x <= lastCamera2002 ? std::min(x, lastCamera) : x;
 }
 
-std::vector<int> wakePoints(const std::vector<LevelEventRecord>& events, int levelWidth, int viewWidth) {
+int viewLimit(const std::vector<LevelEventRecord>& events, int levelWidth, int viewWidth, int victoryX) {
+    if (viewWidth <= Camera::kNarrowWidth) {
+        return levelWidth;
+    }
+    int last = victoryX;
+    for (const LevelEventRecord& r : events) {
+        if (static_cast<LevelEventType>(r.type) == LevelEventType::ScrollLock) {
+            last = std::max(last, r.activationX);
+        }
+    }
+    if (last <= 0) {
+        return levelWidth;
+    }
+    return std::min(levelWidth, std::max(last + Camera::kNarrowWidth, viewWidth));
+}
+
+std::vector<int> wakePoints(const std::vector<LevelEventRecord>& events, int levelWidth, int viewWidth,
+                            int viewLimit) {
     std::vector<int> wake(events.size());
     const int extra = viewWidth - Camera::kNarrowWidth;
 
@@ -76,7 +93,8 @@ std::vector<int> wakePoints(const std::vector<LevelEventRecord>& events, int lev
     std::vector<std::pair<int, int>> locks;
     for (const LevelEventRecord& r : events) {
         if (static_cast<LevelEventType>(r.type) == LevelEventType::ScrollLock) {
-            locks.emplace_back(r.activationX, reachableCameraX(r.activationX, levelWidth, viewWidth));
+            locks.emplace_back(r.activationX,
+                               reachableCameraX(r.activationX, levelWidth, viewWidth, viewLimit));
         }
     }
     std::sort(locks.begin(), locks.end());
@@ -93,7 +111,7 @@ std::vector<int> wakePoints(const std::vector<LevelEventRecord>& events, int lev
                 x = std::max(x, std::prev(behind)->second + 1);
             }
         }
-        wake[i] = reachableCameraX(x, levelWidth, viewWidth);
+        wake[i] = reachableCameraX(x, levelWidth, viewWidth, viewLimit);
     }
     return wake;
 }
