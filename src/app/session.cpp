@@ -176,6 +176,9 @@ void usage() {
                  "                        (also in deterministic runs, which play them in 4:3)\n"
                  "  --dump-frames <dir> <from> <to>   save presented frames as BMP files\n"
                  "  --dump-every <n>      with --dump-frames, keep one frame in n\n"
+                 "  --display-shots <dir> <frame>  at that presented frame, save the picture of every\n"
+                 "                        filter as the Switch's 1280x720 and 1920x1080 screens show\n"
+                 "                        it (BMP files; needs a window and OpenGL)\n"
                  "  --trace-ticks <file> <from> <to>  write the world state of these ticks\n"
                  "  /safe /cheat /quiet   legacy switches (safe mode, cheat keys, no music)\n");
 }
@@ -192,6 +195,8 @@ struct Session::State {
     std::string recordPath;
     std::string replayPath;
     std::string hashPath;
+    std::string shotsDir;
+    std::uint64_t shotsFrame = 0;
     std::string dumpDir;
     std::uint64_t dumpFrom = 0;
     std::uint64_t dumpTo = 0;
@@ -397,6 +402,13 @@ bool Session::init(int argc, const char* argv[]) {
                 return false;
             }
             g.dumpDir = dir;
+        } else if (arg == "--display-shots") {
+            const char* dir = next("a directory and a frame");
+            const char* frame = dir ? next("a frame") : nullptr;
+            if (!frame || !number(frame, g.shotsFrame)) {
+                return false;
+            }
+            g.shotsDir = dir;
         } else if (arg == "--help" || arg == "-h") {
             usage();
             std::exit(0);
@@ -573,6 +585,14 @@ bool Session::headless() const {
 bool Session::smoothMotion() const {
     const State& g = *state_;
     return g.smoothMotion;
+}
+bool Session::displayShots(std::uint64_t presented, std::string& dir) const {
+    const State& g = *state_;
+    if (g.shotsDir.empty() || presented != g.shotsFrame) {
+        return false;
+    }
+    dir = g.shotsDir;
+    return true;
 }
 bool Session::widescreen() const {
     const State& g = *state_;

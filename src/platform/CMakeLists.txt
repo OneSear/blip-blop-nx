@@ -16,6 +16,7 @@ endif()
 # The only code that includes SDL headers, and libnx's.
 add_library(bb_platform_sdl2 STATIC
     sdl2/sdl2_platform.cpp
+    sdl2/gl_display.cpp
 )
 if(NINTENDO_SWITCH)
     target_sources(bb_platform_sdl2 PRIVATE sdl2/switch/switch_system.cpp)

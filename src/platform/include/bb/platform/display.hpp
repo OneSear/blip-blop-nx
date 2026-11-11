@@ -14,6 +14,7 @@ struct DisplayOptions {
     bool integerScaling = false;  // see Display::setScaling()
     core::gfx::Filter filter = core::gfx::Filter::Crisp;
     bool headless = false;  // never opens a window, present() does nothing
+    bool hidden = false;    // a window that is not shown (the conformance tests)
 };
 
 // Shows finished frames. Frames are software-rendered pixmaps
@@ -44,6 +45,17 @@ public:
     // Whether present() waits for the screen's refresh (false for a headless
     // display or a renderer without vsync).
     virtual bool vsync() const = 0;
+
+    // The last frame drawn as a screen width x height would show it, with
+    // the current scaling and filter (screenshots of the filters, as the
+    // Switch shows them); false when the display cannot (no OpenGL,
+    // headless).
+    virtual bool capture(core::gfx::Pixmap& out, int width, int height) {
+        (void)out;
+        (void)width;
+        (void)height;
+        return false;
+    }
 };
 
 }  // namespace bb::platform

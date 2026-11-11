@@ -309,7 +309,7 @@ bool Game::startLevel(const char* name, int kind) {
     world_.players.rewind();
     if (const Entity* first = world_.players.current()) {
         world_.camera.x = std::min(first->x - first->x % Camera::kNarrowWidth,
-                                   std::max(0, world_.collision.width - world_.camera.width));
+                                   std::max(0, world_.camera.limit - world_.camera.width));
     }
 
     services_.decor->rewind();
@@ -372,7 +372,9 @@ bool Game::loadLevel(const char* name) {
     startY_[1] = data->start2Y;
 
     const int levelWidth = world_.collision.width;
-    level_.victory.x = reachableCameraX(data->victoryX, levelWidth, world_.camera.width);
+    const int viewWidth = world_.camera.width;
+    world_.camera.limit = viewLimit(data->events, levelWidth, viewWidth, data->victoryX);
+    level_.victory.x = reachableCameraX(data->victoryX, levelWidth, viewWidth, world_.camera.limit);
     level_.victory.flag1 = data->victoryFlag1;
     level_.victory.value1 = data->victoryValue1;
     level_.victory.flag2 = data->victoryFlag2;
@@ -381,7 +383,7 @@ bool Game::loadLevel(const char* name) {
     // Every event type is ported; the unused ones give none. They sleep in
     // the order they wake: in 4:3 the file's order, in a wider view some
     // wake earlier (wakePoints()).
-    const std::vector<int> wake = wakePoints(data->events, levelWidth, world_.camera.width);
+    const std::vector<int> wake = wakePoints(data->events, levelWidth, viewWidth, world_.camera.limit);
     std::vector<std::size_t> order(data->events.size());
     for (std::size_t i = 0; i < order.size(); ++i) {
         order[i] = i;

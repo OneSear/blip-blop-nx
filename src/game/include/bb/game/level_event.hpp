@@ -47,16 +47,26 @@ public:
 //    it is released (an arena does not get the next section's enemies,
 //    which could keep the lock from opening);
 //  * nothing waits for a camera x the view cannot reach (the last
-//    camera x of a level is its width less the view's): a scroll lock or
-//    the victory at the end of a level then wakes at the last x;
+//    camera x is viewLimit less the view's width; viewLimit is
+//    viewLimit() below): a scroll lock or the victory at the end of a
+//    level then wakes at the last x;
 //  * what never woke in 2002 (an activation beyond the 2002 camera's
 //    reach) still never wakes.
 std::vector<int> wakePoints(const std::vector<core::assets::LevelEventRecord>& events, int levelWidth,
-                            int viewWidth);
+                            int viewWidth, int viewLimit);
 
 // A camera x of the 2002 screen as the view reaches it (the victory X): the
-// same, or the last camera x of the level when the view cannot reach it.
-int reachableCameraX(int x, int levelWidth, int viewWidth);
+// same, or the last camera x when the view cannot reach it.
+int reachableCameraX(int x, int levelWidth, int viewWidth, int viewLimit);
+
+// The level x a view viewWidth pixels wide never shows past (Camera::limit):
+// the level's width in 4:3; in a wider view, the right edge of the 2002
+// screen where it stopped for good, at the level's last scroll lock or its
+// victory X, whichever is further (every level ends there; the decor
+// beyond was never seen, and some of it is filler: snuf1 repeats its last
+// picture there).
+int viewLimit(const std::vector<core::assets::LevelEventRecord>& events, int levelWidth, int viewWidth,
+              int victoryX);
 
 // Creates an enemy, a prop or a pickup of the entity registry.
 class SpawnEvent : public LevelEvent {

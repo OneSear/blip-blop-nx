@@ -3,6 +3,108 @@
 Status of the phases of [migration.md](../migration.md), with the facts
 learnt while implementing them. Newest phase first.
 
+## Widescreen: the view stops where the 2002 screen did (11 November 2026)
+
+Reported by the maintainer with a screenshot: at the end of `snuf1`, in
+16:9, the decor showed a seam and its last houses again on the right. The
+level is 13 screens wide and its last two are the same picture; the 2002
+camera never got there, held by the final scroll lock (x 7037, never
+released) with its right edge at 7677. The 854-pixel camera stopped at the
+lock too, but its right edge was then 7891, 214 pixels into the repeat.
+
+* **`Camera::limit`**: the level x that the view never shows past.
+  `viewLimit()` sets it when a level loads: the level's width in 4:3; in a
+  wider view the furthest of the victory X and the scroll locks, plus 640,
+  where the 2002 screen stopped for good. The camera's clamps
+  (`Level::updateCamera()`, `Decor::clampCamera()`), the start position,
+  the GO arrow, the victory X and the wake points (`reachableCameraX()`)
+  use it instead of the level's width. In 4:3 it is the level's width:
+  every 4:3 fingerprint holds.
+* `snuf1` now ends with the camera at 6823, its right edge at 7677. The
+  limit cuts 97 to 654 pixels off the other levels' ends (3176 off
+  `snuf2`, whose last screens and events lie beyond its final lock), and
+  1 off `snorkniv2`.
+* **Fingerprints.** Five 16:9 replays reach a level's end and were recorded
+  again (`campaign`, `carebears`, `smurf`, `snorks`, `videoboss`, their
+  `.wide` files only). Traced against the old code on `smurf`, the world
+  is identical until the camera reaches x 6823, where the final lock now
+  wakes (it woke at 7037).
+
+Facts learnt:
+
+* The last scroll lock of every level but `snorkniv2` waits for a flag
+  value that nothing in its world sets (666 or 123456 in most; 10 in `lem`
+  and `bisous2`; the fourth bomb of `dork`, which has three; the zombie
+  shaman's state in `bisous1`, whose shaman is in `bisous3`).
+  `snorkniv2`'s opens, and its victory X is at the level's end. So the
+  2002 screen never went past the last lock, or the victory X. `dork` and
+  `lem` repeat their first screen at their end, `bisous2` and `snuf1`
+  their last: the same seam in 16:9 before this change.
+
+## Shader filters (11 November 2026)
+
+Asked by the maintainer: better pictures on the Switch. Its outputs are
+already drawn at their full size (1280x720 handheld, 1920x1080 docked);
+what limits the picture is the game's, 480 lines scaled 1.5 or 2.25 times.
+The frames stay software-drawn (DEC-01); the display now draws them with
+OpenGL, so that a shader can do that last scaling.
+
+* **The OpenGL display** (`src/platform/sdl2/gl_display.cpp`). The frame
+  is a texture; a quad over the picture's rectangle (`core::gfx::
+  viewport()`, as before) is drawn by the filter's shader. OpenGL ES 2.0
+  on the Switch (EGL, which devkitPro's SDL 2 already uses for its own
+  renderer: no new library), OpenGL 2.1 on a Mac. The shaders are written
+  once for GLSL ES 1.00 and GLSL 1.20 (a preamble per context), and the 44
+  functions are loaded from the context (`SDL_GL_GetProcAddress`), so no
+  OpenGL header or library is needed beyond SDL's. Without OpenGL (SDL's
+  dummy driver, a failing shader) the platform falls back on the SDL
+  renderer's display, as before; `BB_DISPLAY=renderer` asks for it.
+* **The filters.** SHARP and SMOOTH: the texture's nearest or bilinear
+  filtering. CRISP: the same picture as the SDL display's (the frame
+  enlarged by the next whole factor with sharp pixels, then filtered down),
+  computed per screen pixel, without a render target. XBR (new): the
+  frame enlarged by a whole factor (x2 handheld, x3 docked) into a
+  framebuffer by an edge-directed shader in the manner of Hyllian's xBR
+  (levels 1 and 2: 45-degree edges and those of half or twice that slope,
+  found by comparing the colour differences across and along each corner's
+  diagonal, 5x5 pixels; written for this game), then drawn down to the
+  picture with bilinear filtering: outlines lose their stair steps, flat
+  colours stay sharp. CRT (new): the picture curved a little, as the
+  glass, its corners darker and rounded; down, the light of the two
+  nearest rows' beams (narrow bells, wider where brighter, so that dark
+  lines run between the rows even on the game's bright colours); across, a
+  little soft, as a beam; an aperture grille of three columns (wider
+  stripes on a large screen), a glow of the rows' plain colour, in linear
+  light. At 1.5 lines per row in handheld mode the scanlines have a
+  visible 2-in-3 rhythm, inherent to the size. Without OpenGL, XBR and
+  CRT are drawn as CRISP.
+* **The option.** FILTER cycles SHARP, CRISP, SMOOTH, XBR, CRT (strings
+  867 and 868, the same words in French; `filter xbr|crt` in the settings
+  file).
+* `Display::capture()` draws the last frame at any size with the current
+  filter and gives it back; `--display-shots <dir> <frame>` saves every
+  filter at the Switch's two sizes (as checked here; the pictures are in
+  the pull request).
+* **Tests.** A conformance test draws a frame through every filter with
+  OpenGL (skipped without a screen and OpenGL, as in the Linux container,
+  or with SDL's dummy driver): upright, the colours in their channels, and
+  SHARP by a whole factor exact to the pixel. Unit: the settings round-trip
+  every filter. The replays never present a frame: unchanged.
+
+Facts learnt:
+
+* This Mac's GPU (Intel Iris Plus 640) gives OpenGL 2.1 to SDL's default
+  context: the shaders' GLSL 1.20 fits it, and GLSL ES 1.00 the Switch's.
+* `half` is a reserved word of GLSL ES; `distance` a built-in function.
+* A first CRT, with wide beams on bright colours (as a tube's), showed
+  almost no lines in this bright game: the maintainer found it was "not
+  really a CRT". Narrow beams and a stronger grille keep only about half a
+  bright colour's light: the shader gives it back (x1.75, and a glow).
+  Asked for darker lines next, the beams are narrower still (a bell's
+  width 0.15 to 0.28 of a row, from black to white), the light given back
+  x2.2 and the glow smaller (0.06), so that about a third of each row's
+  height is dark on every colour.
+
 ## Widescreen levels (11 November 2026)
 
 Asked by the maintainer: the levels in 16:9, showing more of each level

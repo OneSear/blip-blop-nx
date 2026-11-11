@@ -5,6 +5,7 @@
 #include "bb/core/audio/mixer.hpp"
 #include "bb/core/gfx/viewport.hpp"
 #include "bb/core/log.hpp"
+#include "gl_display.hpp"
 
 #if defined(__SWITCH__)
 #include "switch/switch_system.hpp"
@@ -696,19 +697,10 @@ private:
     std::unique_ptr<core::audio::Mixer> mixer_;
 };
 
-const char* filterName(core::gfx::Filter filter) {
-    switch (filter) {
-        case core::gfx::Filter::Sharp:
-            return "sharp";
-        case core::gfx::Filter::Crisp:
-            return "crisp";
-        case core::gfx::Filter::Smooth:
-            return "smooth";
-    }
-    return "?";
-}
-
-class Sdl2Display final : public Display {
+// The display through SDL's renderer: without OpenGL (SDL's dummy driver in
+// the conformance tests), or with BB_DISPLAY=renderer. XBR and CRT are drawn
+// as CRISP.
+class Sdl2Display final : public Sdl2DisplayBase {
 public:
     Sdl2Display(SDL_Window* window, SDL_Renderer* renderer, SDL_Texture* texture, int width, int height)
         : window_(window), renderer_(renderer), texture_(texture), width_(width), height_(height) {
@@ -800,7 +792,7 @@ public:
                            " pixels, renderer " + name + ", picture " + std::to_string(view.picture.w) + "x" +
                            std::to_string(view.picture.h) + " at " + std::to_string(view.picture.x) + "," +
                            std::to_string(view.picture.y) + ", scaling " + (integer_ ? "integer" : "fit") +
-                           ", filter " + filterName(filter_);
+                           ", filter " + core::gfx::filterName(filter_);
         if (view.prescale > 1) {
             text += " (x" + std::to_string(view.prescale) + " first)";
         }
@@ -809,7 +801,7 @@ public:
 
     bool vsync() const override { return vsync_; }
 
-    bool readBack(core::gfx::Pixmap& out) const {
+    bool readBack(core::gfx::Pixmap& out) override {
         if (renderer_ == nullptr) {
             return false;
         }
@@ -913,13 +905,33 @@ public:
             nx::screenSize(width, height);
         }
 #endif
-        SDL_Window* window =
-            SDL_CreateWindow(options.title.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width,
-                             height,
-                             // Drawn at the screen's resolution (Retina); the
-                             // frame keeps its 4:3 shape when resized.
-                             headless ? SDL_WINDOW_HIDDEN
-                                      : SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
+        // Drawn at the screen's resolution (Retina); the frame keeps its shape
+        // when resized.
+        const Uint32 flags = headless ? SDL_WINDOW_HIDDEN
+                                      : (options.hidden ? SDL_WINDOW_HIDDEN : SDL_WINDOW_SHOWN) |
+                                            SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI;
+        const auto makeWindow = [&](Uint32 more) {
+            return SDL_CreateWindow(options.title.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+                                    width, height, flags | more);
+        };
+
+        // OpenGL first, for the shaders of the filters; else SDL's renderer.
+        const char* wanted = SDL_getenv("BB_DISPLAY");
+        if (!headless && (wanted == nullptr || std::string(wanted) != "renderer")) {
+            prepareOpenGl();
+            if (SDL_Window* glWindow = makeWindow(SDL_WINDOW_OPENGL)) {
+                std::string glError;
+                if (auto display = createGlDisplay(glWindow, options, glError)) {
+                    return display;
+                }
+                core::Log::info("Display: no OpenGL (" + glError + "), SDL's renderer draws");
+            } else {
+                core::Log::info(std::string("Display: no OpenGL window (") + SDL_GetError() +
+                                "), SDL's renderer draws");
+            }
+        }
+
+        SDL_Window* window = makeWindow(0);
         if (window == nullptr) {
             error = SDL_GetError();
             return nullptr;
@@ -972,8 +984,8 @@ private:
 }  // namespace
 
 bool readBack(Display& display, core::gfx::Pixmap& out) {
-    // Every Display this backend creates is an Sdl2Display.
-    return static_cast<const Sdl2Display&>(display).readBack(out);
+    // Every Display this backend creates is an Sdl2DisplayBase.
+    return static_cast<Sdl2DisplayBase&>(display).readBack(out);
 }
 
 bool voicePlaying(Audio& audio, int voice) {

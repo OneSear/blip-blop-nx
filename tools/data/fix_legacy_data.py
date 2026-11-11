@@ -73,6 +73,10 @@ And the mission sheets in other languages (10 November 2026):
 And the widescreen option (the levels in 16:9, 11 November 2026):
   uk.dat gains the option's label, in id 807, which was empty.
 
+And the shader filters (11 November 2026):
+  uk.dat gains the names of the XBR and CRT filters (ids 867 and 868),
+        before the mission sheets' text (870).
+
 The script is idempotent: running it on a fixed archive changes nothing.
 Every other entry keeps its content, compression method and timestamp.
 
@@ -310,6 +314,11 @@ BRIEFING_STRINGS = [
 ]
 # The widescreen option, in an id that was empty.
 WIDESCREEN_LABEL = "WIDESCREEN = "
+# The shader filters' names.
+SHADER_STRINGS = [
+    (867, 'XBR'),
+    (868, 'CRT'),
+]
 FRENCH_SOURCE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "assets", "source",
                              "strings", "fr.json")
 
@@ -404,6 +413,12 @@ def fix_entry(name, data):
         data = data[:at] + added.encode("cp1252") + data[at:]
         more, _ = fix_entry(name, data)
         return more, "added %d briefing strings" % len(BRIEFING_STRINGS)
+    if name == "data/uk.dat" and b"\n867^" not in data and b"\n866^" in data:
+        added = "".join("\n%d^%s" % (i, text) for i, text in SHADER_STRINGS)
+        at = data.index(b"\n870^") if b"\n870^" in data else data.index(b"\n1000^")
+        data = data[:at] + added.encode("cp1252") + data[at:]
+        more, _ = fix_entry(name, data)
+        return more, "added %d shader filter names" % len(SHADER_STRINGS)
     if name == "data/uk.dat" and b"\n807^\n" in data:
         return data.replace(b"\n807^\n", b"\n807^%s\n" % WIDESCREEN_LABEL.encode("cp1252")), \
             "filled the widescreen option label (807)"

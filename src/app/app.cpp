@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 
+#include "bb/core/gfx/bmp.hpp"
 #include "bb/core/gfx/sprite.hpp"
 #include "bb/core/input/codes.hpp"
 #include "bb/core/log.hpp"
@@ -404,6 +405,31 @@ void App::present() {
 
     if (presented_++ == 0) {
         firstPresent_ = platform_.clock().microseconds();
+    }
+
+    // The pictures of every filter at the Switch's sizes (--display-shots).
+    std::string shots;
+    if (session_.displayShots(presented_, shots)) {
+        struct Size {
+            int width;
+            int height;
+        };
+        for (const core::gfx::Filter f : core::gfx::kFilters) {
+            display_->setScaling(integerScaling_, f);
+            for (const Size size : {Size{1280, 720}, Size{1920, 1080}}) {
+                core::gfx::Pixmap picture;
+                const std::string path = shots + "/" + core::gfx::filterName(f) + "-" +
+                                         std::to_string(size.width) + "x" + std::to_string(size.height) +
+                                         ".bmp";
+                if (display_->capture(picture, size.width, size.height) &&
+                    core::gfx::writeBmp(picture, path)) {
+                    core::Log::info("Display shot: " + path);
+                } else {
+                    core::Log::warning("Display shot not taken (no OpenGL?): " + path);
+                }
+            }
+        }
+        display_->setScaling(integerScaling_, filter_);
     }
 
     if (!session_.deterministic() && !session_.headless()) {

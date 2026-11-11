@@ -35,11 +35,10 @@ void Decor::rewind() {
 
 void Decor::clampCamera() noexcept {
     Camera& camera = world_.camera;
-    const int levelWidth = world_.collision.width;
     if (camera.x < 0) {
         camera.x = 0;
-    } else if (camera.x > levelWidth - camera.width) {
-        camera.x = levelWidth - camera.width;
+    } else if (camera.x > camera.limit - camera.width) {
+        camera.x = camera.limit - camera.width;
     }
 }
 

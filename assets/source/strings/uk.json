@@ -180,6 +180,8 @@
     {"id": 864, "text": "READY!"},
     {"id": 865, "text": "A = choose   B = back   X = controllers"},
     {"id": 866, "text": "%dP"},
+    {"id": 867, "text": "XBR"},
+    {"id": 868, "text": "CRT"},
     {"id": 870, "text": "MISSION 1"},
     {"id": 871, "text": "Objective :"},
     {"id": 872, "text": "-Bring back Dr Gorgomel."},

@@ -247,8 +247,8 @@ void Level::updateCamera(bool scrollSpeedApplies) {
 
     if (camera.x < 0) {
         camera.x = 0;
-    } else if (camera.x > w.collision.width - camera.width) {
-        camera.x = w.collision.width - camera.width;
+    } else if (camera.x > camera.limit - camera.width) {
+        camera.x = camera.limit - camera.width;
     }
 }
 
@@ -416,7 +416,7 @@ void Level::updateGoArrow() {
         goLastCameraX_ = w.camera.x;
         goDelay_ = 0;
         goMustStop_ = true;
-    } else if (!goArrow && !w.scrollLock.on && w.camera.x < w.collision.width - w.camera.width) {
+    } else if (!goArrow && !w.scrollLock.on && w.camera.x < w.camera.limit - w.camera.width) {
         goDelay_ += 1;
 
         if (goDelay_ >= kGoDelay) {

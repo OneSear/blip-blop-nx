@@ -185,14 +185,14 @@ TEST_CASE("Events wake at their activation in 4:3, earlier on the right of a wid
         at(LevelEventType::SetFlag, 1000, 0),
     };
     // 4:3: as in 2002 (then in file order, nothing moves).
-    std::vector<int> narrow = wakePoints(events, kLevel, Camera::kNarrowWidth);
+    std::vector<int> narrow = wakePoints(events, kLevel, Camera::kNarrowWidth, kLevel);
     for (std::size_t i = 0; i < events.size(); ++i) {
         CAPTURE(i);
         CHECK(narrow[i] == events[i].activationX);
     }
 
     const int extra = Camera::kWideWidth - Camera::kNarrowWidth;  // 214
-    const std::vector<int> wide = wakePoints(events, kLevel, Camera::kWideWidth);
+    const std::vector<int> wide = wakePoints(events, kLevel, Camera::kWideWidth, kLevel);
     CHECK(wide[0] == 5700 - extra);
     CHECK(wide[1] == kLevel - Camera::kWideWidth);  // the last camera x: 5546
     CHECK(wide[2] == 6000);                         // still never
@@ -204,7 +204,26 @@ TEST_CASE("Events wake at their activation in 4:3, earlier on the right of a wid
     CHECK(wide[8] == 1000 - extra);
     CHECK(wide[9] == 1000);
 
-    CHECK(bb::game::reachableCameraX(5759, kLevel, Camera::kWideWidth) == 5546);
-    CHECK(bb::game::reachableCameraX(5759, kLevel, Camera::kNarrowWidth) == 5759);
-    CHECK(bb::game::reachableCameraX(5800, kLevel, Camera::kWideWidth) == 5800);
+    CHECK(bb::game::reachableCameraX(5759, kLevel, Camera::kWideWidth, kLevel) == 5546);
+    CHECK(bb::game::reachableCameraX(5759, kLevel, Camera::kNarrowWidth, kLevel) == 5759);
+    CHECK(bb::game::reachableCameraX(5800, kLevel, Camera::kWideWidth, kLevel) == 5800);
+}
+
+TEST_CASE("A wider view stops where the 2002 screen stopped for good") {
+    using bb::game::Camera;
+    using bb::game::viewLimit;
+    LevelEventRecord lock = record(LevelEventType::ScrollLock, 7037);
+    const std::vector<LevelEventRecord> events = {lock, record(LevelEventType::ScrollLock, 5352)};
+    // snuf1: 13 screens, the last scroll lock and the victory at 7037; the
+    // 2002 screen showed up to 7677, never its last picture again (8320).
+    CHECK(viewLimit(events, 8320, Camera::kNarrowWidth, 7037) == 8320);
+    CHECK(viewLimit(events, 8320, Camera::kWideWidth, 7037) == 7677);
+    CHECK(viewLimit(events, 8320, Camera::kWideWidth, 7500) == 8140);  // the victory further
+    CHECK(viewLimit({}, 8320, Camera::kWideWidth, 0) == 8320);          // no end: the level's
+    CHECK(viewLimit(events, 6400, Camera::kWideWidth, 7037) == 6400);   // never beyond the level
+    // The lock wakes at the last camera x, 7677 - 854.
+    const std::vector<int> wake = bb::game::wakePoints(events, 8320, Camera::kWideWidth, 7677);
+    CHECK(wake[0] == 6823);
+    CHECK(wake[1] == 5352);
+    CHECK(bb::game::reachableCameraX(7037, 8320, Camera::kWideWidth, 7677) == 6823);
 }
