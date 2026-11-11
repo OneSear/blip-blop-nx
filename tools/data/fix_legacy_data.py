@@ -70,6 +70,9 @@ And the mission sheets in other languages (10 November 2026):
   uk.dat gains the sheets' English text (ids 870-937, ten per sheet),
         before id 1000.
 
+And the widescreen option (the levels in 16:9, 11 November 2026):
+  uk.dat gains the option's label, in id 807, which was empty.
+
 The script is idempotent: running it on a fixed archive changes nothing.
 Every other entry keeps its content, compression method and timestamp.
 
@@ -305,6 +308,8 @@ BRIEFING_STRINGS = [
     (937, 'Use the flying ability of the Ballsmobile to get there and do a favour to all mankind by '
           'eliminating this sick man.'),
 ]
+# The widescreen option, in an id that was empty.
+WIDESCREEN_LABEL = "WIDESCREEN = "
 FRENCH_SOURCE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "assets", "source",
                              "strings", "fr.json")
 
@@ -399,6 +404,9 @@ def fix_entry(name, data):
         data = data[:at] + added.encode("cp1252") + data[at:]
         more, _ = fix_entry(name, data)
         return more, "added %d briefing strings" % len(BRIEFING_STRINGS)
+    if name == "data/uk.dat" and b"\n807^\n" in data:
+        return data.replace(b"\n807^\n", b"\n807^%s\n" % WIDESCREEN_LABEL.encode("cp1252")), \
+            "filled the widescreen option label (807)"
     if name == "data/uk.dat" and SWITCH_WORDING[0] in data:
         return data.replace(SWITCH_WORDING[0], SWITCH_WORDING[1]), "the Switch's wording of id 852"
     if name == "data/uk.dat" and b"\n811^\n" in data:

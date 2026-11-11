@@ -100,13 +100,17 @@ bool DialoguePlayer::draw(bool& escaped) {
         goesOn = update();
     }
 
+    // The boxes reach the screen's edges (a wider one in a level shown in
+    // 16:9): the top one from its face on the left, the bottom one to its
+    // face on the right.
     gfx::Pixmap& screen = *services_.screen;
+    const int width = screen.width();
     if (image_[kTop] >= 0) {
-        const gfx::Rect box{100, 120, 540, 100};
+        const gfx::Rect box{100, 120, width - 100, 100};
         gfx::darken(screen, &box);
     }
     if (image_[kBottom] >= 0) {
-        const gfx::Rect box{0, 300, 540, 100};
+        const gfx::Rect box{0, 300, width - 100, 100};
         gfx::darken(screen, &box);
     }
 
@@ -116,15 +120,15 @@ bool DialoguePlayer::draw(bool& escaped) {
     // (The 2002 code drew it at x 538 with a 640-pixel scroll buffer, which
     // the desktop never has.)
     if (faces_[kBottom] != nullptr && image_[kBottom] >= 0 && image_[kBottom] < faces_[kBottom]->size()) {
-        gfx::draw(screen, *(*faces_[kBottom])[image_[kBottom]], 540, 300);
+        gfx::draw(screen, *(*faces_[kBottom])[image_[kBottom]], width - 100, 300);
     }
 
     const gfx::BitmapFont& font = *services_.fonts->rpg;
     if (textId_[kTop] != -1) {
-        font.printWordWrapped(screen, 120, 135, services_.texts->text(textId_[kTop]), 640);
+        font.printWordWrapped(screen, 120, 135, services_.texts->text(textId_[kTop]), width);
     }
     if (textId_[kBottom] != -1) {
-        font.printWordWrapped(screen, 20, 315, services_.texts->text(textId_[kBottom]), 535);
+        font.printWordWrapped(screen, 20, 315, services_.texts->text(textId_[kBottom]), width - 105);
     }
     return goesOn;
 }

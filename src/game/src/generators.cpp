@@ -113,7 +113,7 @@ void EnemyGenerator::update() {
             done_ = true;
         }
     } else if ((setup_.direction == kFacingRight && setup_.x < camera - 200) ||
-               (setup_.direction == kFacingLeft && setup_.x < camera + 690)) {
+               (setup_.direction == kFacingLeft && setup_.x < w.camera.right() + 50)) {
         done_ = true;
     }
 }
@@ -124,7 +124,7 @@ void PickupGenerator::update() {
         tick_ += 1;
         tick_ %= period_;
         if (tick_ == 0) {
-            dropPickup(w, w.camera.x + 320 - 200 + w.random() % 400, -50);
+            dropPickup(w, w.camera.centre() - 200 + w.random() % 400, -50);
         }
         if (w.camera.x > x_ + 500) {
             done_ = true;

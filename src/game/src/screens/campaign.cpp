@@ -470,6 +470,7 @@ Frame LevelScreen::update(ScreenStack& stack) {
                 break;
 
             case Step::FirstEvents:
+                game_.useLevelScreen();
                 game_.updateEvents();
                 step_ = Step::FirstTick;
                 break;

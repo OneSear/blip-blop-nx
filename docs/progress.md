@@ -3,6 +3,88 @@
 Status of the phases of [migration.md](../migration.md), with the facts
 learnt while implementing them. Newest phase first.
 
+## Widescreen levels (11 November 2026)
+
+Asked by the maintainer: the levels in 16:9, showing more of each level
+rather than bars at the sides (switch-port.md had ruled it out, as it
+changes the game). It is an option, WIDESCREEN, on by default: off, a
+level plays exactly as in 2002, and the regression replays keep checking
+that.
+
+### What changed
+
+* **The view.** `Camera::width` is 640, or 854 with the option (16:9 at
+  480 lines); `Game::startLevel()` sets it, for the whole level (a change
+  in the pause menu counts from the next level). The entities use the
+  view's edges where the 2002 code used the screen's: `camera.right()`
+  for `camera.x + 640`, offsets from it for the numbers near it (an enemy
+  that turns at `camera.x + 600` now turns 40 pixels before the right
+  edge; the off-screen deaths at `+700` or `+900` stay as far beyond it),
+  `camera.centre()` for `+320`. In 4:3 every expression gives the 2002
+  number. The level's arenas (a scroll lock keeps the camera still) are
+  as wide as the view; the bosses whose moves are level positions (the
+  videoboss plumbers and Sonic) use their left part.
+* **The events.** The 2002 editor put what comes from the right 700 to 800
+  pixels ahead of its activation (beyond the right edge of a 640-pixel
+  screen) and what comes from the left 50 pixels before it. In a wider
+  view the first would appear in sight: `wakePoints()` wakes them earlier
+  by the extra width, but never before the scroll lock behind them opens
+  (an arena would otherwise get the next section's enemies, which could
+  keep a NO ENEMIES lock shut), and caps every wake point at the last
+  camera x of the level (the last scroll lock of `bisous3` and the victory
+  of `snorkniv2` are beyond the reach of a wider camera; the victory X too
+  is capped). The sleeping events are sorted by their wake point (stable:
+  in 4:3, the file's order).
+* **Drawing.** The back buffer is as wide as the view from the level's
+  first events to its release (`Game::useLevelScreen()`). The display takes
+  frames of any size (a new texture when it changes). `core::gfx::draw()` clips at the destination's edges
+  (2002 cut at x 640 even on a wider pixmap; nothing drew on one). The
+  decor's ring is 200 pixels wider than the view (840 in 4:3). The HUD's
+  right corners keep to the right edge, the timer, the banners, the pause
+  menu, the level summary and the LOADING text are centred, the dialogue
+  boxes reach the edges (their text gets longer lines), the GO arrow, the
+  rain and snow, the cow bomb's cows (a cow every 64 pixels), the laser
+  beam (its 640-pixel image drawn again for a longer beam) and the final
+  boss's battle cruisers cover the wider view.
+* **The other screens in 16:9** (asked after a first try: the menus at
+  another size than the levels, with bars). With the option on, every
+  frame is 16:9: the application shows a 640-pixel frame in the middle of
+  an 854-pixel one, on black (`App::present()`), so the pictures keep
+  their shape and every screen its size; the title, the menus, the
+  credits and most cutscenes are on black already. The hero choice is
+  drawn across (its starfield's first image again after the second, the
+  four columns a quarter of the width each). The mission sheets are typed
+  in every language in 16:9 (the English from strings 870 to 937): the
+  picture on the left, the story's lines and the title over them running
+  on to the right edge (`typeBriefing()`'s extra width; the content test
+  types them so too). The screens that draw wider set the back buffer's
+  width (`setScreenWidth()`) and give back 640 pixels: the hero choice
+  when it goes back to the main menu, the campaign at its start, a level
+  at its release.
+* **The option.** WIDESCREEN = ON/OFF on the options page (in the main
+  and pause menus), after SMOOTH MOTION; string 807 (empty in 2002;
+  "ECRAN LARGE = " in French); `widescreen on|off` in the settings file,
+  on by default and in older files, off in the reference settings of the
+  deterministic runs. `--widescreen` turns it on for a run; a recording
+  made so says `option widescreen`.
+* **Tests.** The 4:3 replays keep every fingerprint but `menus`, whose
+  options page has the new item: its script steps over it (12 frames
+  taken from the hold that stood for the VSYNC taps, so that the game
+  starts at the same frame) and keeps every tick fingerprint; its frame
+  fingerprints were recorded again. Every replay but `attract` also runs
+  with `--widescreen` (`replay.<name>.wide`, fingerprints of their own).
+  Unit tests: the wake points, the settings statement, the clipping of a
+  wider pixmap. The campaign replay plays all twelve levels in 16:9.
+
+Facts learnt:
+
+* The 2002 editor's placement is regular: of 734 enemy events, 536 are
+  700 to 800 pixels ahead of their activation and 198 50 pixels behind;
+  every prop, pickup, foreground image and vehicle is 740 ahead.
+* 854 pixels at 480 lines is 16:9 within a pixel: on the Switch's
+  1280x720 and 1920x1080 screens the picture is one pixel short of the
+  height, so no bar shows.
+
 ## The Switch port (30 October 2026: implemented, not yet tried on a console)
 
 [switch-port.md](../switch-port.md), steps S1 to S7, done in one go; what a

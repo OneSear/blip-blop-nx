@@ -145,7 +145,8 @@ def menus():
     and exit, the pause menu opened by a focus loss, dialogue skip, the
     attract cycle interrupted by keys, and a normal quit. The Phase 9
     options are all switched on, so everything from the key pages on is in
-    French and the level is drawn with smooth motion."""
+    French and the level is drawn with smooth motion; widescreen stays off
+    (replay.menus.wide plays the level in 16:9)."""
     s = Script()
     s.hold(30)
     tap(s, "ESCAPE", frames=10)       # skip the intro
@@ -164,13 +165,15 @@ def menus():
     tap(s, "LEFT")
     tap(s, "RETURN")                  # integer scaling: switched three times, on
                                       # (headless: not shown)
-    s.hold(24)                        # the two taps of the VSYNC item, gone with
-                                      # the desktop versions: the frames after
-                                      # the options page are the same as before
+    s.hold(12)                        # the two taps of the VSYNC item, gone with
+                                      # the desktop versions, less the tap over
+                                      # WIDESCREEN: the frames after the options
+                                      # page are the same as before
     tap(s, "DOWN")
     tap(s, "LEFT")                    # crisp to smooth filter (headless: not shown)
     tap(s, "DOWN")
     tap(s, "RETURN")                  # smooth motion on
+    tap(s, "DOWN")                    # WIDESCREEN, left off: the level in 4:3
     tap(s, "DOWN")
     tap(s, "RIGHT")                   # French
     tap(s, "DOWN")

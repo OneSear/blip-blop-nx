@@ -1,7 +1,8 @@
 // The mission sheets in every language: the text of each sheet has the
-// glyphs it needs and, typed as the game types it, lands on the sheet's
-// black or on the BONUS STAGE stamp, never on the art and never below the
-// picture (where the game prints its prompt). Read from the 2002 data
+// glyphs it needs and, typed as the game types it on a 640-pixel screen and
+// on a 16:9 one, lands on the sheet's black or on the BONUS STAGE stamp,
+// never on the art and never below the picture (where the game prints its
+// prompt). Read from the 2002 data
 // directory and from the runtime pack.
 
 #include <doctest.h>
@@ -70,23 +71,28 @@ void checkSheet(const bb::core::assets::AssetSource& source, const BriefingSheet
     const gfx::Sprite& plain = *pictures[bb::game::kSheetWithoutText];
     REQUIRE(plain.width() == 640);
 
-    gfx::Pixmap before(640, 480);
-    gfx::draw(before, plain, 0, 0);
-    gfx::Pixmap after = before;
-    bb::game::typeBriefing(after, sheet, title, text, texts);
+    // On the 640-pixel screen, and on the 16:9 one of the widescreen option
+    // (the picture on the left, the story across).
+    for (const int width : {gfx::kScreenWidth, gfx::kWideScreenWidth}) {
+        CAPTURE(width);
+        gfx::Pixmap before(width, 480);
+        gfx::draw(before, plain, 0, 0);
+        gfx::Pixmap after = before;
+        bb::game::typeBriefing(after, sheet, title, text, texts, width - gfx::kScreenWidth);
 
-    int typed = 0;
-    int wrong = 0;
-    for (int y = 0; y < 480; ++y) {
-        for (int x = 0; x < 640; ++x) {
-            if (after.at(x, y) != before.at(x, y)) {
-                ++typed;
-                wrong += y >= plain.height() || !blackOrStamp(before.at(x, y)) ? 1 : 0;
+        int typed = 0;
+        int wrong = 0;
+        for (int y = 0; y < 480; ++y) {
+            for (int x = 0; x < width; ++x) {
+                if (after.at(x, y) != before.at(x, y)) {
+                    ++typed;
+                    wrong += y >= plain.height() || !blackOrStamp(before.at(x, y)) ? 1 : 0;
+                }
             }
         }
+        CHECK(typed > 1000);
+        CHECK(wrong == 0);
     }
-    CHECK(typed > 1000);
-    CHECK(wrong == 0);
 }
 
 void checkBriefings(const bb::core::assets::AssetSource& source) {

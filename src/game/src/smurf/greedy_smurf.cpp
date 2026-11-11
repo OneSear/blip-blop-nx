@@ -46,7 +46,7 @@ void GreedySmurf::stand() {
 
     // Throw now and then.
     shotWait_ += 1;
-    if (shotWait_ > shotDelay_ && x > w.camera.x && x < w.camera.x + 640 && w.target != nullptr) {
+    if (shotWait_ > shotDelay_ && x > w.camera.x && x < w.camera.right() && w.target != nullptr) {
         w.media.levelSounds->play(snd::kGreedyThrow + w.random() % 2);  // one of 2
         mode = kShooting;
         shotWait_ = 0;
@@ -150,7 +150,8 @@ void Cake::update() {
     x += xSpeed;
 
     const int camera = world().camera.x;
-    if (solidWall(x, y) || x < camera - 100 || x > camera + 700 || y > 520 || y < -50) {
+    const int cameraRight = world().camera.right();
+    if (solidWall(x, y) || x < camera - 100 || x > cameraRight + 60 || y > 520 || y < -50) {
         dead = true;
     }
     hitboxFromImage();

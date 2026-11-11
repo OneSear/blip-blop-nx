@@ -107,9 +107,9 @@ void WildSmurf::update() {
 
                 // A random place around the screen centre, below a ceiling.
                 if (w.random() % 2 == 0) {
-                    x = w.camera.x + 320 - w.random() % 150;
+                    x = w.camera.centre() - w.random() % 150;
                 } else {
-                    x = w.camera.x + 320 + w.random() % 150;
+                    x = w.camera.centre() + w.random() % 150;
                 }
                 int end = 100 + w.random() % 140;
                 while (solidWall(x, end)) {
@@ -276,7 +276,8 @@ void WildSmurfShot::update() {
     y += ySpeed;
 
     const int camera = world().camera.x;
-    if (solidWall(x, y) || x < camera - 20 || x > camera + 660 || y < -20 || y > 500) {
+    const int cameraRight = world().camera.right();
+    if (solidWall(x, y) || x < camera - 20 || x > cameraRight + 20 || y < -20 || y > 500) {
         image = nullptr;
         noHitbox();
         dead = true;

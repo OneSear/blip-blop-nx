@@ -56,8 +56,10 @@ bool hasBriefingText(const BriefingSheet& sheet, const TextSource& texts);
 
 // Types the sheet's text on dst (the sheet without text drawn first):
 // the title centred, the story's paragraphs word-wrapped one blank line
-// apart, the objectives' label, a blank line and the objectives.
+// apart, the objectives' label, a blank line and the objectives. On a screen
+// `extra` pixels wider than 640 (16:9), the picture stays on the left and
+// the story's lines run on to the right edge, the title over them.
 void typeBriefing(core::gfx::Pixmap& dst, const BriefingSheet& sheet, const core::gfx::BitmapFont& title,
-                  const core::gfx::BitmapFont& text, const TextSource& texts);
+                  const core::gfx::BitmapFont& text, const TextSource& texts, int extra = 0);
 
 }  // namespace bb::game

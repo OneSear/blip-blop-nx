@@ -32,15 +32,15 @@ bool hasBriefingText(const BriefingSheet& sheet, const TextSource& texts) {
 }
 
 void typeBriefing(core::gfx::Pixmap& dst, const BriefingSheet& sheet, const core::gfx::BitmapFont& title,
-                  const core::gfx::BitmapFont& text, const TextSource& texts) {
+                  const core::gfx::BitmapFont& text, const TextSource& texts, int extra) {
     const auto string = [&](int i) { return texts.text(sheet.firstText + i); };
 
-    title.printCentred(dst, sheet.titleX, sheet.titleY, string(BriefingSheet::kTitle));
+    title.printCentred(dst, sheet.titleX + extra / 2, sheet.titleY, string(BriefingSheet::kTitle));
 
     int y = sheet.storyY;
     for (int i = 0; i < BriefingSheet::kParagraphCount; ++i) {
         const int lines = text.printWordWrapped(dst, sheet.storyX, y,
-                                                string(BriefingSheet::kFirstParagraph + i), kBriefingRight);
+                                                string(BriefingSheet::kFirstParagraph + i), kBriefingRight + extra);
         if (lines > 0) {
             y += (lines + 1) * text.lineHeight();
         }

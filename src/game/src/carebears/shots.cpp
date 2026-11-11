@@ -92,12 +92,13 @@ void StormCloud::update() {
 void StormCloud::appear() {
     static const int kSpeed = 1;
     const int camera = world().camera.x;
+    const int cameraRight = world().camera.right();
 
     animation.subFrame += 1;
     animation.subFrame %= 10;
     if (direction == kFacingRight) {
         x += kSpeed;
-        if (x > camera + 600) {
+        if (x > cameraRight - 40) {
             direction = kFacingLeft;
         }
     } else {
@@ -142,6 +143,7 @@ void StormCloud::drift() {
     static const int kSpeed = 1;
     World& w = world();
     const int camera = w.camera.x;
+    const int cameraRight = w.camera.right();
 
     lifetime_ -= 1;
     if (lifetime_ <= 0) {
@@ -153,7 +155,7 @@ void StormCloud::drift() {
 
     if (direction == kFacingRight) {
         x += kSpeed;
-        if (x > camera + 600) {
+        if (x > cameraRight - 40) {
             direction = kFacingLeft;
         }
     } else {
@@ -405,12 +407,13 @@ void ShamanColumn::update() {
 void ShamanColumn::roll() {
     static const int kSpeed = 4;
     const int camera = world().camera.x;
+    const int cameraRight = world().camera.right();
 
     fall();
 
     if (solidWall(x - kSpeed, y) || x + kSpeed < camera) {
         direction = kFacingRight;
-    } else if (x + kSpeed > camera + 640) {
+    } else if (x + kSpeed > cameraRight) {
         direction = kFacingLeft;
     }
     walk(direction == kFacingRight ? kSpeed : -kSpeed);

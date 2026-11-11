@@ -64,7 +64,7 @@ void StrongmanSmurf::walkAbout() {
 
     if (x - kSpeed < minX || solidWall(x - kSpeed, y)) {
         direction = kFacingRight;
-    } else if (x + kSpeed > world().camera.x + 640 || solidWall(x + kSpeed, y)) {
+    } else if (x + kSpeed > world().camera.right() || solidWall(x + kSpeed, y)) {
         direction = kFacingLeft;
     }
 
@@ -146,7 +146,7 @@ void StrongmanSmurf::fireball() {
 }
 
 void StrongmanSmurf::uppercut() {
-    const int camera = world().camera.x;
+    const int cameraRight = world().camera.right();
     fall();
 
     if (animation.frame <= 2) {
@@ -158,7 +158,7 @@ void StrongmanSmurf::uppercut() {
         }
     } else if (dy < 0) {
         // Going up.
-        if (direction == kFacingRight && x < camera + 640 && !solidWall(x + 1, y)) {
+        if (direction == kFacingRight && x < cameraRight && !solidWall(x + 1, y)) {
             x += 1;
         } else if (direction == kFacingLeft && x > minX && !solidWall(x - 1, y)) {
             x -= 1;
@@ -190,7 +190,7 @@ void StrongmanSmurf::spinKick() {
     animation.cycle(4, 6);
 
     const int nextX = x + xSpeed_;
-    if (!solidWall(nextX, y) && nextX > minX && nextX < world().camera.x + 740) {
+    if (!solidWall(nextX, y) && nextX > minX && nextX < world().camera.right() + 100) {
         x = nextX;
     }
 
@@ -222,7 +222,7 @@ void StrongmanSmurf::attack() {
 
     direction = dx > 0 ? kFacingRight : kFacingLeft;
 
-    if (dyTarget > -50 && dyTarget < 50 && x > w.camera.x && x < w.camera.x + 640) {
+    if (dyTarget > -50 && dyTarget < 50 && x > w.camera.x && x < w.camera.right()) {
         // Level with the target, on screen: fireball.
         mode = kFireball;
         w.media.levelSounds->play(snd::kHadoken);

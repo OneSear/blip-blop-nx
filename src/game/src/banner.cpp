@@ -6,13 +6,13 @@
 
 namespace bb::game {
 
-Banner::Banner(int text, int row, bool& rowFree) noexcept
-    : text_(text), y_(150 + row * 30), rowFree_(rowFree) {
+Banner::Banner(int text, int row, bool& rowFree, int centre) noexcept
+    : text_(text), y_(150 + row * 30), rowFree_(rowFree), centre_(centre), x_(centre + 640) {
     rowFree_ = false;
 }
 
 void Banner::update() {
-    if (x_ == 320) {
+    if (x_ == centre_) {
         ticks_ += 1;
         if (ticks_ >= 350) {
             x_ -= 16;
@@ -36,7 +36,7 @@ void showBanner(World& world, int text) {
     if (row >= Banner::kRows) {
         row = 0;
     }
-    world.bannerTexts.add(new Banner(text, row, world.bannerRowFree[row]));
+    world.bannerTexts.add(new Banner(text, row, world.bannerRowFree[row], world.camera.width / 2));
 }
 
 void clearBanners(World& world) {

@@ -365,7 +365,9 @@ void Player::update() {
 void Player::dropCowBomb() {
     World& w = world();
 
-    for (int i = 0; i < 11; ++i) {
+    // A cow every 64 pixels across the view (11 on the 2002 screen).
+    const int cows = w.camera.width / 64 + 1;
+    for (int i = 0; i < cows; ++i) {
         const int cowX = w.camera.x + i * 64 + w.random() % 20;
         if (!solidWall(cowX, 0)) {
             auto* cow = new FallingCow(w);
@@ -416,10 +418,10 @@ void Player::crushedByScroll() {
     // there, or else at the nearest column of the screen that has one (D-91
     // fixed: with none in the middle, the 2002 loop read past the last
     // layer and the player fell out of the level, losing every life).
-    const int centre = w.camera.x + 320;
+    const int centre = w.camera.centre();
     x = centre;
     landingY = 0xFFFF;
-    for (int offset = 0; offset < 320 && landingY == 0xFFFF; ++offset) {
+    for (int offset = 0; offset < w.camera.width / 2 && landingY == 0xFFFF; ++offset) {
         for (const int column : {centre + offset, centre - offset}) {
             if (column < 0 || column >= w.collision.width || landingY != 0xFFFF) {
                 continue;
@@ -442,6 +444,7 @@ void Player::crushedByScroll() {
 void Player::slide() {
     World& w = world();
     const int cameraX = w.camera.x;
+    const int cameraRight = w.camera.right();
 
     if (mode != kNormal && mode != kWalking) {
         slideDx_ = slideMomentum_ = 0;
@@ -451,7 +454,7 @@ void Player::slide() {
     // Layers 6 and 7 are slippery: the slope and the controls build up a
     // momentum.
     const int layer = w.collision.platformLayerAt(x, y);
-    if (layer < 6 || x <= 10 || x <= cameraX + 30 || x >= cameraX + 610) {
+    if (layer < 6 || x <= 10 || x <= cameraX + 30 || x >= cameraRight - 30) {
         slideDx_ = slideMomentum_ = 0;
         return;
     }
@@ -576,6 +579,7 @@ void Player::standing() {
 
 void Player::walking() {
     const int cameraX = world().camera.x;
+    const int cameraRight = world().camera.right();
 
     if (controls_.jump() && !solidWall(x, y - 5)) {
         startJump();
@@ -585,10 +589,10 @@ void Player::walking() {
 
     const int slideX = x + slideDx_;
 
-    if ((slideDx_ > 0 && !solidWall(slideX, y) && slideX < cameraX + 620) ||
+    if ((slideDx_ > 0 && !solidWall(slideX, y) && slideX < cameraRight - 20) ||
         (slideDx_ < 0 && !solidWall(slideX, y) && slideX > cameraX + 20)) {
         walk(slideDx_);
-    } else if (controls_.right() && !solidWall(x + 2, y) && x + 2 < cameraX + 620) {
+    } else if (controls_.right() && !solidWall(x + 2, y) && x + 2 < cameraRight - 20) {
         walk(2);
     } else if (controls_.left() && !solidWall(x - 2, y) && x - 2 > cameraX + 20) {
         walk(-2);
@@ -608,6 +612,7 @@ void Player::walking() {
 
 void Player::jumping() {
     const int cameraX = world().camera.x;
+    const int cameraRight = world().camera.right();
 
     // Jump pressed again while rising: a somersault.
     if (!controls_.jump()) {
@@ -651,7 +656,7 @@ void Player::jumping() {
     }
 
     const int nextX = x + jumpDx_;
-    if (!solidWall(nextX, y) && nextX > cameraX + 20 && nextX < cameraX + 620) {
+    if (!solidWall(nextX, y) && nextX > cameraX + 20 && nextX < cameraRight - 20) {
         x = nextX;
     }
 
@@ -660,6 +665,7 @@ void Player::jumping() {
 
 void Player::somersault() {
     const int cameraX = world().camera.x;
+    const int cameraRight = world().camera.right();
 
     animation.cycle(3, 8);
 
@@ -679,7 +685,7 @@ void Player::somersault() {
     }
 
     const int nextX = x + jumpDx_;
-    if (!solidWall(nextX, y) && nextX > cameraX + 20 && nextX < cameraX + 620) {
+    if (!solidWall(nextX, y) && nextX > cameraX + 20 && nextX < cameraRight - 20) {
         x = nextX;
     }
 

@@ -63,9 +63,10 @@ void Princess::update() {
 void Princess::walkAbout() {
     World& w = world();
     const int camera = w.camera.x;
+    const int cameraRight = w.camera.right();
 
     if (w.flags[kEscort] != 0) {
-        if (x > camera + 820) {
+        if (x > cameraRight + 180) {
             showBanner(w, kEscapedText);
             dead = true;
         }
@@ -73,7 +74,7 @@ void Princess::walkAbout() {
             guarded_ = true;
             for (int i = 1; i < 4; i++) {
                 auto* guard = new PrincessGuard(w, this, 40 + i * 40);
-                guard->x = camera + 720 - i * 20;
+                guard->x = cameraRight + 80 - i * 20;
                 guard->y = y - 20;
                 guard->direction = kFacingLeft;
                 w.enemies.add(guard);

@@ -66,3 +66,15 @@ TEST_CASE("a window: whole multiples are drawn with sharp pixels, other sizes ke
     const gfx::Viewport none = gfx::viewport(640, 480, 0, 0, false, gfx::Filter::Crisp);
     CHECK(none.picture.empty());
 }
+
+TEST_CASE("a level in 16:9 (854x480) fills the Switch's screens, a pixel short of their height") {
+    const gfx::Viewport handheld = gfx::viewport(854, 480, 1280, 720, false, gfx::Filter::Crisp);
+    CHECK(is(handheld.picture, 0, 0, 1280, 719));
+    CHECK(handheld.prescale == 2);  // 1708x960, then filtered down
+    const gfx::Viewport docked = gfx::viewport(854, 480, 1920, 1080, false, gfx::Filter::Crisp);
+    CHECK(is(docked.picture, 0, 0, 1920, 1079));
+    CHECK(docked.prescale == 3);
+    // By a whole factor docked: twice, with bars all round.
+    const gfx::Viewport integer = gfx::viewport(854, 480, 1920, 1080, true, gfx::Filter::Crisp);
+    CHECK(is(integer.picture, 106, 60, 1708, 960));
+}

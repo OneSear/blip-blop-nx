@@ -71,6 +71,11 @@ public:
     // resetTimeBase(); the dialogue if a scene is to play, then
     // resetTimeBase(); tickEnd().
     bool startLevel(const char* name, int kind);
+    // The back buffer (and the backdrop) as wide as the view, from the
+    // level's first events to releaseLevel(), which gives back 640 pixels:
+    // the screens before and after a level are 640x480 pictures, the level
+    // is drawn at the view's width (Camera::width).
+    void useLevelScreen();
     void showBriefing(const char* name);
     bool hasBriefing() const noexcept { return briefing_; }
     void drawBriefingPrompt();

@@ -60,11 +60,13 @@ protected:
     void setItem(int i, const char* text);
     // The items of the options page: the display options and the language
     // (Phase 9; 2002 had a commented-out language choice; its vsync went
-    // with the desktop versions), the key pages and return.
+    // with the desktop versions), widescreen (16:9 levels), the key pages
+    // and return.
     enum OptionItem {
         kScalingItem,
         kFilterItem,
         kMotionItem,
+        kWidescreenItem,
         kLanguageItem,
         kKeys1Item,
         kKeys2Item,

@@ -32,10 +32,10 @@ const char* const kHeroNames[HeroChoice::kHeroes] = {"BLIP", "BLOP", "BLEACH", "
 const gfx::Pixel kPlayerColours[kMaxPlayers] = {gfx::makePixel(214, 41, 41), gfx::makePixel(41, 98, 230),
                                                 gfx::makePixel(230, 197, 25), gfx::makePixel(41, 164, 57)};
 
-// The heroes: a column of 160 pixels each; in it the hero's card (its
-// portrait and its name, the frame of the player whose tag is on it) under
-// a row of tags, one place for each player.
-constexpr int kColumnWidth = 160;
+// The heroes: a column each, a quarter of the screen (160 pixels on the
+// 640-pixel one); in it the hero's card (its portrait and its name, the
+// frame of the player whose tag is on it) under a row of tags, one place for
+// each player.
 constexpr int kCardWidth = 148;
 constexpr int kCardTop = 96;
 constexpr int kCardHeight = 160;
@@ -51,8 +51,12 @@ constexpr int kButtonsY = 440;
 constexpr int kMenuHeight = 24;
 constexpr int kRpgHeight = 16;
 
-int columnX(int i) {
-    return kColumnWidth / 2 + i * kColumnWidth;
+int columnWidth(const gfx::Pixmap& screen) {
+    return screen.width() / HeroChoice::kHeroes;
+}
+
+int columnX(const gfx::Pixmap& screen, int i) {
+    return columnWidth(screen) / 2 + i * columnWidth(screen);
 }
 
 // The pad a player plays with: the one its controls are bound to, else
@@ -119,7 +123,10 @@ void printLines(gfx::Pixmap& screen, const gfx::BitmapFont& font, int x, int y, 
 }  // namespace
 
 void drawLoading(Services& services) {
-    services.fonts->cool->printCentred(*services.screen, 320, 205, services.texts->text(kLoadingText));
+    // Centred on the screen: also over the last frame of a level, wider in
+    // 16:9.
+    services.fonts->cool->printCentred(*services.screen, services.screen->width() / 2, 205,
+                                       services.texts->text(kLoadingText));
 }
 
 CharacterSelectScreen::Keys CharacterSelectScreen::keys(int player) const {
@@ -216,6 +223,7 @@ Frame CharacterSelectScreen::update(ScreenStack& stack) {
     if (leave) {
         services_.session->note("character select: back");
         lineup_ = Lineup{};
+        setScreenWidth(services_, gfx::kScreenWidth);  // the main menu's
         stack.finish();
         return Frame::Continue;
     }
@@ -252,13 +260,22 @@ Frame CharacterSelectScreen::update(ScreenStack& stack) {
 }
 
 void CharacterSelectScreen::draw() {
+    // Across a 16:9 screen with the widescreen option.
+    setScreenWidth(services_, services_.options->widescreen ? gfx::kWideScreenWidth : gfx::kScreenWidth);
     gfx::Pixmap& screen = *services_.screen;
     const ImageBank& images = *services_.banks.interface;
     const bool french = services_.options->language == input::Language::French;
 
+    // The starfield's two 640-pixel images scroll one after the other; on a
+    // wider screen the first one comes again after the second.
     gfx::draw(screen, *images[img::kStarfield], background1X_, 0);
     gfx::draw(screen, *images[img::kStarfield + 1], background2X_, 0);
-    gfx::draw(screen, *images[french ? img::kSelectTitleFr : img::kSelectTitle], 320, titleY_);
+    const bool firstLeft = background1X_ < background2X_;
+    const int left = firstLeft ? background1X_ : background2X_;
+    if (left + 2 * gfx::kScreenWidth < screen.width()) {
+        gfx::draw(screen, *images[firstLeft ? img::kStarfield : img::kStarfield + 1], left + 2 * gfx::kScreenWidth, 0);
+    }
+    gfx::draw(screen, *images[french ? img::kSelectTitleFr : img::kSelectTitle], screen.width() / 2, titleY_);
 
     for (int hero = 0; hero < HeroChoice::kHeroes; ++hero) {
         drawHero(hero);
@@ -266,7 +283,7 @@ void CharacterSelectScreen::draw() {
     for (int player = 0; player < kMaxPlayers; ++player) {
         drawPanel(player);
     }
-    services_.fonts->rpg->printCentred(screen, 320, kButtonsY, services_.texts->text(kButtonsText));
+    services_.fonts->rpg->printCentred(screen, screen.width() / 2, kButtonsY, services_.texts->text(kButtonsText));
 }
 
 void CharacterSelectScreen::drawHero(int hero) {
@@ -274,7 +291,7 @@ void CharacterSelectScreen::drawHero(int hero) {
     gfx::Pixmap& screen = *services_.screen;
     const ImageBank& images = *services_.banks.interface;
     const Fonts& fonts = *services_.fonts;
-    const int x = columnX(hero);
+    const int x = columnX(screen, hero);
     const bool blinkOn = frames_ / 10 % 2 == 0;
 
     const gfx::Rect card{x - kCardWidth / 2, kCardTop, kCardWidth, kCardHeight};
@@ -312,7 +329,7 @@ void CharacterSelectScreen::drawPanel(int player) {
     gfx::Pixmap& screen = *services_.screen;
     const Fonts& fonts = *services_.fonts;
     const TextSource& texts = *services_.texts;
-    const int x = columnX(player);
+    const int x = columnX(screen, player);
     const bool blinkOn = frames_ / 20 % 2 == 0;
 
     const gfx::Rect box{x - kPanelTagWidth / 2, kPanelTop, kPanelTagWidth, kPanelTagHeight};
@@ -323,7 +340,7 @@ void CharacterSelectScreen::drawPanel(int player) {
             gfx::darken(screen, &box);
             fonts.menu->printCentred(screen, x, box.y + (box.h - kMenuHeight) / 2, tag.c_str());
             if (blinkOn) {
-                printLines(screen, *fonts.rpg, x, y, kColumnWidth - 30, kRpgHeight + 2,
+                printLines(screen, *fonts.rpg, x, y, columnWidth(screen) - 30, kRpgHeight + 2,
                            texts.text(kPressText));
             }
             break;

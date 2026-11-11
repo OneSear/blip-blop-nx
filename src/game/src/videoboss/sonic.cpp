@@ -115,7 +115,7 @@ void Sonic::run() {
     if (x - speed_ < minX || solidWall(x - speed_, y)) {
         direction = kFacingRight;
         speed_ = 1;
-    } else if (x + speed_ > w.camera.x + 640 || solidWall(x + speed_, y)) {
+    } else if (x + speed_ > w.camera.right() || solidWall(x + speed_, y)) {
         direction = kFacingLeft;
         speed_ = 1;
     }
@@ -187,7 +187,7 @@ void Sonic::die() {
         if (x - speed_ < minX || solidWall(x - speed_, y)) {
             direction = kFacingRight;
             speed_ = 1;
-        } else if (x + speed_ > w.camera.x + 640 || solidWall(x + speed_, y)) {
+        } else if (x + speed_ > w.camera.right() || solidWall(x + speed_, y)) {
             direction = kFacingLeft;
             speed_ = 1;
         }
@@ -241,7 +241,7 @@ void Sonic::jump() {
         direction = kFacingRight;
         speed_ = 1;
     } else if (direction == kFacingRight &&
-               (x + speed_ > world().camera.x + 640 || solidWall(x + speed_, y))) {
+               (x + speed_ > world().camera.right() || solidWall(x + speed_, y))) {
         direction = kFacingLeft;
         speed_ = 1;
     }
@@ -319,7 +319,7 @@ void Sonic::horizontal() {
             backToRun();
             return;
         }
-        if (x + speed_ > w.camera.x + 640 || solidWall(x + speed_, y)) {
+        if (x + speed_ > w.camera.right() || solidWall(x + speed_, y)) {
             direction = kFacingLeft;
             speed_ = 1;
             backToRun();

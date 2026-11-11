@@ -113,7 +113,7 @@ void PranksterSmurf::walkAbout() {
     // Turns at obstacles.
     if (x - kSpeed < minX || solidWall(x - kSpeed, y)) {
         direction = kFacingRight;
-    } else if (x + kSpeed > w.camera.x + 640 || solidWall(x + kSpeed, y)) {
+    } else if (x + kSpeed > w.camera.right() || solidWall(x + kSpeed, y)) {
         direction = kFacingLeft;
     }
 

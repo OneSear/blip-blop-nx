@@ -89,7 +89,7 @@ void Smurf::walkAbout() {
     // Walk.
     if (x - speed_ < minX || solidWall(x - speed_, y)) {
         direction = kFacingRight;
-    } else if (x + speed_ > world().camera.x + 640 || solidWall(x + speed_, y)) {
+    } else if (x + speed_ > world().camera.right() || solidWall(x + speed_, y)) {
         direction = kFacingLeft;
     }
     if (direction == kFacingRight) {

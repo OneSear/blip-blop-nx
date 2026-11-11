@@ -77,7 +77,11 @@ menu (in the main menu and the pause menu) also sets the FILTER: CRISP
 (square, sharp pixels, the default), SHARP (nearest pixels, uneven at these
 sizes) or SMOOTH (blurred); SMOOTH MOTION (on by default: it draws between
 the game's 84.7 simulation ticks a second, so that movement is even on the
-60 Hz screen, one tick late); and the language (English or French).
+60 Hz screen, one tick late); WIDESCREEN (on by default: the game fills
+the 16:9 screen; a level shows 854 pixels of its width instead of 640, the
+hero choice and the mission sheets are laid out across, the other screens
+of 2002 are in the middle, on black, at the same size; off, the levels play
+as in 2002, in 4:3); and the language (English or French).
 
 ## Building
 

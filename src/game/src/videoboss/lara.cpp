@@ -467,10 +467,11 @@ void RaymanHead::hitBy(Shot& shot) {
 
 void LaraSpine::update() {
     const int camera = world().camera.x;
+    const int cameraRight = world().camera.right();
 
     x += xSpeed_;
     y += dy;
-    if (x < camera - 100 || x > camera + 700 || y > 520 || y < -50) {
+    if (x < camera - 100 || x > cameraRight + 60 || y > 520 || y < -50) {
         dead = true;
     }
     hitboxFromImage();

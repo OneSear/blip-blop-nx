@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <vector>
 
 #include "bb/game/entity_registry.hpp"
 #include "bb/game/generators.hpp"
@@ -14,14 +15,15 @@ namespace bb::game {
 struct World;
 
 // A scripted event of the level (the 2002 Event). Events wait in
-// World::sleepingEvents, in level order, until the camera reaches their
-// activation X; then they wait in World::events until their condition
-// holds, run once and are destroyed.
+// World::sleepingEvents, in the order they wake, until the camera reaches
+// their wake X (their activation X in 4:3); then they wait in World::events
+// until their condition holds, run once and are destroyed.
 class LevelEvent {
 public:
     virtual ~LevelEvent() = default;
 
-    // Whether it leaves the sleeping list (aReveiller()).
+    // Whether it leaves the sleeping list (aReveiller()): the camera
+    // reached wakeX.
     virtual bool wakes(const World& world);
     // Whether it runs now (aActiver()).
     virtual bool ready(const World&) { return true; }
@@ -29,7 +31,32 @@ public:
     virtual void run(World& world) = 0;
 
     int activationX = 0;
+    // The camera x at which it wakes (wakePoints()).
+    int wakeX = 0;
 };
+
+// The camera x at which each event of a level wakes when the view is
+// viewWidth pixels wide (Camera::width), for the level's events in file
+// order (descending activation X). In 4:3, the activation X: as in 2002.
+// In a wider view:
+//  * what appears beyond the right edge (an enemy, generator, prop,
+//    pickup, decal or vehicle placed right of the middle of the 2002
+//    screen: the 2002 editor put them 700 to 800 pixels ahead of their
+//    activation) wakes earlier by the extra width, so that it still
+//    appears beyond the right edge; but not before the scroll lock behind
+//    it is released (an arena does not get the next section's enemies,
+//    which could keep the lock from opening);
+//  * nothing waits for a camera x the view cannot reach (the last
+//    camera x of a level is its width less the view's): a scroll lock or
+//    the victory at the end of a level then wakes at the last x;
+//  * what never woke in 2002 (an activation beyond the 2002 camera's
+//    reach) still never wakes.
+std::vector<int> wakePoints(const std::vector<core::assets::LevelEventRecord>& events, int levelWidth,
+                            int viewWidth);
+
+// A camera x of the 2002 screen as the view reaches it (the victory X): the
+// same, or the last camera x of the level when the view cannot reach it.
+int reachableCameraX(int x, int levelWidth, int viewWidth);
 
 // Creates an enemy, a prop or a pickup of the entity registry.
 class SpawnEvent : public LevelEvent {

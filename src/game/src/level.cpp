@@ -234,7 +234,7 @@ void Level::updateCamera(bool scrollSpeedApplies) {
             meanX += w.players.current()->x;
         }
         meanX /= w.players.count();
-        meanX -= 320;
+        meanX -= camera.width / 2;
 
         if (meanX > camera.x) {
             if (meanX - camera.x >= 2) {
@@ -247,8 +247,8 @@ void Level::updateCamera(bool scrollSpeedApplies) {
 
     if (camera.x < 0) {
         camera.x = 0;
-    } else if (camera.x > w.collision.width - 640) {
-        camera.x = w.collision.width - 640;
+    } else if (camera.x > w.collision.width - camera.width) {
+        camera.x = w.collision.width - camera.width;
     }
 }
 
@@ -367,8 +367,8 @@ void Level::updateTarget() {
 
     // With no player left, enemies aim at the middle of the screen.
     if (w.players.count() == 0) {
-        standIn_.x = w.camera.x + 320;
-        standIn_.y = w.collision.platforms[0][w.camera.x + 320];
+        standIn_.x = w.camera.centre();
+        standIn_.y = w.collision.platforms[0][w.camera.centre()];
         w.target = &standIn_;
         return;
     }
@@ -416,7 +416,7 @@ void Level::updateGoArrow() {
         goLastCameraX_ = w.camera.x;
         goDelay_ = 0;
         goMustStop_ = true;
-    } else if (!goArrow && !w.scrollLock.on && w.camera.x < w.collision.width - 640) {
+    } else if (!goArrow && !w.scrollLock.on && w.camera.x < w.collision.width - w.camera.width) {
         goDelay_ += 1;
 
         if (goDelay_ >= kGoDelay) {
@@ -442,9 +442,11 @@ void Level::updateGoArrow() {
     goAngle_ %= 360;
 
     if (goBounces_ == 0) {
-        // Slides in from the left to the right edge.
+        // Slides in from the left to the right edge (the view's width
+        // is not always a multiple of the step).
         goArrowX += 10;
-        if (goArrowX == 640) {
+        if (goArrowX >= w.camera.width) {
+            goArrowX = w.camera.width;
             goBounces_ += 1;
             goAngle_ = 0;
         }
@@ -455,7 +457,7 @@ void Level::updateGoArrow() {
         if (bounce < 0) {
             bounce = -bounce;
         }
-        goArrowX = 640 - bounce;
+        goArrowX = w.camera.width - bounce;
 
         if (bounce == 0) {
             goBounces_ += 1;
@@ -466,7 +468,7 @@ void Level::updateGoArrow() {
     } else {
         // Leaves to the right.
         goArrowX += 10;
-        if (goArrowX > 800) {
+        if (goArrowX > w.camera.width + 160) {
             goArrow = false;
             goDelay_ = 0;
         }
@@ -571,6 +573,7 @@ void Level::drawWorld(core::gfx::Pixmap& screen, Decor& decor) {
     drawAll(w.foreground);
 
     const gfx::Pixel black = gfx::kAlphaMask;
+    const int width = w.camera.width;
 
     // The distortion: rows of 2 pixels shifted by a sine, black behind.
     if (w.weather.type == Weather::Distortion && w.weather.intensity != 0) {
@@ -581,11 +584,11 @@ void Level::drawWorld(core::gfx::Pixmap& screen, Decor& decor) {
 
             const int shift = (5 * sine1024(phase)) >> kTrigShift;
             const gfx::Rect row =
-                shift < 0 ? gfx::Rect{-shift, y, 640 + shift, 2} : gfx::Rect{0, y, 640 - shift, 2};
+                shift < 0 ? gfx::Rect{-shift, y, width + shift, 2} : gfx::Rect{0, y, width - shift, 2};
             gfx::blit(screen, shift < 0 ? 0 : shift, y, screen, &row);
 
             const gfx::Rect gap =
-                shift < 0 ? gfx::Rect{640 + shift, y, -shift, 2} : gfx::Rect{0, y, shift, 2};
+                shift < 0 ? gfx::Rect{width + shift, y, -shift, 2} : gfx::Rect{0, y, shift, 2};
             gfx::fill(screen, &gap, black);
         }
     }
@@ -595,14 +598,14 @@ void Level::drawWorld(core::gfx::Pixmap& screen, Decor& decor) {
     if (shake.amplitude != 0 && shake.dy != 0) {
         const int h = gfx::kScreenHeight;
         if (shake.dy < 0) {
-            const gfx::Rect part{0, -shake.dy, 640, h + shake.dy};
+            const gfx::Rect part{0, -shake.dy, width, h + shake.dy};
             gfx::blit(screen, 0, 0, screen, &part);
-            const gfx::Rect gap{0, h + shake.dy, 640, -shake.dy};
+            const gfx::Rect gap{0, h + shake.dy, width, -shake.dy};
             gfx::fill(screen, &gap, black);
         } else {
-            const gfx::Rect part{0, 0, 640, h - shake.dy};
+            const gfx::Rect part{0, 0, width, h - shake.dy};
             gfx::blit(screen, 0, shake.dy, screen, &part);
-            const gfx::Rect gap{0, 0, 640, shake.dy};
+            const gfx::Rect gap{0, 0, width, shake.dy};
             gfx::fill(screen, &gap, black);
         }
     }

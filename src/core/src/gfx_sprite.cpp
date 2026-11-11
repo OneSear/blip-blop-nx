@@ -11,14 +11,16 @@ void draw(Pixmap& dst, const Sprite& sprite, int x, int y) {
     const int right = x + sprite.width();
     const int bottom = y + sprite.height();
 
-    if (x > kScreenWidth || right < 0 || y > kScreenHeight || bottom < 0) {
+    const int width = dst.width();
+    const int height = dst.height();
+    if (x > width || right < 0 || y > height || bottom < 0) {
         return;
     }
 
     const int left = x < 0 ? -x : 0;
     const int top = y < 0 ? -y : 0;
-    const int cutRight = right > kScreenWidth ? kScreenWidth - x : sprite.width();
-    const int cutBottom = bottom > kScreenHeight ? kScreenHeight - y : sprite.height();
+    const int cutRight = right > width ? width - x : sprite.width();
+    const int cutBottom = bottom > height ? height - y : sprite.height();
 
     const Rect part{left, top, cutRight - left, cutBottom - top};
     blit(dst, x < 0 ? 0 : x, y < 0 ? 0 : y, sprite.pixels(), &part);

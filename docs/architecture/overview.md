@@ -60,12 +60,17 @@ fingerprint); then `Game::drawAll()` draws the frame.
 
 ## Drawing
 
-One 640x480 `core::gfx::Pixmap` is the back buffer. Sprites
-(`core::gfx::Sprite`: a pixmap with a hotspot and a colour key) are drawn
-with `core::gfx::draw()`, which keeps the 2002 clipping; fonts are
-`core::gfx::BitmapFont`. The level's background is `bb::game::Decor`: an
-840-pixel ring filled two columns at a time ahead of the camera, which
-also takes the decals (corpses, blood). Entities draw through
+One `core::gfx::Pixmap` is the back buffer: 640x480, or as wide as the
+view during a level (854x480 with the widescreen option: `Camera::width`,
+`Game::useLevelScreen()`). Sprites (`core::gfx::Sprite`: a pixmap with a
+hotspot and a colour key) are drawn with `core::gfx::draw()`, which keeps
+the 2002 clipping at the destination's edges; fonts are
+`core::gfx::BitmapFont`. The level's background is `bb::game::Decor`: a
+ring 200 pixels wider than the view (840 in 4:3) filled two columns at a
+time ahead of the camera, which also takes the decals (corpses, blood).
+The entities use the view's edges (`Camera::right()`, `centre()`) where
+the 2002 code used the 640-pixel screen's, and level events placed beyond
+the right edge wake earlier in a wider view (`wakePoints()`). Entities draw through
 `bb::game::Canvas`, which knows the back buffer, the fonts and the
 strings. The platform's `Display` only presents finished frames, scaled
 to the screen (the Switch's 1280x720 or 1920x1080: switch-port.md).

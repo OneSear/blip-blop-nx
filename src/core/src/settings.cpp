@@ -40,6 +40,7 @@ std::int32_t readInt32(const std::vector<std::uint8_t>& b, std::size_t offset) {
 Settings Settings::reference() {
     Settings s;
     s.smoothMotion = false;
+    s.widescreen = false;
     return s;
 }
 
@@ -52,6 +53,7 @@ std::string Settings::serialize() const {
         << (filter == gfx::Filter::Sharp ? "sharp" : filter == gfx::Filter::Smooth ? "smooth" : "crisp")
         << "\n";
     out << "smooth-motion " << (smoothMotion ? "on" : "off") << "\n";
+    out << "widescreen " << (widescreen ? "on" : "off") << "\n";
     for (int p = 0; p < kPlayerCount; ++p) {
         for (const Action a : kActions) {
             out << 'p' << (p + 1) << '.' << input::actionName(a) << ' ' << input::codeName(bindings.get(p, a))
@@ -119,11 +121,11 @@ std::optional<Settings> Settings::parse(std::string_view text, std::string& erro
             }
             continue;
         }
-        if (w[0] == "scaling" || w[0] == "smooth-motion") {
+        if (w[0] == "scaling" || w[0] == "smooth-motion" || w[0] == "widescreen") {
             // Each takes one of two values; the second sets the option.
-            const char* values[2][2] = {{"fit", "integer"}, {"off", "on"}};
-            bool* options[2] = {&s.integerScaling, &s.smoothMotion};
-            const int i = w[0] == "scaling" ? 0 : 1;
+            const char* values[3][2] = {{"fit", "integer"}, {"off", "on"}, {"off", "on"}};
+            bool* options[3] = {&s.integerScaling, &s.smoothMotion, &s.widescreen};
+            const int i = w[0] == "scaling" ? 0 : w[0] == "smooth-motion" ? 1 : 2;
             if (w[1] != values[i][0] && w[1] != values[i][1]) {
                 error = where + std::string(w[0]) + " must be " + values[i][0] + " or " + values[i][1];
                 return std::nullopt;

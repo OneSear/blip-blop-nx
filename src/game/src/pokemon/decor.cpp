@@ -40,12 +40,13 @@ void SkyWindow::draw() {
     // The visible part of the window, clipped at the screen edges (the
     // 2002 computation; at the right edge the width can go negative).
     const int camera = world().camera.x;
+    const int cameraRight = world().camera.right();
     const Image* sky = levelImage(prop::kSky);  // wider than the window, scrolls
     int left = animation.frame;
     int shift = 0;
     int width = 0;
-    if (x + kSkyWidth > camera + 640) {
-        width = camera + 640 - x;
+    if (x + kSkyWidth > cameraRight) {
+        width = cameraRight - x;
     } else if (x < camera) {
         width = kSkyWidth;
         left = camera - x + animation.frame;

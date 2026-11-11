@@ -100,7 +100,7 @@ void ZombieBear::walkAbout() {
     if (walkPhase_) {
         if (x - kSpeed < minX || solidWall(x - kSpeed, y)) {
             direction = kFacingRight;
-        } else if (x + kSpeed > world().camera.x + 640 || solidWall(x + kSpeed, y)) {
+        } else if (x + kSpeed > world().camera.right() || solidWall(x + kSpeed, y)) {
             direction = kFacingLeft;
         }
         if (direction == kFacingRight) {
@@ -219,7 +219,7 @@ void ZombieBear::crawl() {
     if (crawlStep_ == 0) {
         if (x - kSpeed < minX || solidWall(x - kSpeed, y)) {
             direction = kFacingRight;
-        } else if (x + kSpeed > world().camera.x + 640 || solidWall(x + kSpeed, y)) {
+        } else if (x + kSpeed > world().camera.right() || solidWall(x + kSpeed, y)) {
             direction = kFacingLeft;
         }
         walk(direction == kFacingRight ? kSpeed : -kSpeed);
@@ -299,7 +299,7 @@ void Shaman::stand() {
     animation.cycle(6, 8);
 
     // Faces the middle of the screen.
-    if (x < w.camera.x + 320) {
+    if (x < w.camera.centre()) {
         image = enemyImage(img::kShamanTeleportRight);
         direction = kFacingRight;
     } else {
@@ -330,7 +330,7 @@ void Shaman::teleport() {
             // Away from the target player: left spot when the target is on
             // the right half, else the high spot unless the target is high.
             int spot = 0;
-            if (w.target->x > camera + 320) {
+            if (w.target->x > camera + w.camera.width / 2) {
                 spot = 2;
             } else if (w.target->y < 280) {
                 spot = 0;
@@ -355,7 +355,7 @@ void Shaman::teleport() {
     }
 
     // Vanishes (8 images), blinks (3 steps), comes back (8 images).
-    const bool onLeft = x < camera + 320;
+    const bool onLeft = x < camera + w.camera.width / 2;
     direction = onLeft ? kFacingRight : kFacingLeft;
     const int first = onLeft ? img::kShamanTeleportRight : img::kShamanTeleportLeft;
     if (animation.frame <= 7) {

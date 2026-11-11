@@ -19,6 +19,7 @@ namespace bb::core {
 //   scaling fit                 (fit | integer)
 //   filter crisp                (sharp | crisp | smooth)
 //   smooth-motion on
+//   widescreen on               (16:9 levels; off: 4:3 as in 2002)
 //   p1.fire key:left_ctrl
 //   p2.jump pad1:button3
 //   ...
@@ -31,10 +32,12 @@ struct Settings {
     bool integerScaling = false;
     gfx::Filter filter = gfx::Filter::Crisp;
     bool smoothMotion = true;  // the Switch shows 60 frames a second, the game ticks 84.7 times
+    bool widescreen = true;    // the Switch's screens are 16:9
     input::Bindings bindings = input::Bindings::defaults();
 
     // What deterministic runs start from: the defaults, with smooth motion
-    // off, as the replays were recorded (it changes the frames drawn).
+    // and widescreen off, as the replays were recorded (smooth motion changes
+    // the frames drawn, widescreen the game).
     static Settings reference();
 
     std::string serialize() const;

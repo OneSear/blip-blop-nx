@@ -4,6 +4,7 @@
 #include <cstdio>
 
 #include "bb/assets/music/inter.hpp"
+#include "bb/core/gfx/sprite.hpp"
 #include "bb/game/player.hpp"
 #include "bb/game/screens.hpp"
 #include "bb/game/waits.hpp"
@@ -36,6 +37,12 @@ constexpr int kTableLabels = 20;
 constexpr int kTableFirstColumn = 150;
 constexpr int kTableColumn = 120;
 
+// The summary is laid out for the 640-pixel screen: on the wider one of a
+// level shown in 16:9, it is moved to the middle by this much.
+int centring(const core::gfx::Pixmap& screen) {
+    return (screen.width() - core::gfx::kScreenWidth) / 2;
+}
+
 }  // namespace
 
 LevelSummaryScreen::LevelSummaryScreen(Services& services, Player* const* players, bool playersDead,
@@ -55,8 +62,9 @@ void LevelSummaryScreen::start() {
     // The band, darkened once, kept in the backdrop (the whole width for
     // the table).
     core::gfx::blit(*services_.backdrop, 0, 0, *services_.screen);
+    const int dx = centring(*services_.screen);
     const core::gfx::Rect band =
-        table_ ? core::gfx::Rect{10, 100, 620, 300} : core::gfx::Rect{60, 100, 520, 300};
+        table_ ? core::gfx::Rect{10 + dx, 100, 620, 300} : core::gfx::Rect{60 + dx, 100, 520, 300};
     core::gfx::darken(*services_.backdrop, &band);
 
     services_.session->note(bonusFailed_ ? "level summary (bonus failed)" : "level summary");
@@ -75,20 +83,20 @@ void LevelSummaryScreen::start() {
             }
             t.shown = t.player != nullptr && playing;
             t.stage = t.shown ? 0 : kDone;
-            t.x = kTableFirstColumn + column * kTableColumn;
+            t.x = dx + kTableFirstColumn + column * kTableColumn;
             column += t.shown ? 1 : 0;
         }
     } else if (w.players.count() == 2) {
         t1.shown = t2.shown = true;
-        t1.x = 80;
-        t2.x = 350;
+        t1.x = dx + 80;
+        t2.x = dx + 350;
     } else if (t1.player != nullptr && t1.player->lives > 0) {
         t1.shown = true;
-        t1.x = 210;
+        t1.x = dx + 210;
         t2.stage = kDone;
     } else if (t2.player != nullptr) {
         t2.shown = true;
-        t2.x = 210;
+        t2.x = dx + 210;
         t1.stage = kDone;
     }
 
@@ -163,6 +171,7 @@ void LevelSummaryScreen::drawLabels() {
     core::gfx::Pixmap& screen = *services_.screen;
     const TextSource& texts = *services_.texts;
     const core::gfx::BitmapFont& rpg = *services_.fonts->rpg;
+    const int labels = centring(screen) + kTableLabels;
     bool perfect = false;
     bool objective = false;
     for (const Tally& t : tally_) {
@@ -170,17 +179,17 @@ void LevelSummaryScreen::drawLabels() {
         objective = objective || (t.shown && t.objective > 0);
     }
     if (perfect) {
-        rpg.print(screen, kTableLabels, 180, texts.text(kPerfectText));
+        rpg.print(screen, labels, 180, texts.text(kPerfectText));
     }
     if (objective) {
-        rpg.print(screen, kTableLabels, 200, texts.text(kObjectiveText));
+        rpg.print(screen, labels, 200, texts.text(kObjectiveText));
     }
-    rpg.print(screen, kTableLabels, 220, texts.text(kCasualtiesText));
+    rpg.print(screen, labels, 220, texts.text(kCasualtiesText));
     if (services_.world->flags[Flag::Timer] > 0) {
-        rpg.print(screen, kTableLabels, 240, texts.text(kTimeLeftText));
+        rpg.print(screen, labels, 240, texts.text(kTimeLeftText));
     }
-    rpg.print(screen, kTableLabels, 300, texts.text(kBonusText));
-    rpg.print(screen, kTableLabels, 320, texts.text(kScoreText));
+    rpg.print(screen, labels, 300, texts.text(kBonusText));
+    rpg.print(screen, labels, 320, texts.text(kScoreText));
 }
 
 void LevelSummaryScreen::drawColumn(Tally& t) {
@@ -289,7 +298,7 @@ Frame LevelSummaryScreen::update(ScreenStack& stack) {
 
             core::gfx::blit(*services_.screen, 0, 0, *services_.backdrop);
             services_.fonts->cool->printCentred(
-                *services_.screen, 320, 120,
+                *services_.screen, services_.screen->width() / 2, 120,
                 services_.texts->text(bonusFailed_ ? kBonusFailedText : kLevelCompleteText));
             if (table_) {
                 drawLabels();

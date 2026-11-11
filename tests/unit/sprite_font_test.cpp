@@ -47,10 +47,14 @@ TEST_CASE("A sprite is cut at the screen edges, and skipped beyond them") {
     CHECK(inked(other) == 0);
 }
 
-TEST_CASE("A sprite is cut at x 640 even on a wider pixmap (the 2002 BlitTo)") {
-    gfx::Pixmap wide(840, 480, kPaper);
-    gfx::draw(wide, square(10, 0, 0), 635, 0);
-    CHECK(inked(wide) == 50);
+TEST_CASE("A sprite is cut at the edges of a wider pixmap (a level in 16:9)") {
+    gfx::Pixmap wide(854, 480, kPaper);
+    gfx::draw(wide, square(10, 0, 0), 635, 0);  // whole: the 2002 BlitTo cut it at x 640
+    CHECK(inked(wide) == 100);
+    gfx::draw(wide, square(10, 0, 0), 849, 0);  // 5 columns
+    CHECK(inked(wide) == 150);
+    gfx::draw(wide, square(10, 0, 0), 855, 0);  // past the right edge
+    CHECK(inked(wide) == 150);
 }
 
 TEST_CASE("A font advances by glyph widths and the space width") {
