@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "bb/core/assets/asset_types.hpp"
+#include "bb/core/gfx/sprite.hpp"
 #include "bb/core/rng.hpp"
 #include "bb/game/banner.hpp"
 #include "bb/game/entity.hpp"
@@ -97,9 +98,17 @@ struct GameFlags {
     int operator[](Flag flag) const noexcept { return values[static_cast<int>(flag)]; }
 };
 
-// The scrolling camera.
+// The scrolling camera and the view it shows: 640 pixels wide as in 2002
+// (4:3), or 854 with the widescreen option (16:9 at 480 lines). The view
+// width is set at each level start; the entities use the view's edges
+// (right(), centre()) where the 2002 code used the screen's, so that a
+// level plays the same in 4:3 as in 2002.
 struct Camera {
+    static constexpr int kNarrowWidth = core::gfx::kScreenWidth;
+    static constexpr int kWideWidth = core::gfx::kWideScreenWidth;
+
     int x = 0;      // left edge of the screen in level pixels
+    int width = kNarrowWidth;  // of the view
     int speed = 0;  // scroll speed (scroll events)
     // Scrolling stops while a player dies or comes back (one flag per
     // player, four in the four-player mode).
@@ -107,6 +116,12 @@ struct Camera {
 
     // Whether no player stops the scrolling.
     bool scrolls() const noexcept { return !stopped[0] && !stopped[1] && !stopped[2] && !stopped[3]; }
+    // The view's right edge and middle, in level pixels (x + 640 and
+    // x + 320 in 2002).
+    int right() const noexcept { return x + width; }
+    int centre() const noexcept { return x + width / 2; }
+    // How much wider than the 2002 screen the view is (0 in 4:3).
+    int extra() const noexcept { return width - kNarrowWidth; }
 };
 
 // Drawing between the last two ticks (the smooth motion option, Phase 9).

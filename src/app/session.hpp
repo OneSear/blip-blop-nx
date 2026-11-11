@@ -58,6 +58,9 @@ public:
     // --smooth-motion: the option on from the start (the regression test
     // that it changes no tick).
     bool smoothMotion() const;
+    // --widescreen: the option on from the start (the regression replays
+    // of the levels in 16:9).
+    bool widescreen() const;
     bool safeMode() const;
     // The /cheat and /quiet switches (also replayed from a recording).
     bool cheats() const;

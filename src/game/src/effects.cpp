@@ -113,8 +113,8 @@ void Snowflake::update() {
         dead = true;
     } else if (centreX < w.camera.x - 10) {
         // Blown off the left: comes back on the right unless there is a roof.
-        if (!solidWall(w.camera.x + 640, 0)) {
-            centreX += 660;
+        if (!solidWall(w.camera.right(), 0)) {
+            centreX += w.camera.width + 20;
         } else {
             dead = true;
         }
@@ -148,7 +148,7 @@ void Precipitation::update() {
 
             const int size = w.random() % 3;
             flake.dead = false;
-            flake.centreX = w.camera.x + w.random() % 800;
+            flake.centreX = w.camera.x + w.random() % (w.camera.width + 160);
             flake.y = w.random() % 480 - 500;
             flake.image = w.media.misc->image(size <= 1 ? img::kSnowflake : img::kSnowflakeLarge);
             flake.dy = w.weather.intensity / 20 + size;
@@ -166,7 +166,7 @@ void Precipitation::update() {
 
             const int size = w.random() % 4;
             drop.dead = false;
-            drop.x = w.camera.x + w.random() % 800;
+            drop.x = w.camera.x + w.random() % (w.camera.width + 160);
             drop.y = w.random() % 480 - 480;
             drop.image = w.media.misc->image(img::kRaindrop + size);
             drop.dy = 7 + size * 2;

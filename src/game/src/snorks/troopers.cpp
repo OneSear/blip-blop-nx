@@ -77,7 +77,7 @@ void Trooper::stepAndTurn(int speed, int imageRight, int imageLeft, const int* c
     } else {
         walk(speed);
         image = enemyImage(imageRight + animation.loop(cycle, steps, 4));
-        if (solidWall(x + speed, y) || x + speed > world().camera.x + 640) {
+        if (solidWall(x + speed, y) || x + speed > world().camera.right()) {
             direction = kFacingLeft;
         }
     }
@@ -100,9 +100,10 @@ void Grunt::walkAbout() {
         return;
     }
     const int camera = world().camera.x;
+    const int cameraRight = world().camera.right();
     shotWait_ += 1;
-    if (shotWait_ > shotDelay_ &&
-        ((direction == kFacingRight && x > camera + 40) || (direction == kFacingLeft && x < camera + 600))) {
+    if (shotWait_ > shotDelay_ && ((direction == kFacingRight && x > camera + 40) ||
+                                   (direction == kFacingLeft && x < cameraRight - 40))) {
         shotWait_ = 0;
         shotDelay_ = 50 + world().random() % 200;
         animation.restart();
@@ -199,9 +200,11 @@ void Gunner::walkAbout() {
     }
     World& w = world();
     const int camera = w.camera.x;
+    const int cameraRight = w.camera.right();
     shotWait_ += 1;
     if (w.target != nullptr && shotWait_ > shotDelay_ &&
-        ((direction == kFacingRight && x > camera + 80) || (direction == kFacingLeft && x < camera + 560))) {
+        ((direction == kFacingRight && x > camera + 80) ||
+         (direction == kFacingLeft && x < cameraRight - 80))) {
         shotWait_ = 0;
         shotDelay_ = 50 + w.random() % 200;
         animation.restart();
@@ -315,9 +318,10 @@ void Governor::walkAbout() {
         return;
     }
     const int camera = world().camera.x;
+    const int cameraRight = world().camera.right();
     shotWait_ += 1;
-    if (shotWait_ > shotDelay_ &&
-        ((direction == kFacingRight && x > camera + 40) || (direction == kFacingLeft && x < camera + 600))) {
+    if (shotWait_ > shotDelay_ && ((direction == kFacingRight && x > camera + 40) ||
+                                   (direction == kFacingLeft && x < cameraRight - 40))) {
         shotWait_ = 0;
         shotDelay_ = 50 + world().random() % 200;
         animation.restart();
@@ -412,9 +416,11 @@ void SnorkInBlack::walkAbout() {
     }
     World& w = world();
     const int camera = w.camera.x;
+    const int cameraRight = w.camera.right();
     shotWait_ += 1;
     if (w.target != nullptr && shotWait_ > shotDelay_ &&
-        ((direction == kFacingRight && x > camera + 80) || (direction == kFacingLeft && x < camera + 560))) {
+        ((direction == kFacingRight && x > camera + 80) ||
+         (direction == kFacingLeft && x < cameraRight - 80))) {
         aimX_ = w.target->x;
         aimY_ = w.target->y;
         if (aimX_ != x) {
@@ -554,6 +560,7 @@ void Mage::update() {
 void Mage::floatAbout() {
     World& w = world();
     const int camera = w.camera.x;
+    const int cameraRight = w.camera.right();
 
     // Bobs up and down over 43 ticks.
     bobStep_ += 1;
@@ -566,7 +573,8 @@ void Mage::floatAbout() {
 
     shotWait_ += 1;
     if (w.target != nullptr && shotWait_ > shotDelay_ &&
-        ((direction == kFacingRight && x > camera + 30) || (direction == kFacingLeft && x < camera + 610))) {
+        ((direction == kFacingRight && x > camera + 30) ||
+         (direction == kFacingLeft && x < cameraRight - 30))) {
         // Only when the target is on its diagonal, below it.
         const int below = w.target->y - y;
         const int ahead = w.target->x - x;
@@ -595,7 +603,7 @@ void Mage::floatAbout() {
         }
     } else {
         x += 1;
-        if (solidWall(x + 1, y) || x + 1 > camera + 640) {
+        if (solidWall(x + 1, y) || x + 1 > cameraRight) {
             direction = kFacingLeft;
         }
     }
@@ -720,10 +728,11 @@ void SeahorseRider::update() {
 void SeahorseRider::swim() {
     World& w = world();
     const int camera = w.camera.x;
+    const int cameraRight = w.camera.right();
 
     chargeWait_ += 1;
-    if (chargeWait_ > chargeDelay_ &&
-        ((direction == kFacingRight && x > camera + 80) || (direction == kFacingLeft && x < camera + 560))) {
+    if (chargeWait_ > chargeDelay_ && ((direction == kFacingRight && x > camera + 80) ||
+                                       (direction == kFacingLeft && x < cameraRight - 80))) {
         chargeWait_ = 0;
         chargeDelay_ = 50 + w.random() % 200;
         animation.restart();
@@ -744,7 +753,7 @@ void SeahorseRider::swim() {
     } else {
         x += 1;
         image = enemyImage(img::kRiderSwimRight);
-        if (solidWall(x + 1, y) || x + 1 > camera + 640) {
+        if (solidWall(x + 1, y) || x + 1 > cameraRight) {
             direction = kFacingLeft;
         }
     }
@@ -788,7 +797,7 @@ void SeahorseRider::die() {
 void SeahorseRider::charge() {
     static const int kChargeSpeed = 8;
     World& w = world();
-    const int camera = w.camera.x;
+    const int cameraRight = w.camera.right();
 
     animation.cycle(2, 4);
 
@@ -798,7 +807,7 @@ void SeahorseRider::charge() {
         // (2002 checks the next swimming step, not the charge step, on the
         // right.)
         if (direction == kFacingRight) {
-            if (solidWall(x + 1, y) || x + 1 > camera + 640) {
+            if (solidWall(x + 1, y) || x + 1 > cameraRight) {
                 animation.restart();
                 mode = kWalking;
                 fin_ = true;
@@ -836,7 +845,7 @@ void SeahorseRider::burnAway() {
         x -= 6;
         image = enemyImage(img::kRiderSeahorseLeft);
     }
-    if (x - 6 < minX || x + 6 > world().camera.x + 640) {
+    if (x - 6 < minX || x + 6 > world().camera.right()) {
         dead = true;
     }
 }

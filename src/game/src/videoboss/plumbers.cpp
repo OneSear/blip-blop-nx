@@ -248,7 +248,7 @@ void SmallMario::walkAbout() {
     if (x - speed_ < minX || solidWall(x - speed_, y)) {
         direction = kFacingRight;
         speed_ = 1;
-    } else if (x + speed_ > w.camera.x + 640 || solidWall(x + speed_, y)) {
+    } else if (x + speed_ > w.camera.right() || solidWall(x + speed_, y)) {
         direction = kFacingLeft;
         speed_ = 1;
     }
@@ -280,7 +280,7 @@ void SmallMario::walkAbout() {
         image = enemyImage(img::kMarioWalkLeft + animation.loop(kMarioWalk, 4, 16 - 3 * speed_));
     }
     groundPush(kMarioTopSpeed);
-    groundRecoil(w.camera.x + 640);
+    groundRecoil(w.camera.right());
     push_ = 0;
 
     if (speed_ < kMarioTopSpeed) {
@@ -314,7 +314,7 @@ void SmallMario::die() {
             if (x - speed_ < minX || solidWall(x - speed_, y)) {
                 direction = kFacingRight;
                 speed_ = 2;
-            } else if (x + speed_ > w.camera.x + 640 || solidWall(x + speed_, y)) {
+            } else if (x + speed_ > w.camera.right() || solidWall(x + speed_, y)) {
                 direction = kFacingLeft;
                 speed_ = 2;
             }
@@ -362,7 +362,7 @@ void SmallMario::charge() {
         endCharge();
         return;
     }
-    if (x + speed_ > w.camera.x + 640 || solidWall(x + speed_, y)) {
+    if (x + speed_ > w.camera.right() || solidWall(x + speed_, y)) {
         direction = kFacingLeft;
         endCharge();
         return;
@@ -397,7 +397,7 @@ void SmallMario::jump() {
     if (x - speed_ < minX || solidWall(x - speed_, y)) {
         direction = kFacingRight;
         speed_ = 1;
-    } else if (x + speed_ > w.camera.x + 640 || solidWall(x + speed_, y)) {
+    } else if (x + speed_ > w.camera.right() || solidWall(x + speed_, y)) {
         direction = kFacingLeft;
         speed_ = 1;
     }
@@ -502,7 +502,7 @@ void Luigi::walkAbout() {
     if (x - speed_ < minX + 20 || solidWall(x - speed_, y)) {
         direction = kFacingRight;
         speed_ = 1;
-    } else if (x + speed_ > w.camera.x + 600 || solidWall(x + speed_, y)) {
+    } else if (x + speed_ > w.camera.right() - 40 || solidWall(x + speed_, y)) {
         direction = kFacingLeft;
         speed_ = 1;
     }
@@ -510,7 +510,7 @@ void Luigi::walkAbout() {
     // He attacks from stage 3; on screen, he sets stage 2.
     if (w.flags[kStage] >= 3) {
         attackWait_ += 1;
-    } else if (x < w.camera.x + 600) {
+    } else if (x < w.camera.right() - 40) {
         w.flags[kStage] = 2;
     }
 
@@ -557,7 +557,7 @@ void Luigi::walkAbout() {
         image = enemyImage(img::kLuigiWalkLeft + animation.loop(kLuigiWalk, 4, 14 - 2 * speed_));
     }
     groundPush(kLuigiTopSpeed);
-    groundRecoil(w.camera.x + 620);
+    groundRecoil(w.camera.right() - 20);
     push_ = 0;
 
     if (speed_ < kLuigiTopSpeed) {
@@ -579,7 +579,7 @@ void Luigi::die() {
             fall();
             if (x - 3 < minX || solidWall(x - 3, y)) {
                 direction = kFacingRight;
-            } else if (x + 3 > w.camera.x + 640 || solidWall(x + 3, y)) {
+            } else if (x + 3 > w.camera.right() || solidWall(x + 3, y)) {
                 direction = kFacingLeft;
             }
             if (direction == kFacingRight) {
@@ -608,7 +608,7 @@ void Luigi::die() {
         case 2:
             walk(3);
             image = enemyImage(img::kLuigiDyingRight + animation.loop(kLuigiWalk, 4, 8));
-            if (x > w.camera.x + 680) {
+            if (x > w.camera.right() + 40) {
                 w.flags[kLuigiState] = 3;
                 attackDelay_ = 0;
             }
@@ -695,7 +695,7 @@ void Luigi::volley() {
             if (x > w.camera.x + 30) {
                 x -= 1;
             }
-        } else if (x < w.camera.x + 610) {
+        } else if (x < w.camera.right() - 30) {
             x += 1;
         }
     }
@@ -714,7 +714,7 @@ void Luigi::jump() {
     if (x - speed_ < minX || solidWall(x - speed_, y)) {
         direction = kFacingRight;
         speed_ = 1;
-    } else if (x + speed_ > w.camera.x + 600 || solidWall(x + speed_, y)) {
+    } else if (x + speed_ > w.camera.right() - 40 || solidWall(x + speed_, y)) {
         direction = kFacingLeft;
         speed_ = 1;
     }
@@ -729,7 +729,7 @@ void Luigi::jump() {
     }
 
     if (direction == kFacingRight) {
-        if (x + speed_ < w.camera.x + 620) {
+        if (x + speed_ < w.camera.right() - 20) {
             x += speed_;
         }
         image = enemyImage(dy < 0 ? img::kLuigiJumpUpRight : img::kLuigiJumpDownRight);
@@ -759,10 +759,11 @@ void Luigi::hitBy(Shot& shot) {
 
 void Plunger::update() {
     const int camera = world().camera.x;
+    const int cameraRight = world().camera.right();
 
     x += xSpeed_;
     y += dy;
-    if (x < camera - 100 || x > camera + 700 || y > 520 || y < -50) {
+    if (x < camera - 100 || x > cameraRight + 60 || y > 520 || y < -50) {
         dead = true;
     }
     hitboxFromImage();

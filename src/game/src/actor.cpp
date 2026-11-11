@@ -96,8 +96,8 @@ void Actor::hitboxFromImage() {
 }
 
 void Actor::dieWhenOffscreen() {
-    const int camera = world_.camera.x;
-    if (x < camera - 250 || x > camera + 900 || y < -200 || y > kFallenOut) {
+    const Camera& camera = world_.camera;
+    if (x < camera.x - 250 || x > camera.right() + 260 || y < -200 || y > kFallenOut) {
         dead = true;
     }
 }

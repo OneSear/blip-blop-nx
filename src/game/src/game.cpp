@@ -3,6 +3,7 @@
 
 #include "bb/game/game.hpp"
 
+#include <algorithm>
 #include <cstdio>
 #include <cstring>
 #include <string>
@@ -49,9 +50,11 @@ Game::Game(Services& services)
 bool Game::startCampaign(const Lineup& lineup) {
     Banks& banks = services_.banks;
 
-    // The interface pictures are freed while the campaign runs.
+    // The interface pictures are freed while the campaign runs; the screens
+    // of 2002 are 640 pixels wide (the hero choice may have been wider).
     banks.interface->clear();
     banks.attractMusic->stopAll();
+    setScreenWidth(services_, core::gfx::kScreenWidth);
 
     if (!loadCampaign(lineup)) {
         releaseCampaign();
@@ -223,6 +226,10 @@ bool Game::startLevel(const char* name, int kind) {
     }
     levelKind_ = kind;
 
+    // The view's width, for the whole level (the decor's ring, the events'
+    // wake points and the camera follow it).
+    world_.camera.width = services_.options->widescreen ? Camera::kWideWidth : Camera::kNarrowWidth;
+
     skipped_ = false;
     level_.reset();
     services_.decor->rewind();
@@ -297,10 +304,12 @@ bool Game::startLevel(const char* name, int kind) {
     // A bonus level is timed.
     level_.bonusLevel = kind == kBonusLevel;
 
-    // The camera on the screen of the first player in the list.
+    // The camera on the screen of the first player in the list (a 640-pixel
+    // screen of the level), the view inside the level.
     world_.players.rewind();
     if (const Entity* first = world_.players.current()) {
-        world_.camera.x = first->x - first->x % 640;
+        world_.camera.x = std::min(first->x - first->x % Camera::kNarrowWidth,
+                                   std::max(0, world_.collision.width - world_.camera.width));
     }
 
     services_.decor->rewind();
@@ -362,16 +371,27 @@ bool Game::loadLevel(const char* name) {
     startX_[1] = data->start2X;
     startY_[1] = data->start2Y;
 
-    level_.victory.x = data->victoryX;
+    const int levelWidth = world_.collision.width;
+    level_.victory.x = reachableCameraX(data->victoryX, levelWidth, world_.camera.width);
     level_.victory.flag1 = data->victoryFlag1;
     level_.victory.value1 = data->victoryValue1;
     level_.victory.flag2 = data->victoryFlag2;
     level_.victory.value2 = data->victoryValue2;
 
-    // Every event type is ported; the unused ones give none.
-    for (const core::assets::LevelEventRecord& record : data->events) {
-        std::unique_ptr<LevelEvent> event = makeLevelEvent(record);
+    // Every event type is ported; the unused ones give none. They sleep in
+    // the order they wake: in 4:3 the file's order, in a wider view some
+    // wake earlier (wakePoints()).
+    const std::vector<int> wake = wakePoints(data->events, levelWidth, world_.camera.width);
+    std::vector<std::size_t> order(data->events.size());
+    for (std::size_t i = 0; i < order.size(); ++i) {
+        order[i] = i;
+    }
+    std::stable_sort(order.begin(), order.end(),
+                     [&](std::size_t a, std::size_t b) { return wake[a] > wake[b]; });
+    for (const std::size_t i : order) {
+        std::unique_ptr<LevelEvent> event = makeLevelEvent(data->events[i]);
         if (event) {
+            event->wakeX = wake[i];
             world_.sleepingEvents.add(event.release());
         }
     }
@@ -384,6 +404,7 @@ void Game::releaseLevel() {
     Banks& banks = services_.banks;
     World& w = world_;
 
+    setScreenWidth(services_, core::gfx::kScreenWidth);
     w.collision.clear();
 
     // The entities first: their destructors may use the level banks (the
@@ -417,22 +438,31 @@ void Game::releaseLevel() {
     banks.dialogueFaces->clear();
 }
 
+void Game::useLevelScreen() {
+    setScreenWidth(services_, world_.camera.width);
+}
+
 void Game::showBriefing(const char* name) {
     const core::assets::AssetSource& assets = *services_.assets;
     loadSprites(assets, name, briefingPicture_, false);
 
-    // The 2002 pictures hold the English: another language types its own
-    // text on the sheet without text, when the strings and the data have it.
+    // The 2002 pictures hold the English, on a 640-pixel screen: another
+    // language types its own text on the sheet without text, and in 16:9
+    // every language does, across the wider screen; when the strings and the
+    // data have it. The pictures without text stay 640 pixels wide.
     briefingSheet_ = nullptr;
     briefingText_.clear();
     briefingTitle_.clear();
+    const bool wide = services_.options->widescreen;
     const BriefingSheet* sheet = findBriefingSheet(name);
-    if (services_.options->language != core::input::Language::English && sheet != nullptr &&
+    if ((services_.options->language != core::input::Language::English || wide) && sheet != nullptr &&
         hasBriefingText(*sheet, *services_.texts) && briefingPicture_.size() > kSheetWithoutText &&
         loadFont(assets, kBriefingTextFont, briefingText_) &&
         loadFont(assets, kBriefingTitleFont, briefingTitle_)) {
         briefingSheet_ = sheet;
     }
+    setScreenWidth(services_,
+                   briefingSheet_ != nullptr && wide ? core::gfx::kWideScreenWidth : core::gfx::kScreenWidth);
 
     char note[256];
     std::snprintf(note, sizeof(note), "briefing %s", name);
@@ -441,13 +471,15 @@ void Game::showBriefing(const char* name) {
     briefing_ = true;
 
     drawBriefingPicture();
-    services_.fonts->rpg->printCentred(*services_.screen, 320, 460, services_.texts->text(kLoadingDotsText));
+    services_.fonts->rpg->printCentred(*services_.screen, services_.screen->width() / 2, 460,
+                                       services_.texts->text(kLoadingDotsText));
     // The caller presents the frame.
 }
 
 void Game::drawBriefingPrompt() {
     drawBriefingPicture();
-    services_.fonts->rpg->printCentred(*services_.screen, 320, 460, services_.texts->text(kPressKeyText));
+    services_.fonts->rpg->printCentred(*services_.screen, services_.screen->width() / 2, 460,
+                                       services_.texts->text(kPressKeyText));
 }
 
 void Game::drawBriefingPicture() {
@@ -458,7 +490,8 @@ void Game::drawBriefingPicture() {
         return;
     }
     core::gfx::draw(screen, *briefingPicture_[kSheetWithoutText], 0, 0);
-    typeBriefing(screen, *briefingSheet_, briefingTitle_, briefingText_, *services_.texts);
+    typeBriefing(screen, *briefingSheet_, briefingTitle_, briefingText_, *services_.texts,
+                 screen.width() - core::gfx::kScreenWidth);
 }
 
 void Game::closeBriefing() {

@@ -1,6 +1,8 @@
 // The level events (event_*.h/.cpp of 2002) that only act on the World.
 
+#include <algorithm>
 #include <string>
+#include <utility>
 
 #include "bb/core/assets/asset_types.hpp"
 #include "bb/core/log.hpp"
@@ -35,7 +37,65 @@ private:
 }  // namespace
 
 bool LevelEvent::wakes(const World& world) {
-    return activationX <= world.camera.x;
+    return wakeX <= world.camera.x;
+}
+
+namespace {
+
+// Whether the event places something right of the middle of the 2002
+// screen at its activation (beyond the right edge: 700 to 800 pixels ahead
+// in every level).
+bool appearsOnTheRight(const LevelEventRecord& r) {
+    switch (static_cast<LevelEventType>(r.type)) {
+        case LevelEventType::Enemy:
+        case LevelEventType::EnemyGenerator:
+        case LevelEventType::AnimatedProp:
+        case LevelEventType::MidgroundDecal:
+        case LevelEventType::Foreground:
+        case LevelEventType::Vehicle:
+        case LevelEventType::Pickup:
+            return r.x - r.activationX > Camera::kNarrowWidth / 2;
+        default:
+            return false;
+    }
+}
+
+}  // namespace
+
+int reachableCameraX(int x, int levelWidth, int viewWidth) {
+    const int lastCamera2002 = levelWidth - Camera::kNarrowWidth;
+    const int lastCamera = std::max(0, levelWidth - viewWidth);
+    return x <= lastCamera2002 ? std::min(x, lastCamera) : x;
+}
+
+std::vector<int> wakePoints(const std::vector<LevelEventRecord>& events, int levelWidth, int viewWidth) {
+    std::vector<int> wake(events.size());
+    const int extra = viewWidth - Camera::kNarrowWidth;
+
+    // The scroll locks, by activation X: (activation, wake point).
+    std::vector<std::pair<int, int>> locks;
+    for (const LevelEventRecord& r : events) {
+        if (static_cast<LevelEventType>(r.type) == LevelEventType::ScrollLock) {
+            locks.emplace_back(r.activationX, reachableCameraX(r.activationX, levelWidth, viewWidth));
+        }
+    }
+    std::sort(locks.begin(), locks.end());
+
+    for (std::size_t i = 0; i < events.size(); ++i) {
+        const LevelEventRecord& r = events[i];
+        const int activation = r.activationX;
+        int x = activation;
+        if (extra > 0 && appearsOnTheRight(r) && activation <= levelWidth - Camera::kNarrowWidth) {
+            x = activation - extra;
+            // Not before the last scroll lock behind it is released.
+            const auto behind = std::lower_bound(locks.begin(), locks.end(), std::make_pair(activation, 0));
+            if (behind != locks.begin()) {
+                x = std::max(x, std::prev(behind)->second + 1);
+            }
+        }
+        wake[i] = reachableCameraX(x, levelWidth, viewWidth);
+    }
+    return wake;
 }
 
 void SpawnEvent::run(World& world) {
@@ -192,6 +252,7 @@ std::unique_ptr<LevelEvent> makeLevelEvent(const LevelEventRecord& r) {
     }
     if (event) {
         event->activationX = r.activationX;
+        event->wakeX = r.activationX;
     }
     return event;
 }

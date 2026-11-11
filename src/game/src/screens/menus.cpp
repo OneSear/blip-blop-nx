@@ -35,6 +35,7 @@ enum Text {
     kCrispText = 862,
     kSmoothText = 802,
     kMotionText = 804,
+    kWidescreenText = 807,  // an empty id of 2002
     kPlayer1KeysText = 819,
     kPlayer2KeysText = 820,
     kPlayer3KeysText = 860,  // the four-player mode
@@ -130,6 +131,10 @@ bool Menu::switchOption() {
         case kMotionItem:
             o.smoothMotion = !o.smoothMotion;
             break;
+        case kWidescreenItem:
+            // From the next level start.
+            o.widescreen = !o.widescreen;
+            break;
         case kLanguageItem:
             // The application loads the other string table before the
             // next frame is drawn.
@@ -187,6 +192,7 @@ void Menu::optionsItems() {
            : o.filter == core::gfx::Filter::Crisp ? kCrispText
                                                   : kSmoothText);
     option(kMotionItem, kMotionText, o.smoothMotion ? kOnText : kOffText);
+    option(kWidescreenItem, kWidescreenText, o.widescreen ? kOnText : kOffText);
     option(kLanguageItem, kLanguageText, o.language == input::Language::French ? kFrenchText : kEnglishText);
     setItem(kKeys1Item, t.text(kPlayer1KeysText));
     setItem(kKeys2Item, t.text(kPlayer2KeysText));
@@ -237,6 +243,7 @@ void Menu::draw() {
 
     const int halfHeight = items_ * lineHeight_ / 2;
     int y = 240 - halfHeight;
+    const int centre = screen.width() / 2;  // 320, or the middle of a level in 16:9
 
     // The band: the widest item and 30 pixels on each side, from 400 to 640
     // pixels wide.
@@ -257,11 +264,11 @@ void Menu::draw() {
 
     // Darkened again when the page changes or the band moves by more than
     // 20 pixels.
-    const int moved = (320 - halfWidth) - bandLeft_;
+    const int moved = (centre - halfWidth) - bandLeft_;
     if (page_ != bandPage_ || moved > 20 || moved < -20) {
         gfx::blit(backdrop, 0, 0, screen);
-        bandLeft_ = 320 - halfWidth;
-        const gfx::Rect band{320 - halfWidth, 220 - halfHeight, 2 * halfWidth, 40 + 2 * halfHeight};
+        bandLeft_ = centre - halfWidth;
+        const gfx::Rect band{centre - halfWidth, 220 - halfHeight, 2 * halfWidth, 40 + 2 * halfHeight};
         gfx::darken(backdrop, &band);
         bandPage_ = page_;
     }
@@ -269,7 +276,7 @@ void Menu::draw() {
 
     for (int i = 0; i < items_; ++i) {
         (focus_ == i ? focusedFont : font)
-            .printCentred(screen, 320, y, text_[static_cast<std::size_t>(i)].data());
+            .printCentred(screen, centre, y, text_[static_cast<std::size_t>(i)].data());
         y += lineHeight_;
     }
 }

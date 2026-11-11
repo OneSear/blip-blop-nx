@@ -71,7 +71,7 @@ void SnorkBoss::update() {
             break;
     }
     // Only removed far to the right (not by the usual off-screen test).
-    if (x > world().camera.x + 1000) {
+    if (x > world().camera.right() + 360) {
         dead = true;
     }
 }
@@ -320,9 +320,9 @@ namespace {
 
 const int kBobShot[] = {0, 0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 2, 2, 2, 1, 1, 1, 0, 0, 0};
 
-// Outside the usual shot area.
-bool outside(int x, int y, int camera) {
-    return x < camera - 100 || x > camera + 700 || y > 520 || y < -50;
+// Outside the usual shot area (around the view).
+bool outside(int x, int y, const Camera& camera) {
+    return x < camera.x - 100 || x > camera.right() + 60 || y > 520 || y < -50;
 }
 
 }  // namespace
@@ -332,7 +332,7 @@ GruntShot::GruntShot(World& world, int speed) : Projectile(world), xSpeed_(speed
 }
 
 void GruntShot::update() {
-    if (outside(x, y, world().camera.x)) {
+    if (outside(x, y, world().camera)) {
         dead = true;
     }
 
@@ -370,7 +370,7 @@ GunnerShot::GunnerShot(World& world, int speedX, int speedY) : Projectile(world)
 void GunnerShot::update() {
     x += xSpeed_;
     y += dy;
-    if (outside(x, y, world().camera.x)) {
+    if (outside(x, y, world().camera)) {
         dead = true;
     }
     if (solidWall(x, y)) {
@@ -392,7 +392,8 @@ void GovernorShot::update() {
     animation.cycle(4, 4);
 
     const int camera = world().camera.x;
-    if (x < camera - 100 || x > camera + 740 || y > 580 || y < -100) {
+    const int cameraRight = world().camera.right();
+    if (x < camera - 100 || x > cameraRight + 100 || y > 580 || y < -100) {
         dead = true;
     }
 
@@ -448,7 +449,7 @@ void MageShot::update() {
         xSpeed_ = direction == kFacingRight ? 6 : -6;
     }
 
-    if (outside(x, y, world().camera.x)) {
+    if (outside(x, y, world().camera)) {
         dead = true;
     }
     if (solidWall(x + xSpeed_, y + dy)) {
@@ -474,7 +475,7 @@ Spine::Spine(World& world, int imageIndex, int speedX, int speedY) : Projectile(
 void Spine::update() {
     x += xSpeed_;
     y += dy;
-    if (outside(x, y, world().camera.x) || solidWall(x, y)) {
+    if (outside(x, y, world().camera) || solidWall(x, y)) {
         dead = true;
     }
     hitboxFromImage();

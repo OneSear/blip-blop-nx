@@ -47,7 +47,8 @@ void Assembler::draw() {
     // An 87-pixel window on the listing, clipped at the right of the
     // screen.
     const int camera = world().camera.x;
-    const int width = x + 75 > camera + 640 ? camera + 640 - x : 75;
+    const int cameraRight = world().camera.right();
+    const int width = x + 75 > cameraRight ? cameraRight - x : 75;
     world().media.canvas->drawPart(levelImage(prop::kAssembler), 0, animation.frame, width,
                                    87 + animation.frame, x - camera, y);
 }

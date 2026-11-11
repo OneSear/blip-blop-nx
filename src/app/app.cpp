@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 
+#include "bb/core/gfx/sprite.hpp"
 #include "bb/core/input/codes.hpp"
 #include "bb/core/log.hpp"
 #include "bb/core/vfs.hpp"
@@ -273,6 +274,9 @@ bool App::init() {
     if (session_.smoothMotion()) {
         options_.smoothMotion = true;
     }
+    if (session_.widescreen()) {
+        options_.widescreen = true;
+    }
 
     hiScores_.reset();
     if (session_.deterministic()) {
@@ -384,7 +388,19 @@ void App::present() {
         display_->setScaling(integerScaling_, filter_);
         core::Log::info("Display: " + display_->describe());
     }
-    display_->present(screen_);
+    // With the widescreen option every frame is 16:9: the screens of 2002
+    // (640 pixels) in the middle, on black like most of their pictures, at
+    // the size the levels show; no change of size from a menu to a level.
+    if (options_.widescreen && !session_.headless() && screen_.width() < core::gfx::kWideScreenWidth) {
+        if (wideFrame_.width() != core::gfx::kWideScreenWidth) {
+            wideFrame_ = core::gfx::Pixmap(core::gfx::kWideScreenWidth, core::gfx::kScreenHeight);
+        }
+        core::gfx::fill(wideFrame_, nullptr, core::gfx::kAlphaMask);
+        core::gfx::blit(wideFrame_, (core::gfx::kWideScreenWidth - screen_.width()) / 2, 0, screen_);
+        display_->present(wideFrame_);
+    } else {
+        display_->present(screen_);
+    }
 
     if (presented_++ == 0) {
         firstPresent_ = platform_.clock().microseconds();

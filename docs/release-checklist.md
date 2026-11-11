@@ -41,6 +41,14 @@ blocks the release or becomes a known issue in the release notes.
       back after a restart.
 - [ ] SMOOTH MOTION = ON (the default): scrolling and walking look even;
       the game plays the same.
+- [ ] WIDESCREEN = ON (the default): the levels fill the 16:9 screen
+      (handheld and docked), the HUD's right corners at the right edge,
+      the dialogues across, the pause menu and the level summary in the
+      middle; no enemy appears out of nothing on the right; each level
+      can be finished. The menus, the hero choice (across), the mission
+      sheets (the story across), the cutscenes and the credits keep the
+      levels' size: no jump from a menu to a level. OFF: from the next
+      level, 4:3 with bars, as in 2002.
 - [ ] LANGUAGE = FRANCAIS: the menus, the controls, the mission sheets,
       the dialogues, the banners, the level summary and the credits are in
       French; after a restart the game starts in French. A console set to

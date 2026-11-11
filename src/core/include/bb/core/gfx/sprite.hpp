@@ -14,6 +14,8 @@ namespace bb::core::gfx {
 // The screen the game draws on (XPIC_MAX, YPIC_MAX of the 2002 code).
 constexpr int kScreenWidth = 640;
 constexpr int kScreenHeight = 480;
+// The screen of the widescreen option: 16:9 at 480 lines.
+constexpr int kWideScreenWidth = 854;
 
 // An image with a hotspot, the point placed at the drawing position (the
 // 2002 Picture).
@@ -35,8 +37,10 @@ private:
 
 // Draws sprite with its hotspot at (x, y), with its colour key (the 2002
 // Picture::BlitTo and PasteTo, which drew alike). Nothing is drawn when the
-// sprite lies beyond the 640x480 screen; a sprite crossing its right or
-// bottom edge is cut there, whatever the size of dst.
+// sprite lies beyond dst; a sprite crossing its right or bottom edge is cut
+// there. (2002 cut at the 640x480 screen whatever the destination; the game
+// draws on the 640-pixel screen, or on the wider one of a level shown in
+// 16:9.)
 void draw(Pixmap& dst, const Sprite& sprite, int x, int y);
 
 // A bank of sprites addressed by index (the 2002 PictureBank). An index

@@ -73,11 +73,12 @@ void BattleCruiser::update() {
         attackStep_ = -3;
     }
 
-    // Round again (level positions, D-51).
-    if (x > 720) {
+    // Round again (level positions, D-51; further right in a wider view).
+    const int extra = w.camera.extra();
+    if (x > 720 + extra) {
         x = -20;
         attackStep_ = 1;
-        enemyX_ = 700;
+        enemyX_ = 700 + extra;
     }
 }
 
@@ -194,7 +195,7 @@ void HyperspaceRock::update() {
             plane_ = x < 200 ? 2 : x < 420 ? 1 : 0;
             pickLook();
         }
-        x = w.random() % 640;
+        x = w.random() % w.camera.width;  // across the view (the 2002 screen: 640)
         baseY_ = w.random() % 380;
         y = w.random() % 380;
         placing_ = false;
@@ -207,7 +208,7 @@ void HyperspaceRock::update() {
     y = baseY_ + cosine1024(angle_) / kBobDivisor[plane_];
 
     // Off the right of the screen: back from the left.
-    if (x > w.camera.x + 700) {
+    if (x > w.camera.right() + 60) {
         x = w.camera.x - 80;
         baseY_ = w.random() % 380;
         y = w.random() % 380;

@@ -27,6 +27,9 @@ sounds, a level. The game's code is in `src/game` (see
    else), or `Vehicle`. Initialise every member. Use the world's random
    generator (`world().random()`) and nothing else, so that replays stay
    deterministic, and the named images (`enemyImage(img::kSomething)`).
+   The screen is the view, 640 pixels wide or 854 with the widescreen
+   option: for its edges and middle use `world().camera.right()` and
+   `centre()`, never `camera.x + 640` or `+ 320`.
    Put it with its world (`src/game/src/<world>/`).
 
 3. **The registration.** Add it to its world's `register...World()`:
@@ -59,7 +62,11 @@ made by `tools/art/briefings.py`. An enemy is placed by an event:
 ```
 
 It wakes when the camera reaches `activationX`; the events must stay in
-descending `activationX` order. The other event types (generators, props,
+descending `activationX` order. Place what comes from the right beyond the
+right edge of the 2002 screen (the 2002 editor put it 740 pixels ahead of
+`activationX`): in the 854-pixel view of the widescreen option, such an
+event wakes earlier by the extra width, but not before the scroll lock
+behind it opens (`wakePoints()`, `src/game/src/level_events.cpp`). The other event types (generators, props,
 scroll locks, flags, banners, music, weather, dialogues, vehicles) are
 listed in the same document. The 2002 MFC editors in `vc-projects/` still
 edit the 2002 files: `bbassets legacy` writes them from `assets/source`,

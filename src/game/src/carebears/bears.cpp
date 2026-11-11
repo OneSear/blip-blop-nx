@@ -148,7 +148,7 @@ void SkyBear::walkAbout() {
 
     if (x - kSpeed < minX || solidWall(x - kSpeed, y)) {
         direction = kFacingRight;
-    } else if (x + kSpeed > w.camera.x + 640 || solidWall(x + kSpeed, y)) {
+    } else if (x + kSpeed > w.camera.right() || solidWall(x + kSpeed, y)) {
         direction = kFacingLeft;
     }
     walk(direction == kFacingRight ? kSpeed : -kSpeed);
@@ -210,6 +210,7 @@ void StarBear::walkAbout() {
     static const int kSpeed = 1;
     World& w = world();
     const int camera = w.camera.x;
+    const int cameraRight = w.camera.right();
 
     fall();
 
@@ -219,7 +220,7 @@ void StarBear::walkAbout() {
     if (x - kSpeed < minX || solidWall(x - kSpeed, y) ||
         (platformAt(x - kSpeed, y) == 0 && platformAt(x - kSpeed, y + 5) == 0)) {
         direction = kFacingRight;
-    } else if (x + kSpeed > camera + 680 || solidWall(x + kSpeed, y) ||
+    } else if (x + kSpeed > cameraRight + 40 || solidWall(x + kSpeed, y) ||
                (platformAt(x + kSpeed, y) == 0 && platformAt(x + kSpeed, y + 5) == 0)) {
         direction = kFacingLeft;
     }
@@ -291,7 +292,7 @@ void BoomBear::walkAbout() {
 
     if (x - kSpeed < minX || solidWall(x - kSpeed, y)) {
         direction = kFacingRight;
-    } else if (x + kSpeed > w.camera.x + 640 || solidWall(x + kSpeed, y)) {
+    } else if (x + kSpeed > w.camera.right() || solidWall(x + kSpeed, y)) {
         direction = kFacingLeft;
     }
     if (direction == kFacingRight) {
@@ -402,7 +403,7 @@ void CloudBear::sit() {
     World& w = world();
 
     // Faces the middle of the screen.
-    if (x > w.camera.x + 320) {
+    if (x > w.camera.centre()) {
         direction = kFacingLeft;
         image = enemyImage(img::kCloudLeft + animation.loop(kBob, 4, 10));
     } else {
@@ -410,7 +411,7 @@ void CloudBear::sit() {
         image = enemyImage(img::kCloudRight + animation.loop(kBob, 4, 10));
     }
 
-    if (shotWait_ >= shotDelay_ && x <= w.camera.x + 640) {
+    if (shotWait_ >= shotDelay_ && x <= w.camera.right()) {
         auto* cloud = new StormCloud(w);
         cloud->x = x;
         cloud->y = y - 17;

@@ -23,7 +23,7 @@ Decided by the maintainer on 30 October 2026:
 
 - Windows, Linux and macOS releases: dropped on 30 October 2026, with their packages, CI jobs and Windows support (section 6.6).
 - An official release (Nintendo's SDK, the eShop). The SDK is under NDA, which a public MIT repository cannot hold; the game parodies Nintendo's and others' characters; and the README rules out commercial distribution. The `.nsp` is a homebrew package: built with the free devkitPro tools and hacBrewPack, encrypted with keys from the maintainer's own console, not signed by Nintendo, so it installs only on consoles whose custom firmware (such as Atmosphère) accepts titles Nintendo did not sign.
-- Widescreen gameplay. Showing more than 640 pixels of a level would change the game: the decor ring is 840 pixels wide, enemies and level events start from the camera's position just outside the 640-pixel view, and the menus, briefings, cutscenes and HUD are 640x480 pictures. The picture stays 4:3, with bars at the sides.
+- Widescreen gameplay, at first. Showing more than 640 pixels of a level changes the game: the decor ring is 840 pixels wide, enemies and level events start from the camera's position just outside the 640-pixel view, and the menus, briefings, cutscenes and HUD are 640x480 pictures. The picture stayed 4:3, with bars at the sides. (Done later, as an option: the levels in 16:9, 11 November 2026; docs/progress.md.)
 - The Switch 2, touch and motion controls, HD rumble (section 10 lists the small ones as later options).
 
 ## 2. Starting point
@@ -395,7 +395,7 @@ The release job of section 6.5; the replays on a console (section 8); the Switch
 1. CRISP as the default filter; SHARP and SMOOTH remain.
 2. Docked: FIT at 1440x1080 by default; INTEGER at 1280x960 as the option.
 3. The system keyboard for hi-score names.
-4. Later, not planned: a picture in the bars instead of black (from the game's art), the game's own logo and animation on the `.nsp`'s loading screen (hacBrewPack's `logo/` folder) instead of black, rumble when a player is hit or drops a cow bomb, touch to confirm in the menus, a widescreen mode.
+4. Later, not planned: a picture in the bars instead of black (from the game's art), the game's own logo and animation on the `.nsp`'s loading screen (hacBrewPack's `logo/` folder) instead of black, rumble when a player is hit or drops a cow bomb, touch to confirm in the menus. (A widescreen mode, also listed here, was done: WIDESCREEN, the levels in 16:9.)
 
 ## 11. Departures from the plan (implementation, 30 October 2026)
 

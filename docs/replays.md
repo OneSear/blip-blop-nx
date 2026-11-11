@@ -29,6 +29,7 @@ not save them, so saved state cannot change their outcome.
 bbreplay 1                 # header, mandatory
 seed 1                     # random seed (default 1)
 option /cheat              # legacy switch applied before the start (repeatable)
+option widescreen          # the levels in 16:9 (written by --record --widescreen)
 @120 RETURN                # from frame 120 on, Return is held
 @125                       # from frame 125 on, nothing is held
 @300 RIGHT LCTRL MENU      # several inputs at once
@@ -96,6 +97,16 @@ recorded), so the smooth motion option (Phase 9) is off in every replay but
 the `smurf` replay so and compares only its `tick` lines: drawing between
 ticks must show other frames (the test fails if none differs) and change
 nothing of the simulation.
+
+The reference settings also play the levels in 4:3, as in 2002: the
+widescreen option changes the game (a wider view, earlier events), so
+`menus` steps over it. `--widescreen` turns it on; every replay but
+`attract` (no level) also runs so as `replay.<name>.wide`, against
+fingerprints of its own (`expected/<name>.wide.bbhash`, recorded by
+`update_replay_hashes` with the others). The scripts were measured in 4:3:
+in 16:9 they do not always do what their comments say (a level may not be
+won the same way), but they still guard the game in 16:9 against any
+change.
 
 A failing replay test does the first step itself: it dumps the frames of
 the build under test, one in six, from the frame checkpoint before the

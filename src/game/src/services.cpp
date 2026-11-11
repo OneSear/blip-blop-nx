@@ -20,6 +20,14 @@ void logFailure(const char* what, const std::string& error) {
 
 }  // namespace
 
+void setScreenWidth(Services& services, int width) {
+    for (core::gfx::Pixmap* pixmap : {services.screen, services.backdrop}) {
+        if (pixmap != nullptr && pixmap->width() != width) {
+            *pixmap = core::gfx::Pixmap(width, core::gfx::kScreenHeight);
+        }
+    }
+}
+
 bool loadSprites(const core::assets::AssetSource& assets, const std::string& name,
                  core::gfx::SpriteBank& bank, bool colorKey) {
     std::string error;

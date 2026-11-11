@@ -52,6 +52,7 @@ void Jedi::walkAbout() {
     static const int kSpeed = 1;
     World& w = world();
     const int camera = w.camera.x;
+    const int cameraRight = w.camera.right();
 
     fall();
 
@@ -59,7 +60,7 @@ void Jedi::walkAbout() {
 
     if (x - kSpeed < camera + 20 || solidWall(x - kSpeed, y)) {
         direction = kFacingRight;
-    } else if (x + kSpeed > camera + 600 || solidWall(x + kSpeed, y)) {
+    } else if (x + kSpeed > cameraRight - 40 || solidWall(x + kSpeed, y)) {
         direction = kFacingLeft;
     }
     if (direction == kFacingRight) {
@@ -160,7 +161,7 @@ void Jedi::draw() {
 void JediHero::update() {
     World& w = world();
     if (entering_) {
-        if (x > w.camera.x + 450) {
+        if (x > w.camera.right() - 190) {  // walks in to 190 pixels from the right edge
             walkAbout();
             hitbox.active = false;
         } else {
@@ -205,7 +206,7 @@ void SnorkCameo::update() {
         case kWaitingHurt:
             image = enemyImage(img::kSnorkHurt);
             hitboxFromImage();
-            if (x < w.camera.x + 440 || w.flags[kJediHeroState] == 0) {
+            if (x < w.camera.right() - 200 || w.flags[kJediHeroState] == 0) {
                 mode = kGoingIn;
             }
             break;

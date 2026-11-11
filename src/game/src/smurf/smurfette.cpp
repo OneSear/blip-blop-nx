@@ -45,13 +45,14 @@ void Smurfette::walkAbout() {
     static const int kSpeed = 1;
 
     const int camera = world().camera.x;
+    const int cameraRight = world().camera.right();
     fall();
 
     // Turns at walls and at the edges of her platform.
     if (x - kSpeed < minX || solidWall(x - kSpeed, y) ||
         (platformAt(x - kSpeed, y) == 0 && platformAt(x - kSpeed, y + 5) == 0)) {
         direction = kFacingRight;
-    } else if (x + kSpeed > camera + 640 || solidWall(x + kSpeed, y) ||
+    } else if (x + kSpeed > cameraRight || solidWall(x + kSpeed, y) ||
                (platformAt(x + kSpeed, y) == 0 && platformAt(x + kSpeed, y + 5) == 0)) {
         direction = kFacingLeft;
     }
@@ -64,7 +65,7 @@ void Smurfette::walkAbout() {
         image = enemyImage(img::kSmurfetteWalkLeft + animation.loop(kWalkCycle, kWalkSteps, 6));
     }
 
-    if (shotWait_ >= shotDelay_ && x > camera + 10 && x < camera + 630) {
+    if (shotWait_ >= shotDelay_ && x > camera + 10 && x < cameraRight - 10) {
         animation.restart();
         mode = kShooting;
         blowKiss();
@@ -187,7 +188,7 @@ void Stork::update() {
     x += 4;
     y = baseY_ + ((100 * sine1024(((x - baseX_) / 4) % 360)) >> kTrigShift);
 
-    if (x > w.camera.x + 750 && w.flags[kFightStage] < 3) {
+    if (x > w.camera.right() + 110 && w.flags[kFightStage] < 3) {
         w.flags[kFightStage] = 3;
     }
 }

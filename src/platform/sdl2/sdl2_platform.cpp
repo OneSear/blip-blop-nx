@@ -736,7 +736,7 @@ public:
     }
 
     void present(const core::gfx::Pixmap& frame) override {
-        if (renderer_ == nullptr || frame.width() != width_ || frame.height() != height_) {
+        if (renderer_ == nullptr || !resize(frame.width(), frame.height())) {
             return;
         }
         // The output follows the window: resized on the desktop, 1280x720
@@ -826,6 +826,33 @@ public:
 private:
     core::gfx::Viewport viewport() const {
         return core::gfx::viewport(width_, height_, outputWidth_, outputHeight_, integer_, filter_);
+    }
+
+    // The frames' size: 640x480, or wider for a level in 16:9. A new size
+    // gets a new texture (and a new CRISP one when needed); false when the
+    // texture cannot be made.
+    bool resize(int width, int height) {
+        if (width == width_ && height == height_) {
+            return true;
+        }
+        SDL_Texture* texture = SDL_CreateTexture(renderer_, SDL_PIXELFORMAT_ABGR8888,
+                                                 SDL_TEXTUREACCESS_STREAMING, width, height);
+        if (texture == nullptr) {
+            SDL_Log("Frame texture %dx%d: %s", width, height, SDL_GetError());
+            return false;
+        }
+        SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_NONE);
+        SDL_DestroyTexture(texture_);
+        texture_ = texture;
+        if (enlarged_ != nullptr) {
+            SDL_DestroyTexture(enlarged_);
+            enlarged_ = nullptr;
+            enlargedFactor_ = 0;
+        }
+        width_ = width;
+        height_ = height;
+        core::Log::info("Display: " + describe());
+        return true;
     }
 
     // The texture CRISP enlarges the frame into, `factor` times its size;

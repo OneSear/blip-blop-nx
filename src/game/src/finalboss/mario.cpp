@@ -130,7 +130,7 @@ void Mario::walkAbout() {
     if (x - speed_ < minX || solidWall(x - speed_, y)) {
         direction = kFacingRight;
         speed_ = 1;
-    } else if (x + speed_ > w.camera.x + 600 || solidWall(x + speed_, y)) {
+    } else if (x + speed_ > w.camera.right() - 40 || solidWall(x + speed_, y)) {
         direction = kFacingLeft;
         speed_ = 1;
     }
@@ -208,7 +208,7 @@ void Mario::startAttack() {
         case 4:
             // From the far edge of the screen back to him.
             if (direction == kFacingRight) {
-                attackStep_ = 1 + (w.camera.x + 640 - x) / 100;
+                attackStep_ = 1 + (w.camera.right() - x) / 100;
             } else {
                 attackStep_ = 1 + (x - w.camera.x) / 100;
             }
@@ -290,7 +290,7 @@ void Mario::jump() {
     if (direction == kFacingLeft && (x - speed_ < minX || solidWall(x - speed_, y))) {
         direction = kFacingRight;
         speed_ = 1;
-    } else if (direction == kFacingRight && (x + speed_ > w.camera.x + 640 || solidWall(x + speed_, y))) {
+    } else if (direction == kFacingRight && (x + speed_ > w.camera.right() || solidWall(x + speed_, y))) {
         direction = kFacingLeft;
         speed_ = 1;
     }
@@ -420,7 +420,7 @@ void Mario::throwAcross() {
             }
             if (direction == kFacingRight && x > w.camera.x + 10) {
                 x -= kRecoil[attackStep_ - 40];
-            } else if (direction == kFacingLeft && x < w.camera.x + 630) {
+            } else if (direction == kFacingLeft && x < w.camera.right() - 10) {
                 x += kRecoil[attackStep_ - 40];
             }
         }
@@ -578,7 +578,7 @@ void Mario::burstUp() {
         attackStep_ += 1;
         if (direction == kFacingRight) {
             goalX_ = x + attackStep_ * 100 + w.random() % 20;
-            if (goalX_ > w.camera.x + 720) {
+            if (goalX_ > w.camera.right() + 80) {
                 animation.restart();
                 speed_ = 0;
                 mode = kWalking;
@@ -628,7 +628,7 @@ void Mario::burstUpBack() {
             }
             fireballUp(attackStep_, goalX_);
         } else {
-            const int goalX = w.camera.x + 640 - attackStep_ * 100 - w.random() % 20;
+            const int goalX = w.camera.right() - attackStep_ * 100 - w.random() % 20;
             if (goalX > x - 20) {
                 animation.restart();
                 speed_ = 0;
@@ -648,10 +648,10 @@ void Mario::burstUpTwice() {
 
     switch (attackPhase_) {
         case 0:
-            if (direction == kFacingRight && x + (attackStep_ + 1) * 100 + 20 > w.camera.x + 620) {
+            if (direction == kFacingRight && x + (attackStep_ + 1) * 100 + 20 > w.camera.right() - 20) {
                 attackPhase_ = 1;
                 attackSub_ = 0;
-                attackStep_ = 1 + (w.camera.x + 640 - x) / 100;
+                attackStep_ = 1 + (w.camera.right() - x) / 100;
             } else if (direction == kFacingLeft && x - (attackStep_ + 1) * 100 - 20 < w.camera.x + 20) {
                 attackPhase_ = 1;
                 attackSub_ = 0;
@@ -752,7 +752,7 @@ void Mario::runToEdge() {
     if (direction == kFacingRight) {
         walk(speed_);
         image = enemyImage(img::kMarioWalkRight + animation.loop(kWalk, 4, 16 - 3 * speed_));
-        if (x > w.camera.x + 600) {
+        if (x > w.camera.right() - 40) {
             fireball_ = true;
             attackPhase_ = 1;
             speed_ = 1;
@@ -780,7 +780,7 @@ void Mario::berserk() {
             break;
         case 1:
             // A burst up across the screen.
-            if ((direction == kFacingRight && x + (attackStep_ + 1) * 100 + 20 > w.camera.x + 620) ||
+            if ((direction == kFacingRight && x + (attackStep_ + 1) * 100 + 20 > w.camera.right() - 20) ||
                 (direction == kFacingLeft && x - (attackStep_ + 1) * 100 - 20 < w.camera.x + 20)) {
                 attackPhase_ = 2;
             } else {
@@ -802,7 +802,7 @@ void Mario::berserk() {
             if (y < 0) {
                 if (direction == kFacingRight) {
                     direction = kFacingLeft;
-                    x = w.camera.x + 600;
+                    x = w.camera.right() - 40;
                 } else {
                     direction = kFacingRight;
                     x = w.camera.x + 40;
@@ -820,7 +820,7 @@ void Mario::berserk() {
                 // Bursts to the edge of the screen (D-88 fixed: 2002 used
                 // screen positions as level ones).
                 if (direction == kFacingRight) {
-                    attackStep_ = 1 + (world().camera.x + 640 - x) / 100;
+                    attackStep_ = 1 + (world().camera.right() - x) / 100;
                 } else {
                     attackStep_ = 1 + (x - world().camera.x) / 100;
                 }
@@ -876,10 +876,10 @@ void Mario::fireRain() {
         } else {
             // A burst going out, to 20 pixels from the screen's edges (D-88
             // fixed: 2002 compared them as level positions).
-            if (direction == kFacingRight && x + (attackStep_ + 1) * 100 + 20 > w.camera.x + 620) {
+            if (direction == kFacingRight && x + (attackStep_ + 1) * 100 + 20 > w.camera.right() - 20) {
                 attackPhase_ += 1;
                 attackSub_ = 0;
-                attackStep_ = 1 + (w.camera.x + 640 - x) / 100;
+                attackStep_ = 1 + (w.camera.right() - x) / 100;
             } else if (direction == kFacingLeft && x - (attackStep_ + 1) * 100 - 20 < w.camera.x + 20) {
                 attackPhase_ += 1;
                 attackSub_ = 0;
@@ -916,8 +916,9 @@ void Mario::hitBy(Shot& shot) {
 
 void Fireball::update() {
     const int camera = world().camera.x;
+    const int cameraRight = world().camera.right();
 
-    if (x < camera - 100 || x > camera + 700 || y > 520 || y < -50) {
+    if (x < camera - 100 || x > cameraRight + 60 || y > 520 || y < -50) {
         dead = true;
     }
 
@@ -966,8 +967,9 @@ void FireballUp::drop() {
 void FireballUp::update() {
     World& w = world();
     const int camera = w.camera.x;
+    const int cameraRight = w.camera.right();
 
-    if (x < camera - 100 || x > camera + 700 || y > 520 || y < -250) {
+    if (x < camera - 100 || x > cameraRight + 60 || y > 520 || y < -250) {
         dead = true;
     }
     if (dy > 0) {

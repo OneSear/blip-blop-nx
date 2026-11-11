@@ -93,11 +93,12 @@ void BigSmurf::choose() {
         return;
     }
     const int camera = world().camera.x;
+    const int cameraRight = world().camera.right();
     const int dx = target_->x - x;
     direction = dx < 0 ? kFacingLeft : kFacingRight;
 
     // Still entering: walk in first.
-    if (x > camera + 580) {
+    if (x > cameraRight - 60) {
         xSpeed_ = -kSpeed;
         return;
     }
@@ -114,7 +115,7 @@ void BigSmurf::choose() {
 
     // Gifts: back off to throwing range, then throw; too far away or
     // cornered, he runs at the target instead.
-    if (dx < -400 || dx > 400 || x <= camera + 60 || x >= camera + 580) {
+    if (dx < -400 || dx > 400 || x <= camera + 60 || x >= cameraRight - 60) {
         plan_ = Plan::Flurry;
     } else if (std::abs(dx) < kThrowRange) {
         xSpeed_ = dx < 0 ? kSpeed : -kSpeed;
@@ -130,9 +131,10 @@ void BigSmurf::choose() {
 
 void BigSmurf::moveBy(int step) {
     const int camera = world().camera.x;
+    const int cameraRight = world().camera.right();
     const int next = x + step;
     // Walks freely while entering from the right edge.
-    if (!solidWall(next, y) && next > camera + 50 && (next < camera + 600 || step < 0)) {
+    if (!solidWall(next, y) && next > camera + 50 && (next < cameraRight - 40 || step < 0)) {
         x = next;
     }
 }
@@ -260,7 +262,8 @@ void LobbedGift::update() {
             y += dy;
             x += xSpeed;
             const int camera = w.camera.x;
-            if (solidWall(x, y) || x < camera - 100 || x > camera + 700 || y > 520) {
+            const int cameraRight = w.camera.right();
+            if (solidWall(x, y) || x < camera - 100 || x > cameraRight + 60 || y > 520) {
                 dead = true;
             }
             hitboxFromImage();

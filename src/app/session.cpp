@@ -172,6 +172,8 @@ void usage() {
                  "  --headless            no window, no sound device, no frame pacing\n"
                  "  --smooth-motion       start with the smooth motion option on (also in\n"
                  "                        deterministic runs, which use the default settings)\n"
+                 "  --widescreen          start with the widescreen option on: levels in 16:9\n"
+                 "                        (also in deterministic runs, which play them in 4:3)\n"
                  "  --dump-frames <dir> <from> <to>   save presented frames as BMP files\n"
                  "  --dump-every <n>      with --dump-frames, keep one frame in n\n"
                  "  --trace-ticks <file> <from> <to>  write the world state of these ticks\n"
@@ -185,6 +187,7 @@ struct Session::State {
     bool deterministic = false;
     bool headless = false;
     bool smoothMotion = false;
+    bool widescreen = false;
     bool safe = false;
     std::string recordPath;
     std::string replayPath;
@@ -359,6 +362,8 @@ bool Session::init(int argc, const char* argv[]) {
             g.headless = true;
         } else if (arg == "--smooth-motion") {
             g.smoothMotion = true;
+        } else if (arg == "--widescreen") {
+            g.widescreen = true;
         } else if (arg == "--hash-every" || arg == "--max-frames" || arg == "--seed" ||
                    arg == "--dump-every") {
             const char* v = next("a number");
@@ -451,7 +456,11 @@ bool Session::load(const bb::core::FileReader& reader, GameFiles& files) {
         }
         g.timeline = std::move(*parsed);
         for (const auto& option : g.timeline.options) {
-            applyLegacySwitch(option);
+            if (option == "widescreen") {
+                g.widescreen = true;  // recorded with the levels in 16:9
+            } else {
+                applyLegacySwitch(option);
+            }
         }
         if (!g.seedGiven) {
             g.seed = g.timeline.seed;
@@ -466,6 +475,9 @@ bool Session::load(const bb::core::FileReader& reader, GameFiles& files) {
         }
         if (g.quiet) {
             g.timeline.options.emplace_back("/quiet");
+        }
+        if (g.widescreen) {
+            g.timeline.options.emplace_back("widescreen");
         }
     }
     if (!g.hashPath.empty() && !g.deterministic) {
@@ -561,6 +573,10 @@ bool Session::headless() const {
 bool Session::smoothMotion() const {
     const State& g = *state_;
     return g.smoothMotion;
+}
+bool Session::widescreen() const {
+    const State& g = *state_;
+    return g.widescreen;
 }
 bool Session::safeMode() const {
     const State& g = *state_;

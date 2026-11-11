@@ -39,6 +39,30 @@ foreach(replay IN LISTS BB_REPLAYS)
             -DRUN_DIR=${BB_RUN_DIR}
             -DUPDATE=ON
             -P "${CMAKE_CURRENT_SOURCE_DIR}/run_replay.cmake")
+    # The same replay with the levels in 16:9 (--widescreen), but attract,
+    # which plays no level: fingerprints of their own.
+    if(NOT name STREQUAL "attract")
+        add_test(NAME replay.${name}.wide
+            COMMAND "${CMAKE_COMMAND}"
+                -DGAME=$<TARGET_FILE:blipblop> "-DEMULATOR=${CMAKE_CROSSCOMPILING_EMULATOR}"
+                -DREPLAY=${replay}
+                -DEXPECTED=${CMAKE_CURRENT_SOURCE_DIR}/expected/${name}.wide.bbhash
+                -DOUTPUT=${BB_REPLAY_OUT}/${name}.wide.bbhash
+                -DRUN_DIR=${BB_RUN_DIR}
+                -DWIDE=ON
+                -P "${CMAKE_CURRENT_SOURCE_DIR}/run_replay.cmake")
+        set_tests_properties(replay.${name}.wide PROPERTIES LABELS "replay;wide" TIMEOUT 3600)
+        list(APPEND BB_UPDATE_COMMANDS
+            COMMAND "${CMAKE_COMMAND}"
+                -DGAME=$<TARGET_FILE:blipblop> "-DEMULATOR=${CMAKE_CROSSCOMPILING_EMULATOR}"
+                -DREPLAY=${replay}
+                -DEXPECTED=${CMAKE_CURRENT_SOURCE_DIR}/expected/${name}.wide.bbhash
+                -DOUTPUT=${BB_REPLAY_OUT}/${name}.wide.bbhash
+                -DRUN_DIR=${BB_RUN_DIR}
+                -DWIDE=ON
+                -DUPDATE=ON
+                -P "${CMAKE_CURRENT_SOURCE_DIR}/run_replay.cmake")
+    endif()
 endforeach()
 
 # Smooth motion draws between ticks: the smurf level (scrolling, enemies,

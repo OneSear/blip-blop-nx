@@ -99,6 +99,9 @@ private:
 
     core::gfx::Pixmap screen_{640, 480};    // the back buffer
     core::gfx::Pixmap backdrop_{640, 480};  // systemSurface
+    // A 640-pixel frame in the middle of a 16:9 one, black at the sides
+    // (the widescreen option), so that every frame shows at the same size.
+    core::gfx::Pixmap wideFrame_;
 
     game::World world_;
     game::Decor decor_{world_};

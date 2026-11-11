@@ -97,6 +97,9 @@ struct Options {
     bool integerScaling = false;  // whole multiples of 640x480 (2 or more), with borders
     core::gfx::Filter filter = core::gfx::Filter::Crisp;
     bool smoothMotion = true;  // draws between the last two ticks (World::Motion)
+    // Levels shown 854 pixels wide (16:9) rather than 640 (4:3); from the
+    // next level start (Camera::width).
+    bool widescreen = false;
 };
 
 // The banks and fonts of the game, owned by the application: some live as
@@ -155,6 +158,13 @@ struct Services {
 // Loads the banks and fonts of the asset source into the game's own
 // objects; false (with a line in the log) when it is missing. colorKey: each
 // image gets the transparent colour of its layout.
+// The back buffer and the backdrop `width` pixels wide (cleared when their
+// width changes): 640 for the screens of 2002, wider for the screens laid out
+// for 16:9 (a level, a mission sheet, the hero choice) with the widescreen
+// option. The application shows a 640-pixel frame in the middle of a 16:9
+// one when the option is on.
+void setScreenWidth(Services& services, int width);
+
 bool loadSprites(const core::assets::AssetSource& assets, const std::string& name,
                  core::gfx::SpriteBank& bank, bool colorKey = true);
 bool loadFont(const core::assets::AssetSource& assets, const std::string& name, core::gfx::BitmapFont& font);

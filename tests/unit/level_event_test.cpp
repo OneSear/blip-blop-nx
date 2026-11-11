@@ -161,3 +161,50 @@ TEST_CASE("Events wake with the camera, then run when ready") {
     CHECK(world.dialogueToPlay == 4);
     CHECK(world.events.empty());
 }
+
+TEST_CASE("Events wake at their activation in 4:3, earlier on the right of a wider view") {
+    using bb::game::Camera;
+    using bb::game::wakePoints;
+    const auto at = [](LevelEventType type, int activationX, int x) {
+        LevelEventRecord r = record(type, activationX);
+        r.x = x;
+        return r;
+    };
+    // A level of 10 screens: the 2002 camera reaches 5760, a 16:9 one 5546.
+    constexpr int kLevel = 6400;
+    const std::vector<LevelEventRecord> events = {
+        at(LevelEventType::Enemy, 5700, 6440),       // from the right, near the end
+        at(LevelEventType::Music, 5700, 0),          // camera-bound, the view cannot get there
+        at(LevelEventType::Enemy, 6000, 6740),       // never reached in 2002
+        at(LevelEventType::Enemy, 3100, 3840),       // from the right, behind a lock
+        at(LevelEventType::Enemy, 3050, 3790),       // from the right, behind the same lock
+        at(LevelEventType::ScrollLock, 3000, 0),     // the lock
+        at(LevelEventType::Enemy, 3000, 3740),       // the lock's wave, from the right
+        at(LevelEventType::Enemy, 2500, 2450),       // from the left
+        at(LevelEventType::Foreground, 1000, 1740),  // a decal from the right
+        at(LevelEventType::SetFlag, 1000, 0),
+    };
+    // 4:3: as in 2002 (then in file order, nothing moves).
+    std::vector<int> narrow = wakePoints(events, kLevel, Camera::kNarrowWidth);
+    for (std::size_t i = 0; i < events.size(); ++i) {
+        CAPTURE(i);
+        CHECK(narrow[i] == events[i].activationX);
+    }
+
+    const int extra = Camera::kWideWidth - Camera::kNarrowWidth;  // 214
+    const std::vector<int> wide = wakePoints(events, kLevel, Camera::kWideWidth);
+    CHECK(wide[0] == 5700 - extra);
+    CHECK(wide[1] == kLevel - Camera::kWideWidth);  // the last camera x: 5546
+    CHECK(wide[2] == 6000);                         // still never
+    CHECK(wide[3] == 3001);                         // not before the lock at 3000 opens
+    CHECK(wide[4] == 3001);
+    CHECK(wide[5] == 3000);
+    CHECK(wide[6] == 3000 - extra);  // comes from the right before the lock
+    CHECK(wide[7] == 2500);
+    CHECK(wide[8] == 1000 - extra);
+    CHECK(wide[9] == 1000);
+
+    CHECK(bb::game::reachableCameraX(5759, kLevel, Camera::kWideWidth) == 5546);
+    CHECK(bb::game::reachableCameraX(5759, kLevel, Camera::kNarrowWidth) == 5759);
+    CHECK(bb::game::reachableCameraX(5800, kLevel, Camera::kWideWidth) == 5800);
+}

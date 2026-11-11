@@ -88,34 +88,36 @@ void drawPlayer(const World& world, const Player& player, const Layout& layout, 
     char buffer[20];
 
     const int top = layout.top;
-    drawLifePoints(world, screen, layout.lifeX, top + 20, player.health.points);
+    // The right side's corner keeps to the right edge of a wider screen.
+    const int dx = layout.rightSide ? screen.width() - core::gfx::kScreenWidth : 0;
+    drawLifePoints(world, screen, layout.lifeX + dx, top + 20, player.health.points);
 
     // The score towards the centre: right-aligned on the left side.
     std::snprintf(buffer, sizeof(buffer), "%07d", player.score);
     const core::gfx::BitmapFont& scoreFont = *fonts.score(static_cast<int>(player.hero));
-    printFromEdge(scoreFont, screen, !layout.rightSide, layout.scoreX, top + 20, buffer);
+    printFromEdge(scoreFont, screen, !layout.rightSide, layout.scoreX + dx, top + 20, buffer);
 
     if (bonusLevel) {
-        printFromEdge(*fonts.rpg, screen, layout.rightSide, layout.edgeX, top + 5,
+        printFromEdge(*fonts.rpg, screen, layout.rightSide, layout.edgeX + dx, top + 5,
                       media.texts->text(kBonusText));
-        printFromEdge(*fonts.rpg, screen, layout.rightSide, layout.edgeX, top + 20,
+        printFromEdge(*fonts.rpg, screen, layout.rightSide, layout.edgeX + dx, top + 20,
                       media.texts->text(kStageText));
     } else {
         std::snprintf(buffer, sizeof(buffer), "%d", player.lives);
-        printFromEdge(*fonts.cool, screen, layout.rightSide, layout.livesX, top + 5, buffer);
+        printFromEdge(*fonts.cool, screen, layout.rightSide, layout.livesX + dx, top + 5, buffer);
     }
 
-    core::gfx::draw(screen, *(*media.misc)[weaponImage(player.weapon)], layout.weaponX, top + 50);
+    core::gfx::draw(screen, *(*media.misc)[weaponImage(player.weapon)], layout.weaponX + dx, top + 50);
 
     if (player.weapon == Weapon::Rifle) {
-        fonts.ammo->printCentred(screen, layout.ammoX, top + 43, "*");
+        fonts.ammo->printCentred(screen, layout.ammoX + dx, top + 43, "*");
     } else {
         std::snprintf(buffer, sizeof(buffer), "%d", player.ammo);
         const core::gfx::BitmapFont& ammoFont = player.firing && blink ? *fonts.ammoUsed : *fonts.ammo;
-        ammoFont.printCentred(screen, layout.ammoX, top + 43, buffer);
+        ammoFont.printCentred(screen, layout.ammoX + dx, top + 43, buffer);
     }
 
-    for (int i = 0, x = layout.cowBombX; i < player.cowBombs; ++i, x += layout.cowBombStep) {
+    for (int i = 0, x = layout.cowBombX + dx; i < player.cowBombs; ++i, x += layout.cowBombStep) {
         core::gfx::draw(screen, *(*media.misc)[img::kHudCowBomb], x, top + 65);
     }
 }
@@ -135,9 +137,10 @@ void Hud::draw(const World& world, const Player* const* players, bool bonusLevel
         const Media& media = world.media;
         core::gfx::Pixmap& screen = media.canvas->screen();
         char buffer[12];  // any int
-        media.fonts->cool->printCentred(screen, 320, 20, media.texts->text(kTimeText));
+        const int centre = screen.width() / 2;
+        media.fonts->cool->printCentred(screen, centre, 20, media.texts->text(kTimeText));
         std::snprintf(buffer, sizeof(buffer), "%d", timer);
-        media.fonts->cool->printCentred(screen, 320, 50, buffer);
+        media.fonts->cool->printCentred(screen, centre, 50, buffer);
     }
 }
 

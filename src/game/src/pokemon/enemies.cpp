@@ -104,7 +104,7 @@ void Walker::walkAbout() {
     const int ahead = spec_.turnSpeed;
     if (x - ahead < minX || solidWall(x - ahead, y)) {
         direction = kFacingRight;
-    } else if (x + ahead > world().camera.x + 640 || solidWall(x + ahead, y)) {
+    } else if (x + ahead > world().camera.right() || solidWall(x + ahead, y)) {
         direction = kFacingLeft;
     }
 
@@ -159,7 +159,7 @@ void Com::update() {
 
             if (x - 1 < world().camera.x || solidWall(x - 1, y)) {
                 direction = kFacingRight;
-            } else if (x + 1 > world().camera.x + 640 || solidWall(x + 1, y)) {
+            } else if (x + 1 > world().camera.right() || solidWall(x + 1, y)) {
                 direction = kFacingLeft;
             }
             x += direction == kFacingRight ? 1 : -1;
@@ -222,6 +222,7 @@ void FlyingCom::update() {
 
 void FlyingCom::fly() {
     const int camera = world().camera.x;
+    const int cameraRight = world().camera.right();
 
     animation.cycle(8, 2);
 
@@ -230,7 +231,7 @@ void FlyingCom::fly() {
         direction = kFacingRight;
         attacking_ = false;
         aimAtTarget();
-    } else if (direction == kFacingRight && (x + speed_ > camera + 640 || solidWall(x + speed_, y))) {
+    } else if (direction == kFacingRight && (x + speed_ > cameraRight || solidWall(x + speed_, y))) {
         direction = kFacingLeft;
         attacking_ = false;
         aimAtTarget();

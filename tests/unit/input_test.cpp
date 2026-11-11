@@ -65,10 +65,11 @@ TEST_CASE("settings round-trip through their text form") {
     s.integerScaling = true;
     s.filter = bb::core::gfx::Filter::Smooth;
     s.smoothMotion = false;
+    s.widescreen = false;
     s.bindings.set(1, in::Action::Fire, in::padCode(0, 5));
     const std::string text = s.serialize();
     CHECK(text.rfind("blipblop-settings 1\nlanguage french\nscaling integer\nfilter smooth\n"
-                     "smooth-motion off\np1.up key:up\n",
+                     "smooth-motion off\nwidescreen off\np1.up key:up\n",
                      0) == 0);
 
     std::string error;
@@ -79,6 +80,7 @@ TEST_CASE("settings round-trip through their text form") {
     CHECK(back->integerScaling);
     CHECK(back->filter == bb::core::gfx::Filter::Smooth);
     CHECK_FALSE(back->smoothMotion);
+    CHECK_FALSE(back->widescreen);
     CHECK(back->bindings == s.bindings);
     CHECK(warnings.size() == 1);
 
@@ -88,6 +90,13 @@ TEST_CASE("settings round-trip through their text form") {
     CHECK_FALSE(
         bb::core::Settings::parse("blipblop-settings 1\nfilter blurry\n", error, warnings).has_value());
     CHECK(error == "line 2: filter must be sharp, crisp or smooth");
+    CHECK_FALSE(
+        bb::core::Settings::parse("blipblop-settings 1\nwidescreen 16:9\n", error, warnings).has_value());
+    CHECK(error == "line 2: widescreen must be off or on");
+    // A file of an older version has no widescreen statement: the default.
+    const auto older = bb::core::Settings::parse("blipblop-settings 1\nsmooth-motion on\n", error, warnings);
+    REQUIRE(older.has_value());
+    CHECK(older->widescreen);
 }
 
 TEST_CASE("the defaults are the Switch's; deterministic runs start from the reference settings") {
@@ -95,9 +104,12 @@ TEST_CASE("the defaults are the Switch's; deterministic runs start from the refe
     CHECK(defaults.filter == bb::core::gfx::Filter::Crisp);
     CHECK_FALSE(defaults.integerScaling);
     CHECK(defaults.smoothMotion);
-    // The replays were recorded without smooth motion, which changes frames.
+    CHECK(defaults.widescreen);  // the Switch's screens are 16:9
+    // The replays were recorded without smooth motion, which changes frames,
+    // and in 4:3, which changes the game.
     const bb::core::Settings reference = bb::core::Settings::reference();
     CHECK_FALSE(reference.smoothMotion);
+    CHECK_FALSE(reference.widescreen);
     CHECK(reference.filter == defaults.filter);
     CHECK(reference.bindings == defaults.bindings);
 }

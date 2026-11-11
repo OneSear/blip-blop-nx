@@ -108,7 +108,7 @@ void Toad::walkAbout() {
     if (x - speed_ < minX || solidWall(x - speed_, y)) {
         direction = kFacingRight;
         speed_ = 1;
-    } else if (x + speed_ > w.camera.x + 640 || solidWall(x + speed_, y)) {
+    } else if (x + speed_ > w.camera.right() || solidWall(x + speed_, y)) {
         direction = kFacingLeft;
         speed_ = 1;
     }
@@ -205,7 +205,7 @@ void Toad::charge() {
         endCharge(kFacingRight);
         return;
     }
-    if (x + speed_ > w.camera.x + 640 || solidWall(x + speed_, y)) {
+    if (x + speed_ > w.camera.right() || solidWall(x + speed_, y)) {
         endCharge(kFacingLeft);
         return;
     }
@@ -345,7 +345,7 @@ void Yoshi::walkAbout() {
     }
 
     attackWait_ += 1;
-    if (attackWait_ >= attackDelay_ && x <= w.camera.x + 640) {
+    if (attackWait_ >= attackDelay_ && x <= w.camera.right()) {
         attackWait_ = 0;
         attackDelay_ = 50 + w.random() % 250;
         mode = kShooting;
@@ -370,7 +370,7 @@ void Yoshi::walkAbout() {
 
     if (x - kYoshiSpeed < minX || solidWall(x - kYoshiSpeed, y)) {
         direction = kFacingRight;
-    } else if (x + kYoshiSpeed > w.camera.x + 640 || solidWall(x + kYoshiSpeed, y)) {
+    } else if (x + kYoshiSpeed > w.camera.right() || solidWall(x + kYoshiSpeed, y)) {
         direction = kFacingLeft;
     }
 
@@ -510,7 +510,7 @@ void YoshiTurret::stand() {
     fall();
 
     attackWait_ += 1;
-    if (attackWait_ >= attackDelay_ && x <= w.camera.x + 640) {
+    if (attackWait_ >= attackDelay_ && x <= w.camera.right()) {
         attackWait_ = 0;
         attackDelay_ = 50 + w.random() % 150;
         direction = w.target->x > x ? kFacingRight : kFacingLeft;
@@ -575,6 +575,7 @@ void YoshiTurret::hitBy(Shot& shot) {
 void Shell::update() {
     static const int kSpeed = 6;
     const int camera = world().camera.x;
+    const int cameraRight = world().camera.right();
 
     fall();
 
@@ -598,7 +599,7 @@ void Shell::update() {
     }
 
     x += direction == kFacingLeft ? -kSpeed : kSpeed;
-    if (x < camera - 100 || x > camera + 700 || y > 520 || y < -50) {
+    if (x < camera - 100 || x > cameraRight + 60 || y > 520 || y < -50) {
         dead = true;
     }
     hitboxFromImage();
@@ -699,7 +700,7 @@ void Tails::walkAbout() {
     if (x - speed_ < minX || solidWall(x - speed_, y)) {
         direction = kFacingRight;
         speed_ = 1;
-    } else if (x + speed_ > w.camera.x + 640 || solidWall(x + speed_, y)) {
+    } else if (x + speed_ > w.camera.right() || solidWall(x + speed_, y)) {
         direction = kFacingLeft;
         speed_ = 1;
     }
@@ -816,7 +817,7 @@ void Tails::fly() {
     // A swoop ends at a wall or at the screen edges. (The flying Tails
     // checks only the side it faces, rising or swooping.)
     const bool leftBlocked = x - speed_ < minX || solidWall(x - speed_, y);
-    const bool rightBlocked = x + speed_ > w.camera.x + 640 || solidWall(x + speed_, y);
+    const bool rightBlocked = x + speed_ > w.camera.right() || solidWall(x + speed_, y);
     if (entersFlying_) {
         if (direction == kFacingLeft && leftBlocked) {
             land(kFacingRight);
@@ -994,7 +995,7 @@ void Knuckles::walkAbout() {
     if (x - speed_ < minX || solidWall(x - speed_, y)) {
         direction = kFacingRight;
         speed_ = 1;
-    } else if (x + speed_ > w.camera.x + 640 || solidWall(x + speed_, y)) {
+    } else if (x + speed_ > w.camera.right() || solidWall(x + speed_, y)) {
         direction = kFacingLeft;
         speed_ = 1;
     }

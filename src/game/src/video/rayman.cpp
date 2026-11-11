@@ -107,8 +107,8 @@ void Rayman::walkAbout() {
             return;  // the punch has started (and set its image)
         }
         hitboxFromImage();
-    } else if (x - w.camera.x > 445) {
-        // Walks into the arena.
+    } else if (x - w.camera.x > w.camera.width - 195) {
+        // Walks into the arena (to 195 pixels from the right edge).
         animation.cycle(3, 21);
         if (direction == kFacingRight) {
             walk(kSpeed);
@@ -165,7 +165,7 @@ void Rayman::startPunch() {
 void Rayman::throwLimb(int limb) {
     World& w = world();
     int speedX = 0;
-    if (x - w.camera.x > 320) {
+    if (x - w.camera.x > w.camera.width / 2) {
         speedX = -1 - w.random() % 3;
     } else {
         speedX = 1 + w.random() % 3;
@@ -183,7 +183,7 @@ bool Rayman::fight() {
     const int onScreen = x - w.camera.x;
 
     if (health.points > kBelowFistsHp ||
-        (health.points > kCriticalHp && fist1_ && (onScreen < 80 || onScreen > 600))) {
+        (health.points > kCriticalHp && fist1_ && (onScreen < 80 || onScreen > w.camera.width - 40))) {
         // Walks and punches. No ground: falls, and no more this tick (D-54
         // fixed: 2002 also walked on this tick).
         if (platformAt(x, y) == 0) {
@@ -196,7 +196,7 @@ bool Rayman::fight() {
 
         if (x - kSpeed < minX || solidWall(x - kSpeed, y)) {
             direction = kFacingRight;
-        } else if (x + kSpeed > w.camera.x + 600 || solidWall(x + kSpeed, y)) {
+        } else if (x + kSpeed > w.camera.right() - 40 || solidWall(x + kSpeed, y)) {
             direction = kFacingLeft;
         }
         attackWait_ += 1;
@@ -216,7 +216,7 @@ bool Rayman::fight() {
             walk(-kSpeed);
             image = enemyImage(img::kRaymanWalkLeft + animation.frame);
         }
-    } else if (health.points > kCriticalHp && onScreen >= 80 && onScreen <= 600) {
+    } else if (health.points > kCriticalHp && onScreen >= 80 && onScreen <= w.camera.width - 40) {
         // Loses the first fist; stands and punches with the second.
         if (fist1_) {
             throwLimb(img::kRaymanFistRight);
@@ -249,7 +249,7 @@ bool Rayman::fight() {
 
         if (x - kSpeed < minX || solidWall(x - kSpeed, y)) {
             direction = kFacingRight;
-        } else if (x + kSpeed > w.camera.x + 600 || solidWall(x + kSpeed, y)) {
+        } else if (x + kSpeed > w.camera.right() - 40 || solidWall(x + kSpeed, y)) {
             direction = kFacingLeft;
         }
 
@@ -261,7 +261,7 @@ bool Rayman::fight() {
             walk(-kCriticalSpeed);
             image = enemyImage(img::kRaymanRunLeft + animation.frame);
         }
-    } else if (onScreen >= 80 && onScreen <= 600) {
+    } else if (onScreen >= 80 && onScreen <= w.camera.width - 40) {
         // Loses his feet and stands.
         if (feet_) {
             const int speedY = -3 - w.random() % 3;
@@ -294,7 +294,7 @@ void Rayman::die() {
     if (animation.frame == 0 && animation.subFrame == 1) {
         // The head flies off.
         int speedX = 0;
-        if (x - w.camera.x > 320) {
+        if (x - w.camera.x > w.camera.width / 2) {
             speedX = -1 - w.random() % 3;
         } else {
             speedX = 1 + w.random() % 3;
@@ -603,7 +603,7 @@ void PokemonHero::walkAbout() {
 
     if (x - 1 < minX || solidWall(x - 1, y)) {
         direction = kFacingRight;
-    } else if (x + 1 > w.camera.x + 640 || solidWall(x + 1, y)) {
+    } else if (x + 1 > w.camera.right() || solidWall(x + 1, y)) {
         direction = kFacingLeft;
     }
 

@@ -36,9 +36,10 @@ struct ShotgunSpread {
     int smallSpread = 0;
 };
 
-// Whether a straight shot left the playing area.
-bool gone(const World& w, int x, int y, int rightEdge) {
-    return w.collision.solidWall(x, y) || x < w.camera.x - 20 || x > w.camera.x + rightEdge || y < -20 ||
+// Whether a straight shot left the playing area (more than `margin` pixels
+// beyond the view's right edge).
+bool gone(const World& w, int x, int y, int margin) {
+    return w.collision.solidWall(x, y) || x < w.camera.x - 20 || x > w.camera.right() + margin || y < -20 ||
            y > 500;
 }
 
@@ -77,7 +78,7 @@ void RifleBullet::update() {
     x += kRifleDx[direction];
     y += kRifleDy[direction];
 
-    if (gone(world(), x, y, 690)) {
+    if (gone(world(), x, y, 50)) {
         image = nullptr;
         noHitbox();
         dead = true;
@@ -91,7 +92,7 @@ void SmgBullet::update() {
     x += kSmgDx[direction];
     y += kSmgDy[direction];
 
-    if (gone(world(), x, y, 690)) {
+    if (gone(world(), x, y, 50)) {
         image = nullptr;
         noHitbox();
         dead = true;
@@ -191,7 +192,7 @@ void ShotgunPellet::update() {
 
     age_ += 1;
 
-    if (gone(world(), x, y, 660)) {
+    if (gone(world(), x, y, 20)) {
         image = nullptr;
         noHitbox();
         dead = true;
@@ -233,7 +234,7 @@ void LaserBeam::aim(int playerAim) {
             break;
 
         case 2:  // right
-            while (nx > w.camera.x - 5 && nx < w.camera.x + 645 && !w.collision.solidWall(nx, ny)) {
+            while (nx > w.camera.x - 5 && nx < w.camera.right() + 5 && !w.collision.solidWall(nx, ny)) {
                 nx += 8;
             }
             width_ = nx - x;
@@ -252,7 +253,7 @@ void LaserBeam::aim(int playerAim) {
             break;
 
         case 6:  // left
-            while (nx > w.camera.x - 5 && nx < w.camera.x + 645 && !w.collision.solidWall(nx, ny)) {
+            while (nx > w.camera.x - 5 && nx < w.camera.right() + 5 && !w.collision.solidWall(nx, ny)) {
                 nx -= 8;
             }
             width_ = x - nx;
@@ -290,6 +291,17 @@ void LaserBeam::draw() {
     int nx = x;
     int ny = y;
 
+    // A horizontal beam: the image is 640 pixels long, as the 2002 screen;
+    // a longer beam across a wider view (16:9) takes more of it.
+    const auto drawRow = [&](int left, int length) {
+        canvas.drawPart(beam, 0, 0, length, 6, left, y);
+        if (w.camera.extra() > 0) {
+            for (int done = beam->width(); done < length; done += beam->width()) {
+                canvas.drawPart(beam, 0, 0, length - done, 6, left + done, y);
+            }
+        }
+    };
+
     // The straight beams are a part of a long image; the diagonal ones are
     // drawn dot by dot. The impact is where the beam stops.
     switch (direction) {
@@ -304,7 +316,7 @@ void LaserBeam::draw() {
             break;
 
         case 1:  // down-right
-            while (nx > w.camera.x - 20 && nx < w.camera.x + 660 && ny > -50 && ny < 500 &&
+            while (nx > w.camera.x - 20 && nx < w.camera.right() + 20 && ny > -50 && ny < 500 &&
                    !w.collision.solidWall(nx, ny)) {
                 drawAt(nx, ny, playerImage(img::kLaserBeamFalling + animation.frame));
                 nx += 8;
@@ -314,16 +326,17 @@ void LaserBeam::draw() {
             break;
 
         case 2: {  // right
-            const int right = screenX + width_ > 640 ? 640 - screenX : width_;
-            canvas.drawPart(beam, 0, 0, right, 6, screenX, y);
-            if (screenX + width_ < 640) {
+            const int view = w.camera.width;
+            const int right = screenX + width_ > view ? view - screenX : width_;
+            drawRow(screenX, right);
+            if (screenX + width_ < view) {
                 drawAt(x + width_, y + 3, impact);
             }
             break;
         }
 
         case 3:  // up-right
-            while (nx > w.camera.x - 20 && nx < w.camera.x + 660 && ny > -20 && ny < 500 &&
+            while (nx > w.camera.x - 20 && nx < w.camera.right() + 20 && ny > -20 && ny < 500 &&
                    !w.collision.solidWall(nx, ny)) {
                 drawAt(nx, ny, playerImage(img::kLaserBeamRising + animation.frame));
                 nx += 8;
@@ -344,7 +357,7 @@ void LaserBeam::draw() {
             break;
 
         case 5:  // up-left
-            while (nx > w.camera.x - 20 && nx < w.camera.x + 660 && ny > -20 && ny < 500 &&
+            while (nx > w.camera.x - 20 && nx < w.camera.right() + 20 && ny > -20 && ny < 500 &&
                    !w.collision.solidWall(nx, ny)) {
                 drawAt(nx, ny, playerImage(img::kLaserBeamFalling + animation.frame));
                 nx -= 8;
@@ -361,7 +374,7 @@ void LaserBeam::draw() {
                 right = width_ + screenX;
                 screenX = 0;
             }
-            canvas.drawPart(beam, 0, 0, right, 6, screenX, y);
+            drawRow(screenX, right);
             if (screenX > 0) {
                 drawAt(x + 2, y + 3, impact);
             }
@@ -369,7 +382,7 @@ void LaserBeam::draw() {
         }
 
         case 7:  // down-left
-            while (nx > w.camera.x - 20 && nx < w.camera.x + 660 && ny > -50 && ny < 500 &&
+            while (nx > w.camera.x - 20 && nx < w.camera.right() + 20 && ny > -50 && ny < 500 &&
                    !w.collision.solidWall(nx, ny)) {
                 drawAt(nx, ny, playerImage(img::kLaserBeamRising + animation.frame));
                 nx -= 8;

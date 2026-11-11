@@ -3,7 +3,8 @@
 # EMULATOR (optional) runs the game when it is cross-compiled (Wine).
 # With -DSMOOTH=ON the game runs with --smooth-motion and only the tick
 # (world state) fingerprints are compared: drawing between ticks must change
-# the frames and nothing of the simulation.
+# the frames and nothing of the simulation. With -DWIDE=ON it runs with
+# --widescreen (the levels in 16:9), against fingerprints of their own.
 
 foreach(var GAME REPLAY EXPECTED OUTPUT RUN_DIR)
     if(NOT DEFINED ${var})
@@ -21,6 +22,9 @@ if(DEFINED PACK)
 endif()
 if(SMOOTH)
     list(APPEND asset_options --smooth-motion)
+endif()
+if(WIDE)
+    list(APPEND asset_options --widescreen)
 endif()
 
 execute_process(
