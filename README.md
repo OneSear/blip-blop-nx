@@ -28,9 +28,10 @@ firmware such as Atmosphère). Each release has two files:
   signed by Nintendo, so the console's custom firmware must accept such
   titles. A newer version installs over the older one.
 
-Both keep the settings (`settings.cfg`), the hi-scores (`hiscores.scr`) and
-the log (`BlipBlop.log`) in `sdmc:/switch/blipblop/`: the same ones whichever
-starts. On the first run the game speaks French if the console does.
+Both keep the settings (`settings.cfg`), the hi-scores (`hiscores.scr`), the
+missions reached (`progress.cfg`) and the log (`BlipBlop.log`) in
+`sdmc:/switch/blipblop/`: the same ones whichever starts. On the first run
+the game speaks French if the console does.
 
 ### Controls
 
@@ -59,6 +60,22 @@ taken a hero; B before anyone joined goes back to the main menu. The
 players are numbered in the order of their controllers (controllers 1 and
 3 make players 1 and 2).
 
+Players can also join a game already running: in a level, a free corner
+of the screen shows "Press A to join", and A (or ZR) on a controller that
+is not playing brings a new player in, next to a player, as the next
+player number, on the hero of that controller's number (Blop for
+controller 2) or the next one no one plays. Up to four players; no one can
+drop in while every player is dying, dropping in or riding (the stork of
+the last level). To split a Joy-Con pair for a friend, pause and press X:
+the console's controller screen opens, as on the hero choice, and the two
+Joy-Cons held sideways become two controllers.
+
+Each mission reached is saved. Once a second mission was reached, START
+GAME first lists the missions reached (MISSION 1, BONUS STAGE 1, MISSION
+2 ...), on the last one: choose where to start, or B to go back. A mission
+starts afresh (scores at 0, five lives, the cow bomb from the second
+mission on).
+
 Player 1 plays with the console's Joy-Cons in handheld mode. X on the hero
 choice opens the console's controller screen, where each player takes a
 controller (two Joy-Cons held sideways are two players) and its lights
@@ -85,6 +102,12 @@ the 16:9 screen; a level shows 854 pixels of its width instead of 640, the
 hero choice and the mission sheets are laid out across, the other screens
 of 2002 are in the middle, on black, at the same size; off, the levels play
 as in 2002, in 4:3); and the language (English or French).
+
+The options also set the volume of the MUSIC and of the SOUNDS, from 0
+(silent) to 10 (as loud as in 2002; left and right change it, A raises it
+and goes from 10 back to 0), and RUMBLE: the controllers rumble when their
+player is hurt or loses a life, drops a cow bomb or joins, and when the
+screen shakes.
 
 ## Building
 

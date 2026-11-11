@@ -28,6 +28,12 @@ blocks the release or becomes a known issue in the release notes.
       `Game data: romfs:/blipblop.bbpack`.
 - [ ] The intro plays, then the attract mode and the main menu.
 
+## Sound
+
+- [ ] MUSIC and SOUNDS from 10 down to 0 in the options: each step a little
+      quieter, 0 silent, the music and the sounds apart; back after a
+      restart.
+
 ## Display
 
 - [ ] Handheld: the log's `Display:` line says `picture 960x720 at 160,0`;
@@ -81,6 +87,17 @@ blocks the release or becomes a known issue in the release notes.
       binding survives a restart.
 - [ ] How often a single Joy-Con's stick click pauses the game by
       accident (SDL makes it Start).
+- [ ] RUMBLE = ON (the default): a controller rumbles when its player is
+      hurt, loses a life, drops a cow bomb or joins, and every playing
+      controller when the screen shakes (Sonic, Lara, Mario, the cows);
+      only the player's own controller for the rest; a Joy-Con pair and a
+      single Joy-Con held sideways both rumble. RUMBLE = OFF: none.
+- [ ] Joining a running level: in a one-player game, "Press A to join" in
+      the top right corner; A on a second controller brings player 2 in
+      next to player 1, on Blop; a third and a fourth join the same way
+      (Bleach and Blitz load without a pause long enough to notice). In
+      the pause menu, X opens the controller applet: a Joy-Con pair split
+      there joins as two players.
 
 ## The campaign
 
@@ -89,6 +106,10 @@ The replays win the levels with the F9 cheat. The definition of done
 
 - [ ] A game, without cheats, is played through the 12 levels to the ending
       and the credits (one or two players; continues allowed).
+- [ ] After MISSION 2's briefing has shown, START GAME lists MISSION 1,
+      BONUS STAGE 1 and MISSION 2, on MISSION 2, after a restart too (and
+      after the console was switched off during the mission); MISSION 2
+      starts with the cow bomb; B goes back to the main menu.
 - [ ] The replays of a Debug `.nro` on the console give the expected
       fingerprints (docs/replays.md); their benchmark line keeps a frame
       well under 16.7 ms.
@@ -108,7 +129,7 @@ The replays win the levels with the F9 cheat. The definition of done
 In `sdmc:/switch/blipblop/`, shared by the `.nro` and the `.nsp`:
 
 - [ ] After a first run: `settings.cfg`, `hiscores.scr` and `BlipBlop.log`
-      are there.
+      are there, and `progress.cfg` once a mission's briefing has shown.
 - [ ] A name typed on the console's keyboard at the end of a game is in the
       hi-score table after a restart, even when the console was switched
       off without leaving the game.

@@ -20,8 +20,9 @@ is only useful if the game is deterministic, so a run started with
   Microsoft C runtime generator the 2002 game was built with (seed 1 by
   default, `--seed` or the `seed` statement to change it).
 
-Deterministic runs also start from the default settings and hi-scores and do
-not save them, so saved state cannot change their outcome.
+Deterministic runs also start from the default settings and hi-scores, and
+from the first mission alone (no saved progress), and do not save any of
+them, so saved state cannot change their outcome. They never rumble.
 
 ## Input files (`.bbreplay`, text, version 1)
 
@@ -30,6 +31,8 @@ bbreplay 1                 # header, mandatory
 seed 1                     # random seed (default 1)
 option /cheat              # legacy switch applied before the start (repeatable)
 option widescreen          # the levels in 16:9 (written by --record --widescreen)
+option all-missions        # the main menu offers every mission (--all-missions;
+                           # deterministic runs otherwise offer the first only)
 @120 RETURN                # from frame 120 on, Return is held
 @125                       # from frame 125 on, nothing is held
 @300 RIGHT LCTRL MENU      # several inputs at once
@@ -142,6 +145,7 @@ fingerprints included.
 | `menus` | The menu paths the others do not reach, key redefinition, the hero choice (two players; Blop), dialogue skip, a focus loss. |
 | `gameover` | Two players, level summaries, game over, both names, the hi-score table. |
 | `fourplayers` | Four players join (two on the keyboard, two on pads 3 and 4) and take Blip, Blop, Bleach and Blitz; the first level and its dialogue, the second won (the table of four), part of the third, the pause menu's EXIT. |
+| `missions` | Every mission offered (`option all-missions`): the mission page left with its RETURN, MISSION 3 chosen; in snorkniv players 2 (Tab) and 3 (A on pad 3, Bleach) join the running level; snorkniv and snorkniv2 won with F9 (the summary of three), the Lemmings bonus stage's briefing and start, the pause menu's EXIT. |
 | `smurf` | snuf1 and snuf2 played to the end without F9, including the Big Smurf fight. |
 | `dork` | snuf1 and snuf2 won with F9, then the Pokémon bonus level won through its script: the three switches, both lifts, the falling crate and its platforms, the three bombs, then every enemy killed. |
 | `lemmings` | The first eight levels won with F9, then the Lemmings bonus level won: fights with cow bombs at each scroll lock, a somersault over the pit, the 200-kill nuke. |

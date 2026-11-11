@@ -3,6 +3,86 @@
 Status of the phases of [migration.md](../migration.md), with the facts
 learnt while implementing them. Newest phase first.
 
+## Volumes, rumble, saved missions and joining a running level (11 November 2026)
+
+Asked by the maintainer: music and sound volumes, saved progress, a mission
+choice, rumble, and players joining a game already running.
+
+* **Volumes.** MUSIC and SOUNDS in the options, 0 to 10 (`music-volume`,
+  `sound-volume` in the settings file; 10 by default). The mixer scales
+  the sounds and the music apart (`Mixer::setGains()`, gains in 1/256ths);
+  at full gain it mixes exactly the samples it mixed before. The levels
+  are 3 dB apart (`core::audio::volumeGain()`: 10 is 256, 8 is 128, 1 is
+  11). Left and right change a volume, Return raises it and goes from 10
+  back to 0. The application gives the platform's audio the gains when
+  the options change them (`Audio::setGains()`).
+* **Rumble.** RUMBLE in the options (`rumble on|off`, on by default). A
+  player's controller rumbles when the player is hurt, loses a life
+  (killed, fallen out of the level, crushed by the scroll), drops a cow
+  bomb or joins; every playing controller when a screen shake starts or
+  grows (`Level::updateShake()`). The world asks its player's controls
+  (`PlayerControls::rumble()`, a `Rumble` kind); `AliasControls` passes it
+  to the input player, and `DeviceInput` to the pad that player's
+  controls use (`InputSource::rumble()`, `SDL_GameControllerRumble`), with
+  a strength and a length per kind. Nothing the world reads back changes,
+  and deterministic runs never rumble.
+* **Saved missions** (`core::Progress`, `progress.cfg` next to the
+  settings: `missions <n>`). The missions are the briefings of bb.lst that
+  are mission sheets (`findMissions()`: brief1 to brief7, at parts 0, 4, 6,
+  11, 14, 16 and 20): each opens a new world (a level of kind first, bonus,
+  complete or end), where the players drop in afresh. When the campaign
+  reaches a mission's briefing for the first time, it is counted and the
+  file written at once (`CampaignScreen::noteMissionReached()`).
+* **Mission choice.** Once a second mission was reached, START GAME first
+  lists the missions reached (the sheets' titles; the bonus stages, which
+  have none, are BONUS STAGE 1 and 2), on the last; then the hero choice,
+  and the campaign starts at that briefing (`CampaignScreen`'s first part,
+  `Game::startCampaign()`), with the cow bomb if a level came before it.
+  RETURN or B goes back. Deterministic runs offer the first mission only,
+  so the menus of every replay are unchanged; `--all-missions` (the
+  replay option `all-missions`) offers them all, for that run.
+* **Joining a running level** (`Game::updateJoins()`, at the start of each
+  tick). The controls of an input player who is not playing join with
+  their fire (Tab, or A or ZR on their pad) as the next player number, on
+  the hero of their number or the next no one plays (Bleach's and
+  Blitz's banks load then if they were not loaded), and drop in next to a
+  player with the weapon of a new life, five lives, the cow bomb once it
+  is unlocked, one life in a bonus level (given back after it, as for the
+  others). No one joins while no player stands where one can land (all
+  dying, dropping in or riding); `Game::joinSlot()` says who would join,
+  and the HUD shows that player's tag and "Press A to join" in its corner.
+  In the pause menu, X (as on the hero choice) opens the Switch's
+  controller applet, where a Joy-Con pair can become two players'
+  controllers; its first page says so ("X = controllers").
+* **The menus.** The options page has 13 items: a page with more items
+  than fit in 400 pixels gets closer lines (the pause menu's options: 30
+  pixels instead of 40). Strings 835 to 839 and 869, in uk.dat too
+  (`tools/data/fix_legacy_data.py`).
+* **Tests.** Unit: the settings' new lines, the progress file, the
+  mixer's gains and levels, a player's rumble reaching its input player.
+  Content: the missions of bb.lst, their names in both languages, in the
+  menu font. A new replay, `missions`, plays the mission choice and two
+  players joining snorkniv (one of them Bleach).
+* **Fingerprints.** Every tick hash held, in all 14 earlier replays, 4:3,
+  16:9 and from the pack: joining, the volumes and the rumble change
+  nothing of the world. The frames changed where the new pictures show:
+  the join hint in the levels of fewer than four players, the pause
+  menu's controllers line, the options page (`menus`, whose script steps
+  through the three new items: 36 frames more, the level's ticks the
+  same). `attract` is unchanged.
+
+Facts learnt:
+
+* In a replay no pad is connected (`DeviceInput` reads `padSlots()` of the
+  platform, 0 headless), so a pad's back button (`backHeld()`) and its A as
+  Return never act there, while a pad's codes bound to a player's actions
+  do (`held()` does not ask for the pad). The `missions` script leaves the
+  mission page with its RETURN item.
+* The replays' outputs are written in 4096-byte blocks: a file read while
+  its replay runs ends in the middle of a line.
+* The Release preset plays the replays about seven times faster than
+  Debug (`attract`: 24 s against 166 s), with the same fingerprints.
+
 ## Widescreen: the view stops where the 2002 screen did (11 November 2026)
 
 Reported by the maintainer with a screenshot: at the end of `snuf1`, in
