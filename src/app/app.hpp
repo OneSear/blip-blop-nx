@@ -56,6 +56,7 @@ private:
         unsigned long long frame() const override;
         void saveSettings() override;
         void saveHiScores() override;
+        void saveProgress() override;
 
     private:
         app::Session& session_;
@@ -71,6 +72,13 @@ private:
     // start from the reference settings and never write).
     void saveSettingsNow();
     void saveHiScoresNow();
+    void saveProgressNow();
+    // The progress (deterministic runs: the first mission, or every one
+    // with --all-missions; they never write it).
+    void loadProgress();
+    // Gives the mixer the options' volumes when they changed, and the input
+    // the rumble switch.
+    void applyAudioOptions();
     // Loads the string table of the language (fr.dat or uk.dat); English
     // when the French table is missing (the 2002 data has none).
     bool loadStrings(core::input::Language language);
@@ -89,6 +97,8 @@ private:
     bool integerScaling_ = false;
     core::gfx::Filter filter_ = core::gfx::Filter::Crisp;
     core::input::Language language_ = core::input::Language::English;
+    int musicVolume_ = -1;  // -1: not given to the mixer yet
+    int soundVolume_ = -1;
     // Presented frames and when the first was (for the log).
     std::uint64_t presented_ = 0;
     std::uint64_t firstPresent_ = 0;
@@ -96,6 +106,8 @@ private:
     // In the user's preferences directory ("" without one: the data
     // directory's bb.scr, as in 2002).
     std::string hiScoresPath_;
+    // In the user's preferences directory ("" without one: not saved).
+    std::string progressPath_;
 
     core::gfx::Pixmap screen_{640, 480};    // the back buffer
     core::gfx::Pixmap backdrop_{640, 480};  // systemSurface
@@ -111,6 +123,7 @@ private:
     game::AudioOutput audio_;
     game::Options options_;
     game::HiScores hiScores_;
+    core::Progress progress_;
     SessionView sessionView_{session_, *this};
 
     // The banks and fonts (the pbk_*, fnt_*, sbk_*, mbk_* of 2002).

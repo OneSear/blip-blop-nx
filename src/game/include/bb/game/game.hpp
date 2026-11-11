@@ -3,6 +3,7 @@
 #include <array>
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "bb/core/fixed_clock.hpp"
 #include "bb/core/gfx/font.hpp"
@@ -10,6 +11,7 @@
 #include "bb/game/briefing.hpp"
 #include "bb/game/dialogue.hpp"
 #include "bb/game/level.hpp"
+#include "bb/game/missions.hpp"
 #include "bb/game/player.hpp"
 #include "bb/game/screen.hpp"
 #include "bb/game/services.hpp"
@@ -46,16 +48,31 @@ public:
     // the ending if the last level was won; finishCampaign(); game over and
     // hi-scores unless the players left the game (campaignLeft());
     // deletePlayers().
-    bool startCampaign(const Lineup& lineup);
+    //
+    // firstPart: the part the campaign starts at, the briefing of a mission
+    // (MainMenu::firstPart()); the cow bomb is then unlocked if a level
+    // came before it.
+    bool startCampaign(const Lineup& lineup, int firstPart = 0);
     int partCount() const noexcept { return partCount_; }
     int partKind(int i) const noexcept { return parts_[static_cast<std::size_t>(i)].kind; }
     int partLevelKind(int i) const noexcept { return parts_[static_cast<std::size_t>(i)].levelKind; }
     const char* partFile(int i) const noexcept { return parts_[static_cast<std::size_t>(i)].file.c_str(); }
+    // The missions of bb.lst (findMissions()).
+    const std::vector<Mission>& missions() const noexcept { return missions_; }
     void levelPlayed();
     void finishCampaign();
     bool campaignLeft() const noexcept { return skipped_; }
     // Player n, from 1; null when absent.
     Player* player(int n) const noexcept { return n >= 1 && n <= kMaxPlayers ? players_[n - 1] : nullptr; }
+
+    // Joining a running level: the controls no player uses (an input player
+    // who did not join at the hero choice) join with fire, as the next
+    // player, on their own hero or the next no one has; they drop in next to
+    // a player, with the weapon of a new life (and the cow bomb once it is
+    // unlocked). joinSlot(): the player a join would make now (its index,
+    // from 0; the HUD shows where), -1 when no one can join: four players,
+    // or no player standing where one can land (dying, dropping in, riding).
+    int joinSlot() const;
     void deletePlayers();
 
     // A level, as LevelScreen plays it (joueNiveau, gameLoop, updateAll):
@@ -123,6 +140,12 @@ private:
     };
 
     bool loadCampaign(const Lineup& lineup);  // chargePartie()
+    // Bleach's and Blitz's banks and fonts, when one of them plays.
+    bool loadNewHeroes();
+    // The player a joining player drops in next to, or null.
+    const Player* landingPlace() const;
+    // A join, at the start of a tick (tickBegin()).
+    void updateJoins();
     void releaseCampaign();
     bool loadParts(const char* name);
     bool loadLevel(const char* name);  // chargeNiveau()
@@ -140,8 +163,11 @@ private:
 
     std::array<Part, kMaxParts> parts_{};
     int partCount_ = 0;
+    std::vector<Mission> missions_;
 
     Player* players_[kMaxPlayers] = {};
+    // The input player whose controls each player has (-1: none).
+    int controlsOf_[kMaxPlayers] = {-1, -1, -1, -1};
     bool lastPerfect_[kMaxPlayers] = {};
     // The level's two starting points (players 3 and 4 start on those of 1
     // and 2).

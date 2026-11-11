@@ -77,6 +77,13 @@ And the shader filters (11 November 2026):
   uk.dat gains the names of the XBR and CRT filters (ids 867 and 868),
         before the mission sheets' text (870).
 
+And the volumes, the rumble, the missions and joining a running level (11
+November 2026):
+  uk.dat gains the labels of the MUSIC, SOUNDS and RUMBLE options, the
+        bonus stages' name in the mission choice and the HUD's "Press A
+        to join" (ids 835-839), before id 840, and the pause menu's "X =
+        controllers" (id 869), before the mission sheets' text (870).
+
 The script is idempotent: running it on a fixed archive changes nothing.
 Every other entry keeps its content, compression method and timestamp.
 
@@ -319,6 +326,16 @@ SHADER_STRINGS = [
     (867, 'XBR'),
     (868, 'CRT'),
 ]
+# The volume and rumble options, the bonus stages in the mission choice, the
+# HUD's invitation to join.
+PLAYER_FEATURE_STRINGS = [
+    (835, 'MUSIC = '),
+    (836, 'SOUNDS = '),
+    (837, 'RUMBLE = '),
+    (838, 'BONUS STAGE %d'),
+    (839, 'Press A to join'),
+]
+PAUSE_CONTROLLERS_STRING = (869, 'X = controllers')
 FRENCH_SOURCE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "assets", "source",
                              "strings", "fr.json")
 
@@ -419,6 +436,18 @@ def fix_entry(name, data):
         data = data[:at] + added.encode("cp1252") + data[at:]
         more, _ = fix_entry(name, data)
         return more, "added %d shader filter names" % len(SHADER_STRINGS)
+    if name == "data/uk.dat" and b"\n835^" not in data and b"\n840^" in data and b"\n834^" in data:
+        added = "".join("\n%d^%s" % (i, text) for i, text in PLAYER_FEATURE_STRINGS)
+        at = data.index(b"\n840^")
+        data = data[:at] + added.encode("cp1252") + data[at:]
+        more, _ = fix_entry(name, data)
+        return more, "added %d option, mission and join strings" % len(PLAYER_FEATURE_STRINGS)
+    if name == "data/uk.dat" and b"\n869^" not in data and b"\n870^" in data and b"\n835^" in data:
+        added = "\n%d^%s" % PAUSE_CONTROLLERS_STRING
+        at = data.index(b"\n870^")
+        data = data[:at] + added.encode("cp1252") + data[at:]
+        more, _ = fix_entry(name, data)
+        return more, "added the pause menu's controllers string"
     if name == "data/uk.dat" and b"\n807^\n" in data:
         return data.replace(b"\n807^\n", b"\n807^%s\n" % WIDESCREEN_LABEL.encode("cp1252")), \
             "filled the widescreen option label (807)"

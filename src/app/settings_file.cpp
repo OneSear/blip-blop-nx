@@ -30,6 +30,9 @@ core::Settings current(const game::Options& options, const game::Input& in) {
     settings.filter = options.filter;
     settings.smoothMotion = options.smoothMotion;
     settings.widescreen = options.widescreen;
+    settings.musicVolume = options.musicVolume;
+    settings.soundVolume = options.soundVolume;
+    settings.rumble = options.rumble;
     for (int p = 0; p < input::kPlayerCount; ++p) {
         for (int a = 0; a < input::kActionCount; ++a) {
             settings.bindings.set(p, input::kActions[static_cast<std::size_t>(a)],
@@ -47,6 +50,9 @@ void applySettings(const core::Settings& settings, game::Options& options, game:
     options.filter = settings.filter;
     options.smoothMotion = settings.smoothMotion;
     options.widescreen = settings.widescreen;
+    options.musicVolume = settings.musicVolume;
+    options.soundVolume = settings.soundVolume;
+    options.rumble = settings.rumble;
     for (int p = 0; p < input::kPlayerCount; ++p) {
         for (int a = 0; a < input::kActionCount; ++a) {
             in.setAlias(aliasOf(p, a),

@@ -122,6 +122,7 @@ void Level::reset() {
     goAngle_ = 0;
     goArrow = false;
     goDelay_ = 0;
+    lastShake_ = 0;
 
     w.scrollLock.on = false;
     w.camera.speed = 0;
@@ -302,6 +303,17 @@ void Level::updateCheats(const CheatKeys& cheats) {
 
 void Level::updateShake() {
     ScreenShake& shake = world_.shake;
+
+    // A shake that started, or grew, since the last tick rumbles the
+    // players' controllers.
+    if (shake.amplitude > lastShake_) {
+        for (const Player* player : players) {
+            if (player != nullptr && player->lives > 0) {
+                player->rumble(Rumble::Quake);
+            }
+        }
+    }
+    lastShake_ = shake.amplitude;
 
     if (shake.amplitude == 0) {
         return;

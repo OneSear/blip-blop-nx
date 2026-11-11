@@ -33,7 +33,24 @@ std::int32_t between(std::int32_t a, std::int32_t b, std::uint64_t position) {
 // Frames the music decodes at a time.
 constexpr int kMusicChunk = 4096;
 
+// A sample at a gain of 1/256ths: the sample itself at full gain.
+std::int32_t scaled(std::int32_t sample, int gain) {
+    return gain == Mixer::kFullGain ? sample : sample * gain / Mixer::kFullGain;
+}
+
 }  // namespace
+
+int volumeGain(int level) noexcept {
+    // 256 * 10^(-3 dB * (10 - level) / 20), rounded.
+    static constexpr int kGains[kVolumeLevels + 1] = {0,  11, 16,  23,  32,  45,
+                                                      64, 91, 128, 181, Mixer::kFullGain};
+    return kGains[std::clamp(level, 0, kVolumeLevels)];
+}
+
+void Mixer::setGains(int soundGain, int musicGain) noexcept {
+    soundGain_ = std::clamp(soundGain, 0, kFullGain);
+    musicGain_ = std::clamp(musicGain, 0, kFullGain);
+}
 
 bool decodeWav(const std::uint8_t* data, std::size_t size, int outputRate, std::vector<std::int16_t>& out) {
     if (data == nullptr || size < 12 || std::memcmp(data, "RIFF", 4) != 0 ||
@@ -263,8 +280,9 @@ void Mixer::mixMusic(std::int32_t* sum, int frames) {
             return;
         }
         const std::size_t g = std::min(f + 1, count - 1);
-        sum[2 * i] += between(musicFrames_[2 * f], musicFrames_[2 * g], musicPosition_);
-        sum[2 * i + 1] += between(musicFrames_[2 * f + 1], musicFrames_[2 * g + 1], musicPosition_);
+        sum[2 * i] += scaled(between(musicFrames_[2 * f], musicFrames_[2 * g], musicPosition_), musicGain_);
+        sum[2 * i + 1] +=
+            scaled(between(musicFrames_[2 * f + 1], musicFrames_[2 * g + 1], musicPosition_), musicGain_);
         musicPosition_ += step;
     }
 }
@@ -291,7 +309,7 @@ void Mixer::mix(std::int16_t* out, int frames) {
                 }
                 v.position = 0;
             }
-            const std::int32_t s = samples[v.position++];
+            const std::int32_t s = scaled(samples[v.position++], soundGain_);
             sum[2 * i] += s;
             sum[2 * i + 1] += s;
         }

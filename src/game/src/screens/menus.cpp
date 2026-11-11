@@ -2,10 +2,12 @@
 
 #include "bb/game/menus.hpp"
 
+#include <algorithm>
 #include <cstdio>
 #include <cstring>
 #include <string>
 
+#include "bb/core/assets/asset_source.hpp"
 #include "bb/core/input/codes.hpp"
 #include "bb/core/input/names.hpp"
 #include "bb/game/world.hpp"
@@ -46,7 +48,18 @@ enum Text {
     kStartGameText = 830,
     kExitText = 833,
     kCancelText = 834,
+    kMusicText = 835,  // the volumes and the rumble
+    kSoundText = 836,
+    kRumbleText = 837,
 };
+
+// The menus' items stand within this height; a page with more items than
+// fit at its line height gets closer lines (the options page of the pause
+// menu: 13 items).
+constexpr int kItemsHeight = 400;
+// The band's growth for a line under the first page's items.
+constexpr int kFooterHeight = 24;
+constexpr int kControllersText = 869;  // "X = controllers"
 
 // The aliases of the first player's up, down, left, right and fire.
 constexpr int kAliasUp = AliasControls::kFirstPlayer + AliasControls::kUp;
@@ -118,7 +131,7 @@ void Menu::setItem(int i, const char* text) {
     std::snprintf(text_[static_cast<std::size_t>(i)].data(), text_[0].size(), "%s", text);
 }
 
-bool Menu::switchOption() {
+bool Menu::switchOption(int step) {
     Options& o = *services_.options;
     switch (focus_) {
         case kScalingItem:
@@ -146,6 +159,16 @@ bool Menu::switchOption() {
             // next frame is drawn.
             o.language =
                 o.language == input::Language::English ? input::Language::French : input::Language::English;
+            break;
+        case kMusicItem:
+        case kSoundItem: {
+            // The application gives the mixer the new volume.
+            int& volume = focus_ == kMusicItem ? o.musicVolume : o.soundVolume;
+            volume = std::clamp(volume + step, 0, Options::kMaxVolume);
+            break;
+        }
+        case kRumbleItem:
+            o.rumble = !o.rumble;
             break;
         default:
             return false;
@@ -179,8 +202,16 @@ void Menu::chooseOption() {
         case kOptionsReturnItem:
             setPage(kMainPage, 3, 1);
             break;
+        case kMusicItem:
+        case kSoundItem: {
+            Options& o = *services_.options;
+            int& volume = focus_ == kMusicItem ? o.musicVolume : o.soundVolume;
+            volume = volume == Options::kMaxVolume ? 0 : volume + 1;
+            updateItems();
+            break;
+        }
         default:
-            switchOption();
+            switchOption(1);
             break;
     }
 }
@@ -212,6 +243,13 @@ void Menu::optionsItems() {
     option(kMotionItem, kMotionText, o.smoothMotion ? kOnText : kOffText);
     option(kWidescreenItem, kWidescreenText, o.widescreen ? kOnText : kOffText);
     option(kLanguageItem, kLanguageText, o.language == input::Language::French ? kFrenchText : kEnglishText);
+    const auto volume = [&](int item, int label, int level) {
+        std::snprintf(text_[static_cast<std::size_t>(item)].data(), text_[0].size(), "%s %d", t.text(label),
+                      level);
+    };
+    volume(kMusicItem, kMusicText, o.musicVolume);
+    volume(kSoundItem, kSoundText, o.soundVolume);
+    option(kRumbleItem, kRumbleText, o.rumble ? kOnText : kOffText);
     setItem(kKeys1Item, t.text(kPlayer1KeysText));
     setItem(kKeys2Item, t.text(kPlayer2KeysText));
     setItem(kKeys3Item, t.text(kPlayer3KeysText));
@@ -259,7 +297,8 @@ void Menu::draw() {
     const gfx::BitmapFont& font = *services_.fonts->menu;
     const gfx::BitmapFont& focusedFont = *services_.fonts->menus;
 
-    const int halfHeight = items_ * lineHeight_ / 2;
+    const int lineHeight = std::min(lineHeight_, kItemsHeight / std::max(items_, 1));
+    const int halfHeight = items_ * lineHeight / 2;
     int y = 240 - halfHeight;
     const int centre = screen.width() / 2;  // 320, or the middle of a level in 16:9
 
@@ -286,7 +325,9 @@ void Menu::draw() {
     if (page_ != bandPage_ || moved > 20 || moved < -20) {
         gfx::blit(backdrop, 0, 0, screen);
         bandLeft_ = centre - halfWidth;
-        const gfx::Rect band{centre - halfWidth, 220 - halfHeight, 2 * halfWidth, 40 + 2 * halfHeight};
+        const int footer = footerText_ != 0 && page_ == kMainPage ? kFooterHeight : 0;
+        const gfx::Rect band{centre - halfWidth, 220 - halfHeight, 2 * halfWidth,
+                             40 + 2 * halfHeight + footer};
         gfx::darken(backdrop, &band);
         bandPage_ = page_;
     }
@@ -295,7 +336,11 @@ void Menu::draw() {
     for (int i = 0; i < items_; ++i) {
         (focus_ == i ? focusedFont : font)
             .printCentred(screen, centre, y, text_[static_cast<std::size_t>(i)].data());
-        y += lineHeight_;
+        y += lineHeight;
+    }
+    if (footerText_ != 0 && page_ == kMainPage) {
+        services_.fonts->rpg->printCentred(screen, centre, 240 + halfHeight + 8,
+                                           services_.texts->text(footerText_));
     }
 }
 
@@ -324,6 +369,17 @@ void MainMenu::start() {
     setPage(kMainPage, 3, 0);
     musicWasOn_ = services_.audio->musicOn;
     soundWasOn_ = services_.audio->soundOn;
+
+    std::string error;
+    const auto campaign = services_.assets->campaign("data/bb.lst", error);
+    missions_ = campaign ? findMissions(*campaign) : std::vector<Mission>();
+    firstPart_ = 0;
+}
+
+int MainMenu::missionsOffered() const {
+    const int reached = services_.progress != nullptr ? services_.progress->missionsReached : 1;
+    const int fit = static_cast<int>(text_.size()) - 1;  // and RETURN
+    return std::min({reached, static_cast<int>(missions_.size()), fit});
 }
 
 void MainMenu::updateItems() {
@@ -341,6 +397,14 @@ void MainMenu::updateItems() {
         case kOptionsPage:
             optionsItems();
             break;
+        case kMissionPage: {
+            const int count = missionsOffered();
+            for (int i = 0; i < count; ++i) {
+                setItem(i, missionName(missions_, i, t).c_str());
+            }
+            setItem(count, t.text(kReturnText));
+            break;
+        }
         default:
             if (keysPlayer(page_) >= 0) {
                 keyItems(AliasControls::firstOf(keysPlayer(page_)));
@@ -409,6 +473,13 @@ bool MainMenu::update(int& result) {
                     case kMainPage:
                         switch (focus_) {
                             case 0:
+                                // Once a second mission was reached: the
+                                // missions, on the last one reached.
+                                if (missionsOffered() > 1) {
+                                    setPage(kMissionPage, missionsOffered() + 1, missionsOffered() - 1);
+                                    return done(result, kContinue);
+                                }
+                                firstPart_ = 0;
                                 return done(result, kStartGame);
                             case 1:
                                 setPage(kOptionsPage, kOptionItems, kOptionsReturnItem);
@@ -437,6 +508,14 @@ bool MainMenu::update(int& result) {
                         chooseOption();
                         return done(result, kContinue);
 
+                    case kMissionPage:
+                        if (focus_ < missionsOffered()) {
+                            firstPart_ = missions_[static_cast<std::size_t>(focus_)].part;
+                            return done(result, kStartGame);
+                        }
+                        setPage(kMainPage, 3, 0);  // RETURN
+                        return done(result, kContinue);
+
                     case kKeys1Page:
                     case kKeys2Page:
                     case kKeys3Page:
@@ -457,6 +536,7 @@ bool MainMenu::update(int& result) {
             case kSideKeys:
                 if (keyHeld(input::kKeyRight) || aliasHeld(kAliasRight) || keyHeld(input::kKeyLeft) ||
                     aliasHeld(kAliasLeft)) {
+                    sideStep_ = keyHeld(input::kKeyRight) || aliasHeld(kAliasRight) ? 1 : -1;
                     stage_ = kSideAction;
                     return waitFor(MenuWait::Release);
                 }
@@ -464,9 +544,10 @@ bool MainMenu::update(int& result) {
                 break;
 
             case kSideAction:
-                // Right and left do the same: they switch the option.
+                // Right and left switch the option (a volume goes up or
+                // down).
                 if (page_ == kOptionsPage) {
-                    switchOption();
+                    switchOption(sideStep_);
                 }
                 return done(result, kContinue);
 
@@ -479,8 +560,12 @@ bool MainMenu::update(int& result) {
 
             case kBackAction:
                 // Up one page; the first page has nothing above it.
-                if (!backFromOptions() && page_ == kExitPage) {
-                    setPage(kMainPage, 3, 2);
+                if (!backFromOptions()) {
+                    if (page_ == kExitPage) {
+                        setPage(kMainPage, 3, 2);
+                    } else if (page_ == kMissionPage) {
+                        setPage(kMainPage, 3, 0);
+                    }
                 }
                 return done(result, kContinue);
 
@@ -544,9 +629,15 @@ enum PauseStage {
     kPauseEscapeAction,
     kPauseBackKey,
     kPauseBackAction,
+    kPauseControllersKey,
+    kPauseControllersAction,
 };
 
 }  // namespace
+
+PauseMenu::PauseMenu(Services& services) noexcept : Menu(services, 1, 40) {
+    footerText_ = kControllersText;
+}
 
 void PauseMenu::start() {
     setPage(kMainPage, 3, 0);
@@ -659,7 +750,7 @@ bool PauseMenu::update(int& result) {
 
             case kPauseRightAction:
                 stage_ = kPauseLeftKey;
-                if (page_ == optionsPage_ && switchOption()) {
+                if (page_ == optionsPage_ && switchOption(1)) {
                     return done(result, kStay);
                 }
                 break;
@@ -674,7 +765,7 @@ bool PauseMenu::update(int& result) {
 
             case kPauseLeftAction:
                 stage_ = kPauseEscapeKey;
-                if (page_ == optionsPage_ && switchOption()) {
+                if (page_ == optionsPage_ && switchOption(-1)) {
                     return done(result, kStay);
                 }
                 break;
@@ -695,6 +786,24 @@ bool PauseMenu::update(int& result) {
                     stage_ = kPauseBackAction;
                     return waitFor(MenuWait::Release);
                 }
+                stage_ = kPauseControllersKey;
+                break;
+
+            case kPauseControllersKey:
+                // X (SDL's Y, the top button) on any pad, as on the hero
+                // choice: the controller screen, where a Joy-Con pair can
+                // become two players' controllers (who then join in the
+                // level).
+                for (int pad = 0; pad < kMaxPlayers; ++pad) {
+                    if (keyHeld(input::padCode(pad, input::kPadButtonY))) {
+                        stage_ = kPauseControllersAction;
+                        return waitFor(MenuWait::Release);
+                    }
+                }
+                return done(result, kStay);
+
+            case kPauseControllersAction:
+                services_.input->requestPlayers(kMaxPlayers);
                 return done(result, kStay);
 
             case kPauseBackAction:

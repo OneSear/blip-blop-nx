@@ -1,8 +1,10 @@
 #pragma once
 
 #include <array>
+#include <vector>
 
 #include "bb/core/gfx/pixmap.hpp"
+#include "bb/game/missions.hpp"
 #include "bb/game/services.hpp"
 #include "bb/game/waits.hpp"
 
@@ -37,7 +39,8 @@ protected:
         kKeys2Page = 6,
         kKeys3Page = 10,  // the four-player mode
         kKeys4Page = 11,
-        kExitPage = 8
+        kExitPage = 8,
+        kMissionPage = 12,  // the missions reached (the main menu's)
     };
 
     Menu(Services& services, int pauseOptionsPage, int lineHeight) noexcept;
@@ -60,14 +63,17 @@ protected:
     void setItem(int i, const char* text);
     // The items of the options page: the display options and the language
     // (Phase 9; 2002 had a commented-out language choice; its vsync went
-    // with the desktop versions), widescreen (16:9 levels), the key pages
-    // and return.
+    // with the desktop versions), widescreen (16:9 levels), the volumes and
+    // the rumble, the key pages and return.
     enum OptionItem {
         kScalingItem,
         kFilterItem,
         kMotionItem,
         kWidescreenItem,
         kLanguageItem,
+        kMusicItem,
+        kSoundItem,
+        kRumbleItem,
         kKeys1Item,
         kKeys2Item,
         kKeys3Item,  // the four-player mode
@@ -87,11 +93,13 @@ protected:
     // The key read for item `redefining_` of the current key page.
     void setRedefinedKey(unsigned int code);
     // Return on the options page: switches the focused option or opens its
-    // page (RETURN goes back to the first page, on its OPTIONS item).
+    // page (RETURN goes back to the first page, on its OPTIONS item); a
+    // volume goes up, from the loudest back to silence.
     void chooseOption();
-    // Right or left on the options page: switches the focused option, if
-    // it is one; false otherwise.
-    bool switchOption();
+    // Right (step 1) or left (-1) on the options page: switches the focused
+    // option, if it is one (a volume goes up or down, the others switch
+    // either way); false otherwise.
+    bool switchOption(int step);
 
     Services& services_;
     const int optionsPage_;  // MENU_OPTS: 7 in the main menu, 1 in the pause menu
@@ -108,8 +116,11 @@ protected:
     // The band and the page it was darkened for (old_menu, rec).
     int bandPage_ = 0;
     int bandLeft_ = 0;
+    // A line under the first page's items (a string id; 0: none).
+    int footerText_ = 0;
 
-    std::array<std::array<char, 100>, 10> text_{};
+    // The items of a page: 13 on the options page.
+    std::array<std::array<char, 100>, 16> text_{};
 };
 
 // The main menu of the attract loop (MenuMain).
@@ -117,12 +128,18 @@ class MainMenu : public Menu {
 public:
     // What update() returns in its result (RET_*). START GAME opens the
     // hero choice, where the players join (2002 had a page of 1 or 2
-    // PLAYERS, then 3 and 4 in the four-player mode).
+    // PLAYERS, then 3 and 4 in the four-player mode); once the players
+    // reached a second mission, it first offers the missions reached
+    // (firstPart()).
     enum Result { kContinue = 0, kStartGame = 1, kExit = 3 };
 
     explicit MainMenu(Services& services) noexcept : Menu(services, kOptionsPage, 30) {}
 
+    // Opens the first page; reads the missions of bb.lst.
     void start();
+    // With kStartGame: the part of bb.lst the campaign starts at (0, or the
+    // briefing of the mission chosen).
+    int firstPart() const noexcept { return firstPart_; }
     // One update: true with the result; false when the menu waits for
     // wait() to be over - call update() again then.
     bool update(int& result);
@@ -135,10 +152,15 @@ public:
 
 private:
     void updateItems() override;
+    // The missions offered: those reached, at most all of bb.lst's.
+    int missionsOffered() const;
 
     bool keyHeld_ = false;
     bool soundWasOn_ = true;
     bool musicWasOn_ = true;
+    int sideStep_ = 1;  // right (1) or left (-1), held at the last update
+    std::vector<Mission> missions_;
+    int firstPart_ = 0;
 };
 
 // The pause menu of a level (MenuGame).
@@ -147,7 +169,8 @@ public:
     // What update() returns in its result.
     enum Result { kStay = 0, kResume = 1, kLeaveLevel = 2 };
 
-    explicit PauseMenu(Services& services) noexcept : Menu(services, 1, 40) {}
+    // Its first page tells X opens the controller screen.
+    explicit PauseMenu(Services& services) noexcept;
 
     void start();
     bool update(int& result);

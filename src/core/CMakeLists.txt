@@ -13,6 +13,7 @@ add_library(bb_core STATIC
     src/input_names.cpp
     src/input_bindings.cpp
     src/settings.cpp
+    src/progress.cpp
     src/log.cpp
     src/assets_image16.cpp
     src/assets_text_encoding.cpp

@@ -62,6 +62,11 @@ public:
     // has no such screen.
     virtual void requestPlayers(int count) = 0;
 
+    // Rumbles a pad for `milliseconds`, its low- and high-frequency motors at
+    // these strengths (0 to 65535), replacing the rumble it had; nothing on a
+    // pad that cannot rumble or an empty slot.
+    virtual void rumble(int slot, std::uint16_t low, std::uint16_t high, std::uint32_t milliseconds) = 0;
+
     // Shows the system's on-screen keyboard (the Switch's) for a short
     // text, which then comes as a Text event; false where there is none (a
     // keyboard types instead). textEntryShown() is false again once the

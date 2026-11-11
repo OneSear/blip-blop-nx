@@ -12,6 +12,7 @@
 #include <string>
 #include <string_view>
 #include <utility>
+#include <vector>
 
 #include "bb/core/assets/asset_source.hpp"
 #include "bb/core/assets/pack.hpp"
@@ -20,6 +21,7 @@
 #include "bb/core/gfx/sprite.hpp"
 #include "bb/core/vfs.hpp"
 #include "bb/game/briefing.hpp"
+#include "bb/game/missions.hpp"
 #include "bb/game/services.hpp"
 
 namespace {
@@ -102,8 +104,26 @@ void checkBriefings(const bb::core::assets::AssetSource& source) {
 
     gfx::BitmapFont title;
     gfx::BitmapFont text;
+    gfx::BitmapFont menu;
     REQUIRE(bb::game::loadFont(source, bb::game::kBriefingTitleFont, title));
     REQUIRE(bb::game::loadFont(source, bb::game::kBriefingTextFont, text));
+    REQUIRE(bb::game::loadFont(source, "data/menu.lft", menu));
+
+    // The missions the main menu offers: those of the sheets, each starting
+    // with a new world.
+    const std::vector<bb::game::Mission> missions = bb::game::findMissions(*campaign);
+    REQUIRE(missions.size() == 7);
+    const int parts[] = {0, 4, 6, 11, 14, 16, 20};
+    for (std::size_t i = 0; i < missions.size(); ++i) {
+        CAPTURE(i);
+        CHECK(missions[i].part == parts[i]);
+        CHECK(bb::game::missionAt(missions, parts[i]) == static_cast<int>(i));
+        const CampaignEntry& level = campaign->entries.at(static_cast<std::size_t>(parts[i] + 1));
+        CHECK(level.kind == CampaignEntry::Kind::Level);
+        CHECK(level.levelKind != 2);  // not an intermediate level
+        CHECK(level.levelKind != 3);  // nor the last of a world
+    }
+    CHECK(bb::game::missionAt(missions, 2) == -1);
 
     for (const char* table : {"data/uk.dat", "data/fr.dat"}) {
         CAPTURE(table);
@@ -121,6 +141,17 @@ void checkBriefings(const bb::core::assets::AssetSource& source) {
             }
         }
         CHECK(sheets == 7);
+
+        const char* const english[] = {"MISSION 1", "BONUS STAGE 1", "MISSION 2",    "MISSION 3",
+                                       "BONUS STAGE 2", "MISSION 4", "FINAL MISSION"};
+        const char* const french[] = {"MISSION 1",      "NIVEAU BONUS 1", "MISSION 2",     "MISSION 3",
+                                      "NIVEAU BONUS 2", "MISSION 4",      "MISSION FINALE"};
+        const bool uk = std::string_view(table) == "data/uk.dat";
+        for (std::size_t i = 0; i < missions.size(); ++i) {
+            const std::string name = bb::game::missionName(missions, static_cast<int>(i), texts);
+            CHECK(name == (uk ? english[i] : french[i]));
+            checkGlyphs(menu, name);
+        }
     }
 }
 

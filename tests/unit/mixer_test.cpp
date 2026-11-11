@@ -180,3 +180,37 @@ TEST_CASE("the music plays once or loops, at the output rate") {
     CHECK(mixer.openMusic({'O', 'g', 'g', 'S', 0, 0}) == -1);
     CHECK(mixer.openMusic({1, 2, 3, 4, 5, 6, 7, 8}) == -1);
 }
+
+TEST_CASE("the volumes scale the sounds and the music apart, full volume leaving them as they are") {
+    audio::Mixer mixer(100);
+    const auto bytes = wav(1, 100, 16, {1000, -1000});
+    const int sound = mixer.loadSound(bytes.data(), bytes.size());
+    const int music = mixer.addMusic(std::make_unique<std::vector<std::uint8_t>>(),
+                                     std::make_unique<CountingStream>(100, 3));
+    REQUIRE(sound >= 0);
+    REQUIRE(music >= 0);
+    CHECK(mixer.soundGain() == audio::Mixer::kFullGain);
+    CHECK(mixer.musicGain() == audio::Mixer::kFullGain);
+
+    mixer.setGains(128, 0);  // sounds at half, no music
+    mixer.play(sound, true);
+    mixer.playMusic(music, true);
+    CHECK(mix(mixer, 2) == std::vector<std::int16_t>{500, 500, -500, -500});
+    mixer.setGains(0, audio::Mixer::kFullGain);
+    CHECK(mix(mixer, 1) == std::vector<std::int16_t>{3, -3});
+    mixer.setGains(audio::Mixer::kFullGain, audio::Mixer::kFullGain);
+    CHECK(mix(mixer, 1) == std::vector<std::int16_t>{-999, -1001});  // the sound's second sample
+    mixer.setGains(-5, 1000);  // kept within 0 to full
+    CHECK(mixer.soundGain() == 0);
+    CHECK(mixer.musicGain() == audio::Mixer::kFullGain);
+
+    // The options' levels: silent, then louder at each step, full at 10.
+    CHECK(audio::volumeGain(0) == 0);
+    CHECK(audio::volumeGain(audio::kVolumeLevels) == audio::Mixer::kFullGain);
+    CHECK(audio::volumeGain(8) == audio::Mixer::kFullGain / 2);  // 6 dB down
+    for (int level = 1; level <= audio::kVolumeLevels; ++level) {
+        CHECK(audio::volumeGain(level) > audio::volumeGain(level - 1));
+    }
+    CHECK(audio::volumeGain(-1) == 0);
+    CHECK(audio::volumeGain(11) == audio::Mixer::kFullGain);
+}

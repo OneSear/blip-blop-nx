@@ -4,6 +4,14 @@
 
 namespace bb::game {
 
+// The rumble of the controllers: input player `player` (0 to 3) is the one
+// whose aliases start at AliasControls::firstOf(player).
+class RumbleOutput {
+public:
+    virtual ~RumbleOutput() = default;
+    virtual void rumble(int player, Rumble kind) = 0;
+};
+
 // The game's view of the input of the current tick: the codes held, by
 // key code or through the remappable aliases (the 2002 Input).
 class InputState {
@@ -29,8 +37,18 @@ public:
     static constexpr int kSecondPlayer = 10;
     // The first alias of player `player` (0 to 3).
     static constexpr int firstOf(int player) noexcept { return player * 10; }
+    // The player whose aliases start at `first`.
+    static constexpr int playerOf(int first) noexcept { return first / 10; }
 
-    AliasControls(const InputState& input, int first) noexcept : input_(input), first_(first) {}
+    // rumbleOutput: where the player's rumble goes (none: no rumble).
+    AliasControls(const InputState& input, int first, RumbleOutput* rumbleOutput = nullptr) noexcept
+        : input_(input), first_(first), rumble_(rumbleOutput) {}
+
+    void rumble(Rumble kind) const override {
+        if (rumble_ != nullptr) {
+            rumble_->rumble(playerOf(first_), kind);
+        }
+    }
 
     bool left() const override { return input_.aliasHeld(first_ + kLeft); }
     bool up() const override { return input_.aliasHeld(first_ + kUp); }
@@ -43,6 +61,7 @@ public:
 private:
     const InputState& input_;
     int first_;
+    RumbleOutput* rumble_;
 };
 
 }  // namespace bb::game

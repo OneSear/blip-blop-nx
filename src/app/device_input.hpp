@@ -42,6 +42,13 @@ public:
     void requestPlayers(int count) override;
     bool beginTextEntry() override;
     TextEntry textEntry(std::string& text) override;
+    // game::RumbleOutput: on the pad of the player's controls (the pad one of
+    // its actions is bound to, else the default layout's: pad 1 for the first
+    // player ...), while enabled.
+    void rumble(int player, game::Rumble kind) override;
+
+    // The RUMBLE option, off in deterministic runs (App::applyAudioOptions()).
+    void enableRumble(bool on) noexcept { rumbleOn_ = on; }
 
 private:
     struct Pad {
@@ -84,6 +91,7 @@ private:
     bool textEntry_ = false;
     bool textTyped_ = false;
     std::string text_;
+    bool rumbleOn_ = false;
 };
 
 }  // namespace bb::app

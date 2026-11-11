@@ -8,6 +8,7 @@
 #include "bb/core/gfx/sprite.hpp"
 #include "bb/core/gfx/viewport.hpp"
 #include "bb/core/input/names.hpp"
+#include "bb/core/progress.hpp"
 #include "bb/game/audio.hpp"
 #include "bb/game/input.hpp"
 
@@ -23,7 +24,7 @@ class Decor;
 
 // The input the screens read: the keys and pads of the current update,
 // the aliases (remappable from the options), and the focus.
-class Input : public InputState {
+class Input : public InputState, public RumbleOutput {
 public:
     // Reads the platform's events (or, in deterministic runs, the input of
     // the recorded frame).
@@ -86,6 +87,9 @@ public:
     // lose power before the game exits. Nothing in deterministic runs.
     virtual void saveSettings() = 0;
     virtual void saveHiScores() = 0;
+    // Writes Services::progress now (a mission was reached). Nothing in
+    // deterministic runs, whose progress never changes.
+    virtual void saveProgress() = 0;
 };
 
 // The options the menus change (the 2002 language; the display options are
@@ -100,6 +104,12 @@ struct Options {
     // Levels shown 854 pixels wide (16:9) rather than 640 (4:3); from the
     // next level start (Camera::width).
     bool widescreen = false;
+    // The volumes, 0 to kMaxVolume (full: the 2002 mix), which the
+    // application gives the mixer; the rumble of the controllers.
+    static constexpr int kMaxVolume = 10;
+    int musicVolume = kMaxVolume;
+    int soundVolume = kMaxVolume;
+    bool rumble = true;
 };
 
 // The banks and fonts of the game, owned by the application: some live as
@@ -153,6 +163,9 @@ struct Services {
     Decor* decor = nullptr;  // the level's scrolling background
     World* world = nullptr;
     HiScores* hiScores = nullptr;
+    // The missions reached (the main menu offers them); in deterministic
+    // runs the reference (the first one) or, with --all-missions, all.
+    core::Progress* progress = nullptr;
 };
 
 // Loads the banks and fonts of the asset source into the game's own

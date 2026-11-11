@@ -27,6 +27,8 @@ constexpr int kPressKeyText = 852;     // "Press a key to start."
 constexpr int kLoadingDotsText = 853;  // "Loading..."
 constexpr int kFullHealth = 5;
 
+const char* const kHeroNames[] = {"Blip", "Blop", "Bleach", "Blitz"};
+
 void log(const std::string& line) {
     core::Log::info(line);
 }
@@ -38,16 +40,16 @@ Game::Game(Services& services)
       world_(*services.world),
       level_(*services.world),
       dialogue_(services),
-      controls_{AliasControls(*services.input, AliasControls::firstOf(0)),
-                AliasControls(*services.input, AliasControls::firstOf(1)),
-                AliasControls(*services.input, AliasControls::firstOf(2)),
-                AliasControls(*services.input, AliasControls::firstOf(3))} {}
+      controls_{AliasControls(*services.input, AliasControls::firstOf(0), services.input),
+                AliasControls(*services.input, AliasControls::firstOf(1), services.input),
+                AliasControls(*services.input, AliasControls::firstOf(2), services.input),
+                AliasControls(*services.input, AliasControls::firstOf(3), services.input)} {}
 
 //-----------------------------------------------------------------------------
 // The campaign
 //-----------------------------------------------------------------------------
 
-bool Game::startCampaign(const Lineup& lineup) {
+bool Game::startCampaign(const Lineup& lineup, int firstPart) {
     Banks& banks = services_.banks;
 
     // The interface pictures are freed while the campaign runs; the screens
@@ -66,16 +68,22 @@ bool Game::startCampaign(const Lineup& lineup) {
 
     // Players 1 to count, each with its hero and with the controls of the
     // input player that chose it.
-    static const char* const kHeroNames[] = {"Blip", "Blop", "Bleach", "Blitz"};
     std::string note = "campaign starts:";
+    for (int& c : controlsOf_) {
+        c = -1;
+    }
     for (int i = 0; i < lineup.count && i < kMaxPlayers; ++i) {
         const int c = lineup.controls[i];
         const int controls = c >= 0 && c < kMaxPlayers ? c : i;
         players_[i] = new Player(world_, lineup.heroes[i], controls_[controls], i);
+        controlsOf_[i] = controls;
         world_.players.add(players_[i]);
         level_.players[i] = players_[i];
         note += std::string(i == 0 ? " " : ", ") + kHeroNames[static_cast<int>(lineup.heroes[i])] +
                 " (controls " + std::to_string(controls + 1) + ")";
+    }
+    if (firstPart > 0) {
+        note += ", from part " + std::to_string(firstPart + 1);
     }
     services_.session->note(note.c_str());
 
@@ -83,7 +91,91 @@ bool Game::startCampaign(const Lineup& lineup) {
     for (bool& perfect : lastPerfect_) {
         perfect = false;
     }
+
+    // A campaign started at a later mission: the cow bomb that the first
+    // level gives.
+    for (int i = 0; i < firstPart && i < partCount_; ++i) {
+        if (parts_[static_cast<std::size_t>(i)].kind == kLevel) {
+            levelPlayed();
+            break;
+        }
+    }
     return true;
+}
+
+//-----------------------------------------------------------------------------
+// Joining a running level
+//-----------------------------------------------------------------------------
+
+const Player* Game::landingPlace() const {
+    for (const Player* p : players_) {
+        if (p != nullptr && !p->dead && p->lives > 0 && p->mode != kDying && p->mode != Player::kComingBack &&
+            p->mode != Player::kRiding) {
+            return p;
+        }
+    }
+    return nullptr;
+}
+
+int Game::joinSlot() const {
+    int slot = -1;
+    for (int i = 0; i < kMaxPlayers && slot < 0; ++i) {
+        slot = players_[i] == nullptr ? i : -1;
+    }
+    return slot >= 0 && landingPlace() != nullptr ? slot : -1;
+}
+
+void Game::updateJoins() {
+    const int slot = joinSlot();
+    if (slot < 0) {
+        return;
+    }
+    Input& in = *services_.input;
+    for (int c = 0; c < kMaxPlayers; ++c) {
+        if (std::find(std::begin(controlsOf_), std::end(controlsOf_), c) != std::end(controlsOf_) ||
+            !in.aliasHeld(AliasControls::firstOf(c) + AliasControls::kFire)) {
+            continue;
+        }
+
+        // The hero of the controls (Blop for the second ...), or the next one
+        // no one has.
+        int hero = c;
+        for (int i = 0; i < kMaxPlayers; ++i) {
+            const int h = (c + i) % kMaxPlayers;
+            const bool taken = std::any_of(std::begin(players_), std::end(players_), [&](const Player* p) {
+                return p != nullptr && static_cast<int>(p->hero) == h;
+            });
+            if (!taken) {
+                hero = h;
+                break;
+            }
+        }
+        const Hero which = static_cast<Hero>(hero);
+        if ((which == Hero::Bleach || which == Hero::Blitz) && services_.banks.bleach->empty() &&
+            !loadNewHeroes()) {
+            return;
+        }
+
+        const Player* place = landingPlace();
+        auto* p = new Player(world_, which, controls_[c], slot);
+        players_[slot] = p;
+        controlsOf_[slot] = c;
+        level_.players[slot] = p;
+        p->cowBombs = world_.cowBombUnlocked ? 1 : 0;
+        p->dropIn(place->x, place->y);
+        // A bonus level is played with one life; the others come back.
+        if (levelKind_ == kBonusLevel) {
+            bonus_[slot].lives = p->lives;
+            bonus_[slot].bringBack = true;
+            p->lives = 1;
+        }
+        world_.players.add(p);
+
+        const std::string note = "player " + std::to_string(slot + 1) + " joins: " + kHeroNames[hero] +
+                                 " (controls " + std::to_string(c + 1) + ")";
+        services_.session->note(note.c_str());
+        return;
+    }
 }
 
 void Game::levelPlayed() {
@@ -108,6 +200,7 @@ void Game::deletePlayers() {
         delete players_[i];
         players_[i] = nullptr;
         level_.players[i] = nullptr;
+        controlsOf_[i] = -1;
     }
 }
 
@@ -132,15 +225,12 @@ bool Game::loadCampaign(const Lineup& lineup) {
         }
     }
     // Bleach and Blitz, recoloured Blip and Blop (tools/art/new_heroes.py),
-    // only when one of them plays.
+    // only when one of them plays (or joins, updateJoins()).
     bool newHeroes = false;
     for (int i = 0; i < lineup.count && i < kMaxPlayers; ++i) {
         newHeroes = newHeroes || lineup.heroes[i] == Hero::Bleach || lineup.heroes[i] == Hero::Blitz;
     }
-    if (newHeroes && (!loadSprites(assets, "data/bleach.gfx", *banks.bleach) ||
-                        !loadSprites(assets, "data/blitz.gfx", *banks.blitz) ||
-                        !loadFont(assets, "data/scorep.lft", *banks.scoreBleach) ||
-                        !loadFont(assets, "data/scoreg.lft", *banks.scoreBlitz))) {
+    if (newHeroes && !loadNewHeroes()) {
         return false;
     }
 
@@ -165,6 +255,15 @@ bool Game::loadCampaign(const Lineup& lineup) {
 
     log("Successfully loaded all needed global game files");
     return true;
+}
+
+bool Game::loadNewHeroes() {
+    const core::assets::AssetSource& assets = *services_.assets;
+    Banks& banks = services_.banks;
+    return loadSprites(assets, "data/bleach.gfx", *banks.bleach) &&
+           loadSprites(assets, "data/blitz.gfx", *banks.blitz) &&
+           loadFont(assets, "data/scorep.lft", *banks.scoreBleach) &&
+           loadFont(assets, "data/scoreg.lft", *banks.scoreBlitz);
 }
 
 void Game::releaseCampaign() {
@@ -201,6 +300,7 @@ bool Game::loadParts(const char* name) {
     }
 
     partCount_ = 0;
+    missions_ = findMissions(*campaign);
     for (const auto& entry : campaign->entries) {
         if (entry.path.size() >= 200) {  // the 2002 name buffers
             log(std::string("File ") + name + " corrupted!");
@@ -601,6 +701,7 @@ std::unique_ptr<Screen> Game::summaryScreen() {
 void Game::tickBegin() {
     Input& in = *services_.input;
     in.update();
+    updateJoins();
 
     CheatKeys cheats;
     cheats.enabled = services_.options->cheats;
@@ -663,7 +764,7 @@ void Game::drawAll(bool flip) {
 
     core::gfx::Pixmap& screen = *services_.screen;
     level_.drawWorld(screen, *services_.decor);
-    Hud::draw(world_, players_, level_.bonusLevel, world_.blink);
+    Hud::draw(world_, players_, level_.bonusLevel, world_.blink, joinSlot());
     level_.drawOverlays(screen);
 
     if (level_.showFps) {

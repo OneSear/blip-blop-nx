@@ -108,6 +108,9 @@ private:
     int goSubFrame_ = 0;
     int goLastCameraX_ = 0;
     bool goMustStop_ = false;
+    // The shake's amplitude after the last tick's updateShake(), to rumble
+    // when a shake starts (no part of the world state).
+    int lastShake_ = 0;
 };
 
 }  // namespace bb::game
