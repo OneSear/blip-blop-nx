@@ -75,8 +75,11 @@ picture is 1440x1080, or 1280x960 (exactly twice the game's 640x480) with
 SCALING = INTEGER. Docking and undocking change it at once. The options
 menu (in the main menu and the pause menu) also sets the FILTER: CRISP
 (square, sharp pixels, the default), SHARP (nearest pixels, uneven at these
-sizes) or SMOOTH (blurred); SMOOTH MOTION (on by default: it draws between
-the game's 84.7 simulation ticks a second, so that movement is even on the
+sizes), SMOOTH (blurred), XBR (the edges of the art smoothed, sharp
+otherwise) or CRT (scanlines and the phosphor stripes of a tube); the last
+two are shaders, drawn with OpenGL, and show as CRISP without it; SMOOTH
+MOTION (on by default: it draws between the game's 84.7 simulation ticks a
+second, so that movement is even on the
 60 Hz screen, one tick late); WIDESCREEN (on by default: the game fills
 the 16:9 screen; a level shows 854 pixels of its width instead of 640, the
 hero choice and the mission sheets are laid out across, the other screens

@@ -79,7 +79,7 @@ SDL resizes the window when the mode changes. The display reads the output's siz
 - The Switch shows 60 frames a second: vsync always on; the 60-per-second pacing of `App::present` unchanged.
 - SMOOTH MOTION on by default: 84.7 ticks a second do not divide into 60 frames.
 - The VSYNC option, the F10 key and the `fullscreen` setting go: the Switch has no window to manage and always syncs. Local Mac and Linux builds open a plain window with vsync on.
-- The options: SCALING (FIT, INTEGER), FILTER (SHARP, CRISP, SMOOTH), SMOOTH MOTION, LANGUAGE and the four players' controls.
+- The options: SCALING (FIT, INTEGER), FILTER (SHARP, CRISP, SMOOTH; XBR and CRT were added later, as OpenGL shaders: docs/progress.md, 11 November 2026), SMOOTH MOTION, LANGUAGE and the four players' controls.
 
 ### 3.5 Work
 

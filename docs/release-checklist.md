@@ -39,6 +39,11 @@ blocks the release or becomes a known issue in the release notes.
 - [ ] FILTER = CRISP: square, sharp pixels that do not shimmer when the
       level scrolls; SHARP shows uneven pixels, SMOOTH blurs; the choice is
       back after a restart.
+- [ ] The log's first `Display:` line names OpenGL ES (the shaders' display),
+      not SDL's renderer. FILTER = XBR: the outlines of the art are
+      smooth, not stair-stepped, handheld and docked; FILTER = CRT:
+      scanlines and stripes, the picture not darker than CRISP's; both at
+      60 frames a second (no stutter while a level scrolls).
 - [ ] SMOOTH MOTION = ON (the default): scrolling and walking look even;
       the game plays the same.
 - [ ] WIDESCREEN = ON (the default): the levels fill the 16:9 screen

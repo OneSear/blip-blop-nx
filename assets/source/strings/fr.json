@@ -195,6 +195,8 @@
     {"id": 864, "text": "PRET!"},
     {"id": 865, "text": "A = choisir   B = retour   X = manettes"},
     {"id": 866, "text": "J%d"},
+    {"id": 867, "text": "XBR"},
+    {"id": 868, "text": "CRT"},
     {"id": 870, "text": "MISSION 1"},
     {"id": 871, "text": "Objectif\u00a0:"},
     {"id": 872, "text": "-Délivrer le Dr Gorgomel."},

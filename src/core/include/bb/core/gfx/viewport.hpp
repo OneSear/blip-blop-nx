@@ -1,5 +1,8 @@
 #pragma once
 
+#include <optional>
+#include <string_view>
+
 #include "bb/core/gfx/pixmap.hpp"
 
 namespace bb::core::gfx {
@@ -8,13 +11,23 @@ namespace bb::core::gfx {
 // (nearest), CRISP or smoothed (bilinear). CRISP first enlarges the frame
 // with sharp pixels by the next whole factor, then draws that at the final
 // size with bilinear filtering: square, sharp pixels with at most one
-// blended pixel at their edges (switch-port.md, 3.2).
-enum class Filter { Sharp, Crisp, Smooth };
+// blended pixel at their edges (switch-port.md, 3.2). XBR and CRT are
+// shaders, drawn where the display has OpenGL (else as CRISP): XBR smooths
+// the edges of the art (an edge-directed enlargement in the manner of
+// Hyllian's xBR), CRT shows the frame as a tube showed it (scanlines and an
+// aperture grille).
+enum class Filter { Sharp, Crisp, Smooth, Xbr, Crt };
+
+// The filters in the order the options menu shows them, and their names in
+// the settings file and the log ("sharp", "crisp", "smooth", "xbr", "crt").
+constexpr Filter kFilters[] = {Filter::Sharp, Filter::Crisp, Filter::Smooth, Filter::Xbr, Filter::Crt};
+const char* filterName(Filter filter) noexcept;
+std::optional<Filter> filterFromName(std::string_view name) noexcept;
 
 // Where a frame goes on the screen and how it gets there.
 struct Viewport {
     Rect picture;      // in output pixels, centred; the rest is black
-    int prescale = 1;  // whole factor CRISP enlarges the frame by first (1: none)
+    int prescale = 1;  // whole factor CRISP (XBR, CRT) enlarges the frame by first (1: none)
     bool smooth = false;  // whether the last step, to the picture, is bilinear
 };
 

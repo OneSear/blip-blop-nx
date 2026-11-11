@@ -33,6 +33,8 @@ enum Text {
     kFilterText = 817,
     kSharpText = 818,
     kCrispText = 862,
+    kXbrText = 867,  // the shaders
+    kCrtText = 868,
     kSmoothText = 802,
     kMotionText = 804,
     kWidescreenText = 807,  // an empty id of 2002
@@ -122,12 +124,16 @@ bool Menu::switchOption() {
         case kScalingItem:
             o.integerScaling = !o.integerScaling;
             break;
-        case kFilterItem:
-            // SHARP, CRISP, SMOOTH and round again.
-            o.filter = o.filter == core::gfx::Filter::Sharp   ? core::gfx::Filter::Crisp
-                       : o.filter == core::gfx::Filter::Crisp ? core::gfx::Filter::Smooth
-                                                              : core::gfx::Filter::Sharp;
+        case kFilterItem: {
+            // SHARP, CRISP, SMOOTH, XBR, CRT and round again.
+            constexpr int kCount = sizeof(core::gfx::kFilters) / sizeof(core::gfx::kFilters[0]);
+            int i = 0;
+            while (i < kCount && core::gfx::kFilters[i] != o.filter) {
+                ++i;
+            }
+            o.filter = core::gfx::kFilters[(i + 1) % kCount];
             break;
+        }
         case kMotionItem:
             o.smoothMotion = !o.smoothMotion;
             break;
@@ -187,10 +193,22 @@ void Menu::optionsItems() {
                       t.text(value));
     };
     option(kScalingItem, kScalingText, o.integerScaling ? kIntegerText : kFitText);
-    option(kFilterItem, kFilterText,
-           o.filter == core::gfx::Filter::Sharp   ? kSharpText
-           : o.filter == core::gfx::Filter::Crisp ? kCrispText
-                                                  : kSmoothText);
+    const auto filterText = [](core::gfx::Filter f) {
+        switch (f) {
+            case core::gfx::Filter::Sharp:
+                return kSharpText;
+            case core::gfx::Filter::Crisp:
+                return kCrispText;
+            case core::gfx::Filter::Smooth:
+                return kSmoothText;
+            case core::gfx::Filter::Xbr:
+                return kXbrText;
+            case core::gfx::Filter::Crt:
+                return kCrtText;
+        }
+        return kCrispText;
+    };
+    option(kFilterItem, kFilterText, filterText(o.filter));
     option(kMotionItem, kMotionText, o.smoothMotion ? kOnText : kOffText);
     option(kWidescreenItem, kWidescreenText, o.widescreen ? kOnText : kOffText);
     option(kLanguageItem, kLanguageText, o.language == input::Language::French ? kFrenchText : kEnglishText);

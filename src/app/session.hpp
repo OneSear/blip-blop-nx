@@ -61,6 +61,9 @@ public:
     // --widescreen: the option on from the start (the regression replays
     // of the levels in 16:9).
     bool widescreen() const;
+    // --display-shots: true at the presented frame asked for, with the
+    // directory the pictures of the filters go to.
+    bool displayShots(std::uint64_t presented, std::string& dir) const;
     bool safeMode() const;
     // The /cheat and /quiet switches (also replayed from a recording).
     bool cheats() const;

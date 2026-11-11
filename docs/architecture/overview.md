@@ -73,7 +73,11 @@ the 2002 code used the 640-pixel screen's, and level events placed beyond
 the right edge wake earlier in a wider view (`wakePoints()`). Entities draw through
 `bb::game::Canvas`, which knows the back buffer, the fonts and the
 strings. The platform's `Display` only presents finished frames, scaled
-to the screen (the Switch's 1280x720 or 1920x1080: switch-port.md).
+to the screen (the Switch's 1280x720 or 1920x1080: switch-port.md): with
+OpenGL (ES 2.0 on the Switch, 2.1 on a Mac; `src/platform/sdl2/
+gl_display.cpp`), a shader for each FILTER (CRISP, XBR and CRT among
+them); without it, through SDL's renderer (SDL's dummy driver in the
+conformance tests; `BB_DISPLAY=renderer`), XBR and CRT then drawn as CRISP.
 
 ## Determinism
 

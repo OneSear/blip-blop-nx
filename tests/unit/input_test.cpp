@@ -89,7 +89,14 @@ TEST_CASE("settings round-trip through their text form") {
         bb::core::Settings::parse("blipblop-settings 1\np1.fire key:nope\n", error, warnings).has_value());
     CHECK_FALSE(
         bb::core::Settings::parse("blipblop-settings 1\nfilter blurry\n", error, warnings).has_value());
-    CHECK(error == "line 2: filter must be sharp, crisp or smooth");
+    CHECK(error == "line 2: filter must be sharp, crisp, smooth, xbr or crt");
+    for (const bb::core::gfx::Filter f : bb::core::gfx::kFilters) {
+        bb::core::Settings with;
+        with.filter = f;
+        const auto again = bb::core::Settings::parse(with.serialize(), error, warnings);
+        REQUIRE(again.has_value());
+        CHECK(again->filter == f);
+    }
     CHECK_FALSE(
         bb::core::Settings::parse("blipblop-settings 1\nwidescreen 16:9\n", error, warnings).has_value());
     CHECK(error == "line 2: widescreen must be off or on");

@@ -49,9 +49,7 @@ std::string Settings::serialize() const {
     out << "blipblop-settings 1\n";
     out << "language " << (language == input::Language::French ? "french" : "english") << "\n";
     out << "scaling " << (integerScaling ? "integer" : "fit") << "\n";
-    out << "filter "
-        << (filter == gfx::Filter::Sharp ? "sharp" : filter == gfx::Filter::Smooth ? "smooth" : "crisp")
-        << "\n";
+    out << "filter " << gfx::filterName(filter) << "\n";
     out << "smooth-motion " << (smoothMotion ? "on" : "off") << "\n";
     out << "widescreen " << (widescreen ? "on" : "off") << "\n";
     for (int p = 0; p < kPlayerCount; ++p) {
@@ -109,16 +107,12 @@ std::optional<Settings> Settings::parse(std::string_view text, std::string& erro
             continue;
         }
         if (w[0] == "filter") {
-            if (w[1] == "sharp") {
-                s.filter = gfx::Filter::Sharp;
-            } else if (w[1] == "crisp") {
-                s.filter = gfx::Filter::Crisp;
-            } else if (w[1] == "smooth") {
-                s.filter = gfx::Filter::Smooth;
-            } else {
-                error = where + "filter must be sharp, crisp or smooth";
+            const auto filter = gfx::filterFromName(w[1]);
+            if (!filter) {
+                error = where + "filter must be sharp, crisp, smooth, xbr or crt";
                 return std::nullopt;
             }
+            s.filter = *filter;
             continue;
         }
         if (w[0] == "scaling" || w[0] == "smooth-motion" || w[0] == "widescreen") {

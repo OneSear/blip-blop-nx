@@ -178,8 +178,9 @@ TEST_CASE("uk.dat reads as UTF-8 strings and writes back unchanged") {
     // 136 strings in 2002, plus the 109 that game.cpp printed (Phase 2),
     // the 8 of the screens and the HUD (Phase 3), the 4 menu items of the
     // four-player mode, the CRISP filter of the Switch port, the 4 texts
-    // of the hero choice and the 46 of the mission sheets.
-    CHECK(table->strings.size() == 253 + 4 + 1 + 4 + 46);
+    // of the hero choice, the 46 of the mission sheets and the names of the
+    // XBR and CRT filters.
+    CHECK(table->strings.size() == 253 + 4 + 1 + 4 + 46 + 2);
     REQUIRE(table->find(854) != nullptr);
     CHECK(*table->find(854) == "PLAYER %d GOT A HIGH SCORE!");
     REQUIRE(table->find(1013) != nullptr);

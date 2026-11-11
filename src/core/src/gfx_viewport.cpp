@@ -2,6 +2,31 @@
 
 namespace bb::core::gfx {
 
+const char* filterName(Filter filter) noexcept {
+    switch (filter) {
+        case Filter::Sharp:
+            return "sharp";
+        case Filter::Crisp:
+            return "crisp";
+        case Filter::Smooth:
+            return "smooth";
+        case Filter::Xbr:
+            return "xbr";
+        case Filter::Crt:
+            return "crt";
+    }
+    return "crisp";
+}
+
+std::optional<Filter> filterFromName(std::string_view name) noexcept {
+    for (const Filter filter : kFilters) {
+        if (name == filterName(filter)) {
+            return filter;
+        }
+    }
+    return std::nullopt;
+}
+
 Viewport viewport(int frameWidth, int frameHeight, int outputWidth, int outputHeight, bool integer,
                   Filter filter) noexcept {
     Viewport v;
@@ -37,6 +62,8 @@ Viewport viewport(int frameWidth, int frameHeight, int outputWidth, int outputHe
             v.smooth = true;
             break;
         case Filter::Crisp:
+        case Filter::Xbr:  // (as CRISP without OpenGL)
+        case Filter::Crt:
             // A whole multiple is exact with sharp pixels; a larger picture
             // is enlarged by the next whole factor, then filtered down; a
             // smaller one is only filtered.

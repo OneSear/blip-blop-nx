@@ -17,7 +17,7 @@ namespace bb::core {
 //   blipblop-settings 1
 //   language english
 //   scaling fit                 (fit | integer)
-//   filter crisp                (sharp | crisp | smooth)
+//   filter crisp                (sharp | crisp | smooth | xbr | crt)
 //   smooth-motion on
 //   widescreen on               (16:9 levels; off: 4:3 as in 2002)
 //   p1.fire key:left_ctrl

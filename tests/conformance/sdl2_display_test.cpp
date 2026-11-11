@@ -6,6 +6,8 @@
 
 #include <SDL.h>
 
+#include <cstdint>
+#include <cstdlib>
 #include <string>
 
 #include "bb/core/gfx/pixmap.hpp"
@@ -142,4 +144,68 @@ TEST_CASE("the SDL 2 display fits the frame, by whole factors when asked, CRISP 
     CHECK(isBlue(shown.at(1599, 1019)));
     CHECK(isBlack(shown.at(1600, 1019)));
     CHECK(display->describe().find("picture 1280x960 at 320,60, scaling integer") != std::string::npos);
+}
+
+// The OpenGL display, where there is a screen and OpenGL (not with SDL's
+// dummy driver: skipped then, as in a container): every filter draws the
+// frame upright, its colours in their channels; SHARP by a whole factor
+// shows every pixel exactly.
+TEST_CASE("the OpenGL display draws the frame through every filter") {
+    unsetenv("SDL_VIDEODRIVER");  // the system's driver
+    std::string error;
+    auto platform = bb::platform::sdl2::createPlatform({}, error);
+    if (platform == nullptr) {
+        MESSAGE("no video, skipped: " << error);
+        return;
+    }
+    bb::platform::DisplayOptions options;
+    options.width = 854;
+    options.hidden = true;
+    auto display = platform->createDisplay(options, error);
+    if (display == nullptr || display->describe().rfind("OpenGL", 0) != 0) {
+        MESSAGE("no OpenGL display, skipped");
+        return;
+    }
+
+    // A quarter of each colour, and a gradient in the bottom right one.
+    gfx::Pixmap frame(854, 480);
+    for (int y = 0; y < 480; ++y) {
+        for (int x = 0; x < 854; ++x) {
+            const bool right = x >= 427;
+            const bool bottom = y >= 240;
+            frame.at(x, y) = !right && !bottom  ? gfx::makePixel(220, 10, 10)
+                             : right && !bottom ? gfx::makePixel(10, 220, 10)
+                             : !right           ? gfx::makePixel(10, 10, 220)
+                                                : gfx::makePixel(static_cast<std::uint8_t>(x & 0xFF),
+                                                                 static_cast<std::uint8_t>(y & 0xFF), 128);
+        }
+    }
+    display->present(frame);
+
+    for (const gfx::Filter filter : gfx::kFilters) {
+        CAPTURE(gfx::filterName(filter));
+        display->setScaling(false, filter);
+        gfx::Pixmap shown;
+        REQUIRE(display->capture(shown, 1280, 720));
+        REQUIRE(shown.width() == 1280);
+        REQUIRE(shown.height() == 720);
+        const gfx::Pixel topLeft = shown.at(320, 180);
+        const gfx::Pixel topRight = shown.at(960, 180);
+        const gfx::Pixel bottomLeft = shown.at(320, 540);
+        CHECK(gfx::red(topLeft) > 2 * gfx::green(topLeft));
+        CHECK(gfx::green(topRight) > 2 * gfx::red(topRight));
+        CHECK(gfx::blue(bottomLeft) > 2 * gfx::red(bottomLeft));
+    }
+
+    display->setScaling(true, gfx::Filter::Sharp);
+    gfx::Pixmap twice;
+    REQUIRE(display->capture(twice, 1708, 960));
+    int mismatches = 0;
+    for (int y = 0; y < 960; ++y) {
+        for (int x = 0; x < 1708; ++x) {
+            mismatches +=
+                (twice.at(x, y) & gfx::kRgbMask) != (frame.at(x / 2, y / 2) & gfx::kRgbMask) ? 1 : 0;
+        }
+    }
+    CHECK(mismatches == 0);
 }
