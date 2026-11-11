@@ -71,11 +71,23 @@ constexpr int kDiagonalDownLeft = 15;  // BBDIR_BAS_GAUCHE
 constexpr int kDownLeft = 17;          // BBDIR_BAS_B_G
 }  // namespace aim
 
+// What a player's controller rumbles for (the RUMBLE option).
+enum class Rumble {
+    Hurt,     // a life point lost
+    Death,    // the last life point lost, or fallen out of the level
+    CowBomb,  // the player dropped one
+    Join,     // the player joined a running level
+    Quake,    // the screen starts to shake
+};
+
 // A player's buttons, read once per tick (the 2002 Controlor; its inertia
-// switch was always on, so the players always keep their jump speed).
+// switch was always on, so the players always keep their jump speed), and
+// the rumble of the controller they are on: a side effect the world never
+// reads back, so that it changes no tick.
 class PlayerControls {
 public:
     virtual ~PlayerControls() = default;
+    virtual void rumble(Rumble kind) const { (void)kind; }
     virtual bool left() const = 0;
     virtual bool up() const = 0;
     virtual bool right() const = 0;
@@ -242,6 +254,12 @@ public:
     bool wantsWeaponPickup() const;
     // Stops the looping weapon sounds (endLevel()).
     void endLevel();
+
+    // Drops in from the top of the view at x, down to landingY, as after a
+    // lost life: a player who joins a running level.
+    void dropIn(int atX, int atLandingY);
+    // Rumbles the player's controller.
+    void rumble(Rumble kind) const { controls_.rumble(kind); }
 
     void addPoints(int points) { score += points; }
     void addKill() { kills += 1; }

@@ -159,7 +159,8 @@ def menus():
     tap(s, "DOWN")                    # wraps to START
     tap(s, "DOWN")                    # OPTIONS
     tap(s, "RETURN")                  # options (SCALING, FILTER, SMOOTH MOTION,
-                                      # LANGUAGE, P1 to P4 KEYS, RETURN)
+                                      # WIDESCREEN, LANGUAGE, MUSIC, SOUNDS,
+                                      # RUMBLE, P1 to P4 KEYS, RETURN)
     tap(s, "DOWN")                    # wraps to SCALING
     tap(s, "RIGHT")
     tap(s, "LEFT")
@@ -176,6 +177,12 @@ def menus():
     tap(s, "DOWN")                    # WIDESCREEN, left off: the level in 4:3
     tap(s, "DOWN")
     tap(s, "RIGHT")                   # French
+    tap(s, "DOWN")
+    tap(s, "LEFT")                    # music volume 9 (/quiet: no music anyway)
+    tap(s, "DOWN")
+    tap(s, "RETURN")                  # sound volume: from 10 around to 0
+    tap(s, "DOWN")
+    tap(s, "RIGHT")                   # rumble off (none in a replay anyway)
     tap(s, "DOWN")
     tap(s, "RETURN")                  # player 1 keys, focus on RETURN
     tap(s, "UP")                      # special
@@ -265,6 +272,71 @@ def menus():
     s.hold(60)
     # Quit: EXIT, YES.
     tap(s, "UP")
+    tap(s, "RETURN")
+    tap(s, "RETURN")
+    return s.end(300)
+
+
+def missions():
+    """The missions the main menu offers once they were reached (option
+    all-missions: every one): the mission page left with its RETURN and
+    opened again, MISSION 3 chosen (the cow bomb comes with it); in its first
+    level player 2 joins with Tab (on Blop) and player 3 with A on pad 3 (on
+    Bleach, whose pictures load then); F9 wins the level and the next one,
+    whose summary has the three players; the bonus stage after them, the
+    pause menu's EXIT and a quit."""
+    s = Script(options=("/cheat", "/quiet", "all-missions"))
+    s.hold(30)
+    s.hold(10, "ESCAPE")              # skip the intro cutscene
+    s.hold(60)
+    tap(s, "RETURN")                  # START GAME: the missions, on the last
+    tap(s, "DOWN")                    # RETURN (a pad's B, also back, is not
+    tap(s, "RETURN")                  # read without a pad): the main menu
+    tap(s, "RETURN")                  # START GAME again
+    for _ in range(3):
+        tap(s, "UP")                  # MISSION 4, BONUS STAGE 2, MISSION 3
+    tap(s, "RETURN")                  # MISSION 3: the hero choice
+    s.hold(30)
+    tap(s, "RETURN", frames=10)       # player 1 joins, on Blip
+    tap(s, "RETURN", frames=10)       # and takes Blip: the game starts
+    s.hold(300)                       # loading, the 2-second wait
+    tap(s, "RETURN", frames=10)       # MISSION 3's briefing: start
+    for _ in range(4):
+        play_cycle(s)
+    s.hold(20, "TAB")                 # player 2 joins, next to player 1
+    p2 = ("F", "TAB")                 # player 2 runs right and fires
+    p3 = ("JOY3_RIGHT", "JOY3_B1")    # player 3, on pad 3
+
+    def cycle(*others):
+        s.hold(30, "RIGHT", "LCTRL", *others)
+        s.hold(8, "RIGHT", "LCTRL", "LALT", "G", "JOY3_B0", *others)  # all jump
+        s.hold(40, "RIGHT", "LCTRL", *others)
+        s.hold(6)                     # release all: lets dialogues finish
+        s.hold(4, "RETURN")
+        s.hold(6)
+        s.hold(3, "F1", "F3")         # ammo and a life for player 1
+        s.hold(3)
+
+    for _ in range(3):
+        cycle(*p2)
+    s.hold(20, "JOY3_B1")             # player 3 joins: Bleach
+    for _ in range(4):
+        cycle(*p2, *p3)
+    for _ in range(2):                # F9 wins snorkniv, then snorkniv2
+        s.hold(30)
+        s.hold(4, "F9")
+        s.hold(10)
+        for _ in range(12):           # the summary of three, the briefing
+            s.hold(4, "RETURN")
+            s.hold(30)
+        for _ in range(2):
+            cycle(*p2, *p3)
+    tap(s, "ESCAPE", frames=10)       # pause menu (RESUME, OPTIONS, EXIT)
+    tap(s, "DOWN")
+    tap(s, "DOWN")
+    tap(s, "RETURN")                  # EXIT: back to the main menu
+    s.hold(60)
+    tap(s, "UP")                      # EXIT, YES: quit
     tap(s, "RETURN")
     tap(s, "RETURN")
     return s.end(300)
@@ -720,6 +792,7 @@ def main():
         "menus.bbreplay": menus(),
         "gameover.bbreplay": gameover(),
         "fourplayers.bbreplay": four_players(),
+        "missions.bbreplay": missions(),
         "smurf.bbreplay": smurf(),
         "dork.bbreplay": dork(),
         "carebears.bbreplay": carebears(),

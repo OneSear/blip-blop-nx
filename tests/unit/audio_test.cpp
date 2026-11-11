@@ -23,6 +23,7 @@ public:
     void freeMusic(Music) override {}
     void playMusic(Music music, bool loop) override { musicPlays.push_back({music, loop}); }
     void stopMusic() override { ++musicStops; }
+    void setGains(int, int) override {}
 
     struct Play {
         int what;

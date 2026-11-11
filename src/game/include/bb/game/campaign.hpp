@@ -55,11 +55,13 @@ private:
 };
 
 // A campaign: the parts of bb.lst in turn, the ending after the last
-// level, then game over and the hi-scores (the 2002 jouePartie).
+// level, then game over and the hi-scores (the 2002 jouePartie). It starts at
+// part firstPart (a mission's briefing, MainMenu::firstPart()); each mission
+// reached is saved (Services::progress).
 class CampaignScreen : public Screen {
 public:
-    CampaignScreen(Services& services, Game& game, const Lineup& lineup)
-        : services_(services), game_(game), lineup_(lineup) {}
+    CampaignScreen(Services& services, Game& game, const Lineup& lineup, int firstPart = 0)
+        : services_(services), game_(game), lineup_(lineup), firstPart_(firstPart) {}
     // Plays one level only ("data/xxx.lvl", a level kind of bb.lst), then
     // stops: no ending, game over or hi-scores (the level editor's test).
     void playOnly(std::string file, int kind) {
@@ -72,6 +74,9 @@ public:
 private:
     // Waits for the release of the keys, a key, and its release.
     void pushKeyPress(ScreenStack& stack);
+    // Part part_ is about to play: if it opens a mission not reached yet,
+    // the progress counts it and is saved.
+    void noteMissionReached();
 
     enum class Step {
         Start,
@@ -109,6 +114,7 @@ private:
     Services& services_;
     Game& game_;
     Lineup lineup_;
+    int firstPart_ = 0;
     Step step_ = Step::Start;
     CutscenePlayer cutscene_{services_};
     bool won_ = true;

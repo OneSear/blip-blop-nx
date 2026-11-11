@@ -52,6 +52,9 @@ std::string Settings::serialize() const {
     out << "filter " << gfx::filterName(filter) << "\n";
     out << "smooth-motion " << (smoothMotion ? "on" : "off") << "\n";
     out << "widescreen " << (widescreen ? "on" : "off") << "\n";
+    out << "music-volume " << musicVolume << "\n";
+    out << "sound-volume " << soundVolume << "\n";
+    out << "rumble " << (rumble ? "on" : "off") << "\n";
     for (int p = 0; p < kPlayerCount; ++p) {
         for (const Action a : kActions) {
             out << 'p' << (p + 1) << '.' << input::actionName(a) << ' ' << input::codeName(bindings.get(p, a))
@@ -115,11 +118,23 @@ std::optional<Settings> Settings::parse(std::string_view text, std::string& erro
             s.filter = *filter;
             continue;
         }
-        if (w[0] == "scaling" || w[0] == "smooth-motion" || w[0] == "widescreen") {
+        if (w[0] == "music-volume" || w[0] == "sound-volume") {
+            int level = -1;
+            if (w[1].size() <= 2 && w[1].find_first_not_of("0123456789") == std::string_view::npos) {
+                level = std::stoi(std::string(w[1]));
+            }
+            if (level < 0 || level > kMaxVolume) {
+                error = where + std::string(w[0]) + " must be 0 to " + std::to_string(kMaxVolume);
+                return std::nullopt;
+            }
+            (w[0] == "music-volume" ? s.musicVolume : s.soundVolume) = level;
+            continue;
+        }
+        if (w[0] == "scaling" || w[0] == "smooth-motion" || w[0] == "widescreen" || w[0] == "rumble") {
             // Each takes one of two values; the second sets the option.
-            const char* values[3][2] = {{"fit", "integer"}, {"off", "on"}, {"off", "on"}};
-            bool* options[3] = {&s.integerScaling, &s.smoothMotion, &s.widescreen};
-            const int i = w[0] == "scaling" ? 0 : w[0] == "smooth-motion" ? 1 : 2;
+            const char* values[4][2] = {{"fit", "integer"}, {"off", "on"}, {"off", "on"}, {"off", "on"}};
+            bool* options[4] = {&s.integerScaling, &s.smoothMotion, &s.widescreen, &s.rumble};
+            const int i = w[0] == "scaling" ? 0 : w[0] == "smooth-motion" ? 1 : w[0] == "widescreen" ? 2 : 3;
             if (w[1] != values[i][0] && w[1] != values[i][1]) {
                 error = where + std::string(w[0]) + " must be " + values[i][0] + " or " + values[i][1];
                 return std::nullopt;

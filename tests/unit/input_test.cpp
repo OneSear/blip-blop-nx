@@ -4,6 +4,7 @@
 #include <array>
 #include <cstdint>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "bb/core/input/bindings.hpp"
@@ -66,10 +67,14 @@ TEST_CASE("settings round-trip through their text form") {
     s.filter = bb::core::gfx::Filter::Smooth;
     s.smoothMotion = false;
     s.widescreen = false;
+    s.musicVolume = 7;
+    s.soundVolume = 0;
+    s.rumble = false;
     s.bindings.set(1, in::Action::Fire, in::padCode(0, 5));
     const std::string text = s.serialize();
     CHECK(text.rfind("blipblop-settings 1\nlanguage french\nscaling integer\nfilter smooth\n"
-                     "smooth-motion off\nwidescreen off\np1.up key:up\n",
+                     "smooth-motion off\nwidescreen off\nmusic-volume 7\nsound-volume 0\nrumble off\n"
+                     "p1.up key:up\n",
                      0) == 0);
 
     std::string error;
@@ -81,8 +86,26 @@ TEST_CASE("settings round-trip through their text form") {
     CHECK(back->filter == bb::core::gfx::Filter::Smooth);
     CHECK_FALSE(back->smoothMotion);
     CHECK_FALSE(back->widescreen);
+    CHECK(back->musicVolume == 7);
+    CHECK(back->soundVolume == 0);
+    CHECK_FALSE(back->rumble);
     CHECK(back->bindings == s.bindings);
     CHECK(warnings.size() == 1);
+
+    // Files written before the volumes keep the defaults: full, rumbling.
+    const auto beforeVolumes =
+        bb::core::Settings::parse("blipblop-settings 1\nlanguage french\n", error, warnings);
+    REQUIRE(beforeVolumes.has_value());
+    CHECK(beforeVolumes->musicVolume == 10);
+    CHECK(beforeVolumes->soundVolume == 10);
+    CHECK(beforeVolumes->rumble);
+    CHECK_FALSE(
+        bb::core::Settings::parse("blipblop-settings 1\nmusic-volume 11\n", error, warnings).has_value());
+    CHECK(error == "line 2: music-volume must be 0 to 10");
+    CHECK_FALSE(
+        bb::core::Settings::parse("blipblop-settings 1\nsound-volume -1\n", error, warnings).has_value());
+    CHECK_FALSE(
+        bb::core::Settings::parse("blipblop-settings 1\nrumble maybe\n", error, warnings).has_value());
 
     CHECK_FALSE(bb::core::Settings::parse("language french\n", error, warnings).has_value());
     CHECK_FALSE(
@@ -236,7 +259,31 @@ public:
     unsigned int alias(int a) const override { return aliases[a]; }
 };
 
+// Records the rumble the controls ask for.
+class RumbleLog final : public bb::game::RumbleOutput {
+public:
+    void rumble(int player, bb::game::Rumble kind) override { asked.emplace_back(player, kind); }
+    std::vector<std::pair<int, bb::game::Rumble>> asked;
+};
+
 }  // namespace
+
+TEST_CASE("a player's rumble goes to the input player of its controls") {
+    const FakeInput input;
+    RumbleLog log;
+    const bb::game::AliasControls third(input, bb::game::AliasControls::firstOf(2), &log);
+    third.rumble(bb::game::Rumble::Hurt);
+    const bb::game::AliasControls first(input, bb::game::AliasControls::firstOf(0), &log);
+    first.rumble(bb::game::Rumble::CowBomb);
+    REQUIRE(log.asked.size() == 2);
+    CHECK(log.asked[0] == std::make_pair(2, bb::game::Rumble::Hurt));
+    CHECK(log.asked[1] == std::make_pair(0, bb::game::Rumble::CowBomb));
+
+    // Without an output (the tests, the editor), nothing.
+    const bb::game::AliasControls silent(input, bb::game::AliasControls::firstOf(1));
+    silent.rumble(bb::game::Rumble::Death);
+    CHECK(log.asked.size() == 2);
+}
 
 TEST_CASE("aliases accept the bound key and the default pad layout") {
     using bb::game::AliasControls;

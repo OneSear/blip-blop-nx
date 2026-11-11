@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 
+#include "bb/core/audio/mixer.hpp"
 #include "bb/core/gfx/bmp.hpp"
 #include "bb/core/gfx/sprite.hpp"
 #include "bb/core/input/codes.hpp"
@@ -108,6 +109,9 @@ void App::SessionView::saveSettings() {
 void App::SessionView::saveHiScores() {
     app_.saveHiScoresNow();
 }
+void App::SessionView::saveProgress() {
+    app_.saveProgressNow();
+}
 
 //-----------------------------------------------------------------------------
 // App
@@ -133,6 +137,7 @@ App::App(platform::Platform& platform, Session& session, GameFiles& files)
     }
     if (!platform.files().preferencesDirectory().empty()) {
         hiScoresPath_ = platform.files().preferencesDirectory() + "hiscores.scr";
+        progressPath_ = platform.files().preferencesDirectory() + "progress.cfg";
     }
 
     connectServices();
@@ -219,6 +224,7 @@ void App::connectServices() {
     s.world = &world_;
     s.decor = &decor_;
     s.hiScores = &hiScores_;
+    s.progress = &progress_;
 
     game::Banks& b = s.banks;
     b.interface = &interface_;
@@ -286,10 +292,13 @@ bool App::init() {
         loadHiScores(hiScoresPath_, platform_.files(), files_.dataFiles(), hiScores_);
     }
 
+    loadProgress();
+
     if (!loadStrings(options_.language)) {
         error("Cannot open the file 'data/uk.dat'");
         return false;
     }
+    applyAudioOptions();
 
     input_.open();
 
@@ -371,6 +380,7 @@ void App::present() {
     if (options_.language != language_) {
         loadStrings(options_.language);
     }
+    applyAudioOptions();
 
     if (!display_) {
         return;
@@ -507,6 +517,57 @@ int App::run() {
 void App::saveSettingsNow() {
     if (!session_.deterministic()) {
         saveSettings(settingsPath_, platform_.files(), options_, input_);
+    }
+}
+
+void App::applyAudioOptions() {
+    if (options_.musicVolume != musicVolume_ || options_.soundVolume != soundVolume_) {
+        musicVolume_ = options_.musicVolume;
+        soundVolume_ = options_.soundVolume;
+        platform_.audio().setGains(core::audio::volumeGain(soundVolume_),
+                                   core::audio::volumeGain(musicVolume_));
+    }
+    // Recordings and replays never rumble: what a replay rumbles is not
+    // checked, and a recording plays its own controllers' rumble again.
+    input_.enableRumble(options_.rumble && !session_.deterministic());
+}
+
+void App::loadProgress() {
+    progress_ = core::Progress();
+    if (session_.deterministic()) {
+        if (session_.allMissions()) {
+            progress_.missionsReached = core::Progress::kAllMissions;
+        }
+        return;
+    }
+    if (session_.allMissions()) {
+        // For this run only: no mission is reached beyond them, so the file
+        // is not written.
+        progress_.missionsReached = core::Progress::kAllMissions;
+        core::Log::info("--all-missions: every mission offered.");
+        return;
+    }
+    const auto bytes = progressPath_.empty() ? std::nullopt : platform_.files().readAll(progressPath_);
+    if (!bytes) {
+        return;
+    }
+    std::string error;
+    const auto progress = core::Progress::parse(std::string(bytes->begin(), bytes->end()), error);
+    if (progress) {
+        progress_ = *progress;
+        core::Log::info("Using " + progressPath_ + " as progress file.");
+    } else {
+        core::Log::info(progressPath_ + ": " + error + " - progress starts again");
+    }
+}
+
+void App::saveProgressNow() {
+    if (session_.deterministic() || progressPath_.empty()) {
+        return;
+    }
+    const std::string text = progress_.serialize();
+    if (!platform_.files().writeAll(progressPath_, text.data(), text.size())) {
+        core::Log::warning("Cannot save " + progressPath_);
     }
 }
 

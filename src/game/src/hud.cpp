@@ -17,6 +17,8 @@ namespace common = bb::assets::sprites::bb;
 constexpr int kTimeText = 828;   // "TIME"
 constexpr int kBonusText = 856;  // "Bonus"
 constexpr int kStageText = 857;  // "Stage"
+constexpr int kTagText = 866;    // "%dP": a player's tag
+constexpr int kJoinText = 839;   // "Press A to join"
 
 struct Layout {
     bool rightSide;
@@ -122,14 +124,29 @@ void drawPlayer(const World& world, const Player& player, const Layout& layout, 
     }
 }
 
+// In the corner of a player who has not joined: its tag, and how to join.
+void drawJoinHint(const World& world, int slot, const Layout& layout) {
+    const Media& media = world.media;
+    core::gfx::Pixmap& screen = media.canvas->screen();
+    const int x = layout.rightSide ? screen.width() - 10 : 10;
+    char tag[16];
+    std::snprintf(tag, sizeof(tag), media.texts->text(kTagText), slot + 1);  // NOLINT(cert-err33-c)
+    printFromEdge(*media.fonts->cool, screen, layout.rightSide, x, layout.top + 8, tag);
+    printFromEdge(*media.fonts->rpg, screen, layout.rightSide, x, layout.top + 40,
+                  media.texts->text(kJoinText));
+}
+
 }  // namespace
 
-void Hud::draw(const World& world, const Player* const* players, bool bonusLevel, bool blink) {
+void Hud::draw(const World& world, const Player* const* players, bool bonusLevel, bool blink, int joinSlot) {
     const Layout* layouts[kMaxPlayers] = {&kPlayer1, &kPlayer2, &kPlayer3, &kPlayer4};
     for (int i = 0; i < kMaxPlayers; ++i) {
         if (players[i] != nullptr && players[i]->lives > 0) {
             drawPlayer(world, *players[i], *layouts[i], bonusLevel, blink);
         }
+    }
+    if (joinSlot >= 0 && joinSlot < kMaxPlayers) {
+        drawJoinHint(world, joinSlot, *layouts[joinSlot]);
     }
 
     const int timer = world.flags[Flag::Timer];

@@ -80,6 +80,14 @@ public:
     void stopMusic();
     bool musicPlaying() const noexcept { return music_ >= 0; }
 
+    // The volumes of the sounds and of the music (the options' MUSIC and
+    // SOUNDS): a gain in 1/256ths, from 0 (silent) to kFullGain (the samples
+    // as they are, as before the volumes existed).
+    static constexpr int kFullGain = 256;
+    void setGains(int soundGain, int musicGain) noexcept;
+    int soundGain() const noexcept { return soundGain_; }
+    int musicGain() const noexcept { return musicGain_; }
+
     // Writes `frames` frames (2 samples each) of everything playing.
     void mix(std::int16_t* out, int frames);
 
@@ -111,6 +119,13 @@ private:
     std::uint64_t musicPosition_ = 0;        // in musicFrames_, 16.16 fixed point
 
     std::vector<std::int32_t> sum_;  // mix()'s accumulator
+    int soundGain_ = kFullGain;
+    int musicGain_ = kFullGain;
 };
+
+// The gain of a volume level of the options, 0 (silent) to 10 (full): 3 dB
+// a step, so that each step sounds about as much quieter as the last.
+constexpr int kVolumeLevels = 10;
+int volumeGain(int level) noexcept;
 
 }  // namespace bb::core::audio

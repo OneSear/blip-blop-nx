@@ -36,6 +36,10 @@ public:
     virtual void freeMusic(Music music) = 0;
     virtual void playMusic(Music music, bool loop) = 0;
     virtual void stopMusic() = 0;
+
+    // The volumes of the sounds and of the music, as gains in 1/256ths from 0
+    // to 256 (bb::core::audio::Mixer::setGains()); 256 for both until set.
+    virtual void setGains(int soundGain, int musicGain) = 0;
 };
 
 }  // namespace bb::platform

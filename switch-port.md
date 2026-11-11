@@ -395,7 +395,7 @@ The release job of section 6.5; the replays on a console (section 8); the Switch
 1. CRISP as the default filter; SHARP and SMOOTH remain.
 2. Docked: FIT at 1440x1080 by default; INTEGER at 1280x960 as the option.
 3. The system keyboard for hi-score names.
-4. Later, not planned: a picture in the bars instead of black (from the game's art), the game's own logo and animation on the `.nsp`'s loading screen (hacBrewPack's `logo/` folder) instead of black, rumble when a player is hit or drops a cow bomb, touch to confirm in the menus. (A widescreen mode, also listed here, was done: WIDESCREEN, the levels in 16:9.)
+4. Later, not planned: a picture in the bars instead of black (from the game's art), the game's own logo and animation on the `.nsp`'s loading screen (hacBrewPack's `logo/` folder) instead of black, touch to confirm in the menus. (A widescreen mode, also listed here, was done: WIDESCREEN, the levels in 16:9; and the rumble, 11 November 2026: RUMBLE, docs/progress.md.)
 
 ## 11. Departures from the plan (implementation, 30 October 2026)
 

@@ -267,6 +267,7 @@ void Player::update() {
         lives = 0;
         perfect = false;
         dead = true;
+        rumble(Rumble::Death);
     }
 
     if (mode == kDying) {
@@ -385,6 +386,15 @@ void Player::dropCowBomb() {
     invincible = 200;
     cowInvincible_ = true;
     w.media.commonSounds->play(snd::kCowBombDrop);
+    rumble(Rumble::CowBomb);
+}
+
+void Player::dropIn(int atX, int atLandingY) {
+    x = atX;
+    landingY = atLandingY;
+    respawn();
+    rearm();
+    rumble(Rumble::Join);
 }
 
 void Player::respawn() {
@@ -406,6 +416,7 @@ void Player::crushedByScroll() {
     // Each player stops the scroll through its own flag (D-90 fixed: both
     // used the first player's); a player crushed on its last life leaves
     // the scroll free (D-93 fixed: it stayed stopped).
+    rumble(Rumble::Death);
     lives -= 1;
     if (lives == 0) {
         dead = true;
@@ -904,9 +915,11 @@ void Player::hurt(int damage) {
         animation.restart();
         hitbox.active = false;
         world().camera.stopped[slot] = true;
+        rumble(Rumble::Death);
     } else {
         invincible = 200;
         hurtEye_ = 100;
+        rumble(Rumble::Hurt);
     }
 }
 

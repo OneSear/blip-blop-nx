@@ -20,6 +20,9 @@ namespace bb::core {
 //   filter crisp                (sharp | crisp | smooth | xbr | crt)
 //   smooth-motion on
 //   widescreen on               (16:9 levels; off: 4:3 as in 2002)
+//   music-volume 10             (0 to 10)
+//   sound-volume 10
+//   rumble on
 //   p1.fire key:left_ctrl
 //   p2.jump pad1:button3
 //   ...
@@ -33,6 +36,12 @@ struct Settings {
     gfx::Filter filter = gfx::Filter::Crisp;
     bool smoothMotion = true;  // the Switch shows 60 frames a second, the game ticks 84.7 times
     bool widescreen = true;    // the Switch's screens are 16:9
+    // The volumes, 0 (silent) to 10 (full: the 2002 mix), and the rumble of
+    // the controllers.
+    static constexpr int kMaxVolume = 10;
+    int musicVolume = kMaxVolume;
+    int soundVolume = kMaxVolume;
+    bool rumble = true;
     input::Bindings bindings = input::Bindings::defaults();
 
     // What deterministic runs start from: the defaults, with smooth motion

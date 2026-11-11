@@ -276,6 +276,19 @@ public:
 #endif
     }
 
+    void rumble(int slot, std::uint16_t low, std::uint16_t high, std::uint32_t milliseconds) override {
+        if (!padConnected(slot)) {
+            return;
+        }
+        // -1 where the pad cannot rumble: nothing to do.
+        const Pad& pad = pads_[slot];
+        if (pad.controller != nullptr) {
+            SDL_GameControllerRumble(pad.controller, low, high, milliseconds);
+        } else {
+            SDL_JoystickRumble(pad.handle, low, high, milliseconds);
+        }
+    }
+
     bool beginTextEntry() override {
         if (!SDL_HasScreenKeyboardSupport()) {
             return false;
@@ -660,6 +673,11 @@ public:
     void stopMusic() override {
         const Lock lock(device_);
         mixer_->stopMusic();
+    }
+
+    void setGains(int soundGain, int musicGain) override {
+        const Lock lock(device_);
+        mixer_->setGains(soundGain, musicGain);
     }
 
     bool voicePlaying(int voice) {

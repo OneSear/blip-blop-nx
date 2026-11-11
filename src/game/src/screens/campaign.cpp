@@ -175,7 +175,7 @@ Frame AttractScreen::update(ScreenStack& stack) {
                     return Frame::Continue;
                 }
                 step_ = Step::AfterGame;
-                stack.push(std::make_unique<CampaignScreen>(services_, game_, lineup_));
+                stack.push(std::make_unique<CampaignScreen>(services_, game_, lineup_, menu_.firstPart()));
                 return Frame::Continue;
 
             case Step::AfterGame:
@@ -204,6 +204,19 @@ Frame AttractScreen::update(ScreenStack& stack) {
 // CampaignScreen
 //-----------------------------------------------------------------------------
 
+void CampaignScreen::noteMissionReached() {
+    Session& session = *services_.session;
+    core::Progress* progress = services_.progress;
+    const int mission = missionAt(game_.missions(), part_);
+    // Deterministic runs keep the progress they started with.
+    if (mission < 0 || progress == nullptr || session.deterministic() ||
+        mission < progress->missionsReached) {
+        return;
+    }
+    progress->missionsReached = mission + 1;
+    session.saveProgress();
+}
+
 void CampaignScreen::pushKeyPress(ScreenStack& stack) {
     // Pushed in reverse: they run release, key, release.
     stack.push(std::make_unique<WaitReleaseScreen>(services_));
@@ -218,11 +231,12 @@ Frame CampaignScreen::update(ScreenStack& stack) {
     for (;;) {
         switch (step_) {
             case Step::Start:
-                if (session.quitRequested() || !game_.startCampaign(lineup_)) {
+                if (session.quitRequested() ||
+                    !game_.startCampaign(lineup_, onlyFile_.empty() ? firstPart_ : 0)) {
                     stack.finish();
                     return Frame::Continue;
                 }
-                part_ = 0;
+                part_ = onlyFile_.empty() && firstPart_ < game_.partCount() ? firstPart_ : 0;
                 step_ = onlyFile_.empty() ? Step::Parts : Step::OnlyLevel;
                 break;
 
@@ -244,6 +258,7 @@ Frame CampaignScreen::update(ScreenStack& stack) {
                     break;
                 }
 
+                noteMissionReached();
                 const int kind = game_.partKind(part_);
                 if (kind == Game::kLevel) {
                     step_ = Step::AfterLevel;

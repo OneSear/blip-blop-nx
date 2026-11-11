@@ -5,6 +5,7 @@
 #include <cstring>
 #include <string>
 
+#include "bb/core/input/bindings.hpp"
 #include "bb/core/input/codes.hpp"
 #include "bb/core/log.hpp"
 #include "bb/platform/input_source.hpp"
@@ -261,6 +262,49 @@ void DeviceInput::requestPlayers(int count) {
     if (!session_.deterministic()) {
         source_.requestPlayers(count);
     }
+}
+
+void DeviceInput::rumble(int player, game::Rumble kind) {
+    namespace input = core::input;
+    if (!rumbleOn_ || player < 0 || player >= input::kPlayerCount) {
+        return;
+    }
+    int pad = player;
+    const int first = game::AliasControls::firstOf(player);
+    for (int i = 0; i < input::kActionCount; ++i) {
+        const int slot = input::padSlot(static_cast<input::Code>(aliases_[first + i]));
+        if (slot >= 0) {
+            pad = slot;
+            break;
+        }
+    }
+
+    // The low-frequency motor shakes, the high-frequency one buzzes (on the
+    // Switch, SDL plays them on the controller's HD rumble).
+    struct Feel {
+        std::uint16_t low;
+        std::uint16_t high;
+        std::uint32_t milliseconds;
+    };
+    Feel feel{};
+    switch (kind) {
+        case game::Rumble::Hurt:
+            feel = {0x6000, 0x9000, 180};
+            break;
+        case game::Rumble::Death:
+            feel = {0xC000, 0x8000, 450};
+            break;
+        case game::Rumble::CowBomb:
+            feel = {0xFFFF, 0x4000, 700};
+            break;
+        case game::Rumble::Join:
+            feel = {0x3000, 0x7000, 150};
+            break;
+        case game::Rumble::Quake:
+            feel = {0x9000, 0x2000, 300};
+            break;
+    }
+    source_.rumble(pad, feel.low, feel.high, feel.milliseconds);
 }
 
 bool DeviceInput::beginTextEntry() {

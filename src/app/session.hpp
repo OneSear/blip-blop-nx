@@ -61,6 +61,9 @@ public:
     // --widescreen: the option on from the start (the regression replays
     // of the levels in 16:9).
     bool widescreen() const;
+    // --all-missions: the main menu offers every mission (the replays of the
+    // mission choice).
+    bool allMissions() const;
     // --display-shots: true at the presented frame asked for, with the
     // directory the pictures of the filters go to.
     bool displayShots(std::uint64_t presented, std::string& dir) const;

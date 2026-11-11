@@ -174,6 +174,8 @@ void usage() {
                  "                        deterministic runs, which use the default settings)\n"
                  "  --widescreen          start with the widescreen option on: levels in 16:9\n"
                  "                        (also in deterministic runs, which play them in 4:3)\n"
+                 "  --all-missions        offer every mission in the main menu, for this run (also\n"
+                 "                        in deterministic runs, which offer the first one only)\n"
                  "  --dump-frames <dir> <from> <to>   save presented frames as BMP files\n"
                  "  --dump-every <n>      with --dump-frames, keep one frame in n\n"
                  "  --display-shots <dir> <frame>  at that presented frame, save the picture of every\n"
@@ -191,6 +193,7 @@ struct Session::State {
     bool headless = false;
     bool smoothMotion = false;
     bool widescreen = false;
+    bool allMissions = false;
     bool safe = false;
     std::string recordPath;
     std::string replayPath;
@@ -369,6 +372,8 @@ bool Session::init(int argc, const char* argv[]) {
             g.smoothMotion = true;
         } else if (arg == "--widescreen") {
             g.widescreen = true;
+        } else if (arg == "--all-missions") {
+            g.allMissions = true;
         } else if (arg == "--hash-every" || arg == "--max-frames" || arg == "--seed" ||
                    arg == "--dump-every") {
             const char* v = next("a number");
@@ -470,6 +475,8 @@ bool Session::load(const bb::core::FileReader& reader, GameFiles& files) {
         for (const auto& option : g.timeline.options) {
             if (option == "widescreen") {
                 g.widescreen = true;  // recorded with the levels in 16:9
+            } else if (option == "all-missions") {
+                g.allMissions = true;  // recorded with every mission offered
             } else {
                 applyLegacySwitch(option);
             }
@@ -490,6 +497,9 @@ bool Session::load(const bb::core::FileReader& reader, GameFiles& files) {
         }
         if (g.widescreen) {
             g.timeline.options.emplace_back("widescreen");
+        }
+        if (g.allMissions) {
+            g.timeline.options.emplace_back("all-missions");
         }
     }
     if (!g.hashPath.empty() && !g.deterministic) {
@@ -594,6 +604,10 @@ bool Session::displayShots(std::uint64_t presented, std::string& dir) const {
     dir = g.shotsDir;
     return true;
 }
+bool Session::allMissions() const {
+    return state_->allMissions;
+}
+
 bool Session::widescreen() const {
     const State& g = *state_;
     return g.widescreen;
