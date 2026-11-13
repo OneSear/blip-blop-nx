@@ -69,8 +69,10 @@ the 2002 clipping at the destination's edges; fonts are
 ring 200 pixels wider than the view (840 in 4:3) filled two columns at a
 time ahead of the camera, which also takes the decals (corpses, blood).
 The entities use the view's edges (`Camera::right()`, `centre()`) where
-the 2002 code used the 640-pixel screen's, and level events placed beyond
-the right edge wake earlier in a wider view (`wakePoints()`). Entities draw through
+the 2002 code used the 640-pixel screen's (but the temporary generators
+facing left, which keep the 2002 edge so that the arenas get their waves:
+`EnemyGenerator`), and level events placed beyond the right edge wake
+earlier in a wider view (`wakePoints()`, `sleepOrder()`). Entities draw through
 `bb::game::Canvas`, which knows the back buffer, the fonts and the
 strings. The platform's `Display` only presents finished frames, scaled
 to the screen (the Switch's 1280x720 or 1920x1080: switch-port.md): with

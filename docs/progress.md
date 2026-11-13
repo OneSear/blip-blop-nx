@@ -3,6 +3,100 @@
 Status of the phases of [migration.md](../migration.md), with the facts
 learnt while implementing them. Newest phase first.
 
+## Widescreen: every level won in 16:9; rumble in handheld mode (13 November 2026)
+
+Reported by the maintainer from the Switch: in 16:9 the first mission could
+not be finished (both strongmen of snuf2 killed, then nothing), and the
+controllers did not rumble in handheld mode. Then asked: test every level.
+
+* **The wake order** (`sleepOrder()`). The events that wake in one tick run
+  in the order they joined the sleeping list. A 16:9 view stops at snuf2's
+  final lock at 4290 instead of 4504, so every event from 4290 to 4504
+  woke at 4290 and ran in file order (descending X): "generators on"
+  (4502) before "generators off" (4322). The generators stayed off, only
+  the two placed strongmen came, and the Big Smurf (5 kills) and the stork
+  (6) waited for good. Events sharing a wake point now run by ascending
+  activation X, as the 2002 camera met them; in 4:3 one wake point is one
+  activation X, and the order is the file's, as before.
+* **The 2002 camera's reach** (`viewLimit()`, `reachableCameraX()`,
+  `wakePoints()`). Nothing past it wakes in a wider view. It was taken as
+  the level's end, so the 43 events past snuf2's final lock (18 farmers,
+  11 greedy Smurfs, 9 generators, 2 storks...), which never woke in 2002,
+  woke at 4290 and joined the boss fight. The reach is now the furthest
+  lock at or past the victory X, which every level but snorkniv2 has (and
+  never opens); without one, the level's end (snorkniv2: its limit moves
+  from 6399 to 6400, and its dialogue at 5760, which starts the boss fight,
+  still wakes). Every other level's limit is unchanged.
+* **The arena waves** (`EnemyGenerator`). A temporary generator facing left
+  leaves when its spot nears the right edge; it now watches the 2002
+  screen's edge (camera x + 640), not the view's. The 2002 levels fill
+  their locked arenas from such generators, placed 60 to 160 pixels right
+  of the screen: a 16:9 view woke them 214 pixels earlier, and they left
+  214 pixels earlier, before the camera reached the lock (25 generators in
+  8 levels: bisous2, dork, lem, snorkniv, snorkniv2, snuf1, snuf2, video).
+  The arenas had fewer enemies, and lem's lock at 425, which waits for 100
+  kills, filled with 7 seconds left; the first lemmings of lem and Pokémon
+  of dork, from just right of the first screen, never came. Chosen by the
+  maintainer over stopping the camera 214 pixels earlier at every lock: in
+  a wider view these enemies can appear inside the view's right part. In
+  4:3 the edge is the view's: nothing changes.
+* **Rumble on the Switch** (`nx::rumble()`). devkitPro's SDL 2.28.5 opens
+  the vibration devices of npads No1 to No8 only (`SDL_sysjoystick.o`, read
+  with objdump): never the Joy-Cons attached in handheld mode, which it
+  reads as player 1, and player 1's only once a controller changes. It also
+  sends the strengths as frequencies at an amplitude of 320 (1 is the
+  most). The platform now drives the motors with libnx: both motors of a
+  pair, amplitudes of 0 to 1 at 160 and 320 Hz, player 1's on npad No1 and
+  the handheld one, and stops them when the time is up (`Sdl2Input::poll()`).
+  Not yet felt on a console.
+* **Every level won in 16:9.** The world replays were measured in 4:3; in
+  16:9 seven stopped in a level. `make_replays.py` now also writes scripts
+  measured in 16:9, `tests/replays/wide/` (smurf, dork, carebears,
+  snorks, lemmings, video, videoboss, finalboss), which the `.wide` tests
+  play instead: the same drivers, with longer fights and a few timings
+  measured again (video's turret, the walk to Lara's ledges, lem's walk to
+  its second lock and to the pit, dork's ledge before lift 2). Each of the
+  12 levels is won in both views without the win-level cheat.
+* **Expected milestones** (`# expect` lines, `Script.expect_win()`,
+  `run_replay.cmake`). A replay names the milestones it must print, in
+  order: each level it plays loaded, then `level ends: complete`, and for a
+  bonus level `level summary`. A missing one fails the test before the
+  fingerprints are compared: the 16:9 fingerprints had been recorded while
+  snuf2 could not be won, and its replay passed.
+* **Tests.** Unit: the snuf2 arena's events in 4:3 and 16:9, the order of
+  shared wake points, the reach past the final lock (snuf2, snorkniv2),
+  lem's generators at the start and in its arena, in both views.
+* **Fingerprints.** Every 4:3 and `.pack` fingerprint held (the 4:3
+  scripts only gained `# expect` lines). The `.wide` ones were recorded
+  again: other worlds in 16:9, and seven other scripts.
+
+Facts learnt:
+
+* A bonus level whose timer runs out prints `level ends: complete` too,
+  then `level summary (bonus failed)`; only the summary tells a win.
+* Comparing a replay's milestones in 4:3 and 16:9 finds a level that one
+  view cannot finish; the fingerprints do not, once recorded.
+* In video, a Yoshi turret left alive on the ledge at x 1417 keeps the
+  scroll lock at 1534 (no enemies) shut for good once the camera has passed
+  it: off the screen, it can no longer be shot, and the off-screen rule
+  removes enemies only 250 pixels left of the view. 2002 behaves so; a
+  player who walks past it cannot finish the level (both views).
+* Searched for other 16:9 faults in the code: the level code places,
+  removes and aims its entities from the view's edges (`right()`,
+  `centre()`, `width`) or from the left edge, which both views share, and
+  draws across the view (cow bombs, rain, the final level's rocks); no
+  640 is left in it but the banners' start, off the view. What differed
+  was the level events' machinery (wake order, reach, generators).
+* The generators of the arenas now leave as in 2002 but still wake 214
+  pixels early in 16:9 (so that their enemies come from beyond the view's
+  edge): where the camera does not stop, they run longer than in 2002,
+  about 39 more enemies over the game (counted at 1.5 pixels of camera per
+  tick), most in snorkniv, snorkniv2 and lem.
+* A replay's 16:9 run of dork is a route of measured frames: the player
+  lost his fifth point on lift 2 instead of on the ledge before it (in 4:3
+  he died there and came back with five), and a flying Com finished him on
+  the lift.
+
 ## Volumes, rumble, saved missions and joining a running level (11 November 2026)
 
 Asked by the maintainer: music and sound volumes, saved progress, a mission

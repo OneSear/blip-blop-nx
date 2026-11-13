@@ -106,10 +106,22 @@ widescreen option changes the game (a wider view, earlier events), so
 `menus` steps over it. `--widescreen` turns it on; every replay but
 `attract` (no level) also runs so as `replay.<name>.wide`, against
 fingerprints of its own (`expected/<name>.wide.bbhash`, recorded by
-`update_replay_hashes` with the others). The scripts were measured in 4:3:
-in 16:9 they do not always do what their comments say (a level may not be
-won the same way), but they still guard the game in 16:9 against any
-change.
+`update_replay_hashes` with the others). The scripts were measured in 4:3,
+and a level plays otherwise in 16:9 (events wake earlier, the camera stops
+elsewhere, enemies come at other times): where a 4:3 script no longer wins
+its levels in 16:9, `make_replays.py` writes one measured in 16:9,
+`wide/<name>.bbreplay` (`option widescreen`), which `replay.<name>.wide`
+plays instead. Every level is so won in both views without the
+win-level cheat.
+
+A replay's `# expect <milestone>` lines (`Script.expect_win()` in the
+generator) name milestones the run must print, in that order: a level
+loaded, `level ends: complete`, and for a bonus level `level summary`
+(not `level summary (bonus failed)`, which a bonus level whose timer ran
+out also prints after `level ends: complete`). The test fails when one is
+missing, before it compares fingerprints, so a change that leaves a level
+unwinnable cannot pass by recording the fingerprints of a run stuck in it
+(a 16:9 snuf2 could not be won for a day, and its replay passed).
 
 A failing replay test does the first step itself: it dumps the frames of
 the build under test, one in six, from the frame checkpoint before the

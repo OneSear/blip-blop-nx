@@ -70,7 +70,9 @@ The regression replays guard every change. Each `tests/replays/*.bbreplay` plays
 
 Each replay also runs as:
 - `.pack`: from the runtime pack, which must give identical hashes.
-- `.wide`: with `--widescreen`, against `<name>.wide.bbhash`, for every replay but `attract`. WIDESCREEN changes the simulation: the 854-pixel view wakes events earlier (`wakePoints()`) and stops at `Camera::limit`.
+- `.wide`: with `--widescreen`, against `<name>.wide.bbhash`, for every replay but `attract`. WIDESCREEN changes the simulation: the 854-pixel view wakes events earlier (`wakePoints()`) and stops at `Camera::limit`. Where a 4:3 script no longer wins its levels in 16:9, the generator writes one measured in 16:9, `tests/replays/wide/<name>.bbreplay`, which the `.wide` test plays instead.
+
+A replay's `# expect` lines (`Script.expect_win()`) list milestones the run must print in order, a level won without the cheat; the test fails before comparing fingerprints when one is missing. Every level is won so in both views: keep it so when re-measuring a script.
 
 `replay.smurf.smooth` checks that smooth motion changes no tick.
 
