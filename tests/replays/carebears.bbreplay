@@ -3,6 +3,12 @@ bbreplay 1
 seed 1
 option /cheat
 option /quiet
+# expect level data/bisous1.lvl loaded (kind 1)
+# expect level ends: complete
+# expect level data/bisous2.lvl loaded (kind 2)
+# expect level ends: complete
+# expect level data/bisous3.lvl loaded (kind 3)
+# expect level ends: complete
 @0
 @30 ESCAPE
 @40

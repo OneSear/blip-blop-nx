@@ -2,6 +2,8 @@
 # played headless and its fingerprints compared with expected/<name>.bbhash.
 
 file(GLOB BB_REPLAYS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/*.bbreplay")
+# Scripts written for 16:9, which the .wide tests play instead (wide/<name>).
+file(GLOB BB_WIDE_REPLAYS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/wide/*.bbreplay")
 set(BB_REPLAY_OUT "${CMAKE_CURRENT_BINARY_DIR}/out")
 
 set(BB_UPDATE_COMMANDS "")
@@ -40,12 +42,17 @@ foreach(replay IN LISTS BB_REPLAYS)
             -DUPDATE=ON
             -P "${CMAKE_CURRENT_SOURCE_DIR}/run_replay.cmake")
     # The same replay with the levels in 16:9 (--widescreen), but attract,
-    # which plays no level: fingerprints of their own.
+    # which plays no level: fingerprints of their own. A script written for
+    # 16:9 (wide/<name>.bbreplay) replaces the 4:3 one there.
     if(NOT name STREQUAL "attract")
+        set(wide_replay "${replay}")
+        if("${CMAKE_CURRENT_SOURCE_DIR}/wide/${name}.bbreplay" IN_LIST BB_WIDE_REPLAYS)
+            set(wide_replay "${CMAKE_CURRENT_SOURCE_DIR}/wide/${name}.bbreplay")
+        endif()
         add_test(NAME replay.${name}.wide
             COMMAND "${CMAKE_COMMAND}"
                 -DGAME=$<TARGET_FILE:blipblop> "-DEMULATOR=${CMAKE_CROSSCOMPILING_EMULATOR}"
-                -DREPLAY=${replay}
+                -DREPLAY=${wide_replay}
                 -DEXPECTED=${CMAKE_CURRENT_SOURCE_DIR}/expected/${name}.wide.bbhash
                 -DOUTPUT=${BB_REPLAY_OUT}/${name}.wide.bbhash
                 -DRUN_DIR=${BB_RUN_DIR}
@@ -55,7 +62,7 @@ foreach(replay IN LISTS BB_REPLAYS)
         list(APPEND BB_UPDATE_COMMANDS
             COMMAND "${CMAKE_COMMAND}"
                 -DGAME=$<TARGET_FILE:blipblop> "-DEMULATOR=${CMAKE_CROSSCOMPILING_EMULATOR}"
-                -DREPLAY=${replay}
+                -DREPLAY=${wide_replay}
                 -DEXPECTED=${CMAKE_CURRENT_SOURCE_DIR}/expected/${name}.wide.bbhash
                 -DOUTPUT=${BB_REPLAY_OUT}/${name}.wide.bbhash
                 -DRUN_DIR=${BB_RUN_DIR}

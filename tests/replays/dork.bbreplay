@@ -3,6 +3,9 @@ bbreplay 1
 seed 1
 option /cheat
 option /quiet
+# expect level data/dork.lvl loaded (kind 0)
+# expect level ends: complete
+# expect level summary
 @0
 @30 ESCAPE
 @40

@@ -3,6 +3,8 @@ bbreplay 1
 seed 1
 option /cheat
 option /quiet
+# expect level data/video.lvl loaded (kind 4)
+# expect level ends: complete
 @0
 @30 ESCAPE
 @40
