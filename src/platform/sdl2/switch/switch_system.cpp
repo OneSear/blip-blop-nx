@@ -60,6 +60,76 @@ std::string languageCode() {
     return code;
 }
 
+namespace {
+
+// The vibration devices of one npad, opened for the style its controller
+// had then (a controller can be swapped for another).
+struct Vibration {
+    u32 style = 0;  // the HidNpadStyleTag the handles were opened for; 0: none
+    HidVibrationDeviceHandle handles[2] = {};
+    s32 count = 0;
+};
+
+constexpr int kNpads = 8;
+Vibration vibrations[kNpads + 1];  // No1 to No8, then Handheld
+
+// The devices of npad `id` (vibrations[slot]); null without a controller.
+const Vibration* vibrationOf(int slot, HidNpadIdType id) {
+    Vibration& v = vibrations[slot];
+    const u32 styles = hidGetNpadStyleSet(id);
+    // A controller has one style: the lowest of the set.
+    const u32 style = styles & (~styles + 1);
+    if (style == 0) {
+        v = Vibration{};
+        return nullptr;
+    }
+    if (style != v.style) {
+        v = Vibration{};
+        // Both motors (left and right) of a Pro Controller, a Joy-Con pair
+        // or the attached Joy-Cons; one Joy-Con has one.
+        s32 count = style == HidNpadStyleTag_NpadFullKey || style == HidNpadStyleTag_NpadHandheld ||
+                            style == HidNpadStyleTag_NpadJoyDual
+                        ? 2
+                        : 1;
+        const auto tag = static_cast<HidNpadStyleTag>(style);
+        if (R_FAILED(hidInitializeVibrationDevices(v.handles, count, id, tag))) {
+            count = 1;
+            if (R_FAILED(hidInitializeVibrationDevices(v.handles, count, id, tag))) {
+                return nullptr;
+            }
+        }
+        v.style = style;
+        v.count = count;
+    }
+    return &v;
+}
+
+}  // namespace
+
+void rumble(int npad, std::uint16_t low, std::uint16_t high) {
+    if (npad < 0 || npad >= kNpads) {
+        return;
+    }
+    // libnx's sample frequencies; amplitudes of 0 to 1.
+    HidVibrationValue value{};
+    value.amp_low = static_cast<float>(low) / 65535.0f;
+    value.freq_low = 160.0f;
+    value.amp_high = static_cast<float>(high) / 65535.0f;
+    value.freq_high = 320.0f;
+    const HidVibrationValue values[2] = {value, value};
+
+    const auto send = [&values](int slot, HidNpadIdType id) {
+        if (const Vibration* v = vibrationOf(slot, id)) {
+            hidSendVibrationValues(v->handles, values, v->count);
+        }
+    };
+    send(npad, static_cast<HidNpadIdType>(HidNpadIdType_No1 + npad));
+    // SDL's player 1 also reads the Joy-Cons attached to the console.
+    if (npad == 0) {
+        send(kNpads, HidNpadIdType_Handheld);
+    }
+}
+
 std::uint64_t memoryInUse() {
     u64 used = 0;
     if (R_FAILED(svcGetInfo(&used, InfoType_UsedMemorySize, CUR_PROCESS_HANDLE, 0))) {

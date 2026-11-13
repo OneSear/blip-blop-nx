@@ -62,8 +62,8 @@ bool appearsOnTheRight(const LevelEventRecord& r) {
 
 }  // namespace
 
-int reachableCameraX(int x, int levelWidth, int viewWidth, int viewLimit) {
-    const int lastCamera2002 = levelWidth - Camera::kNarrowWidth;
+int reachableCameraX(int x, int viewWidth, int viewLimit) {
+    const int lastCamera2002 = viewLimit - Camera::kNarrowWidth;
     const int lastCamera = std::max(0, viewLimit - viewWidth);
     return x <= lastCamera2002 ? std::min(x, lastCamera) : x;
 }
@@ -72,9 +72,11 @@ int viewLimit(const std::vector<LevelEventRecord>& events, int levelWidth, int v
     if (viewWidth <= Camera::kNarrowWidth) {
         return levelWidth;
     }
-    int last = victoryX;
+    // The furthest scroll lock at or past the victory X: the 2002 camera
+    // stopped there for good.
+    int last = 0;
     for (const LevelEventRecord& r : events) {
-        if (static_cast<LevelEventType>(r.type) == LevelEventType::ScrollLock) {
+        if (static_cast<LevelEventType>(r.type) == LevelEventType::ScrollLock && r.activationX >= victoryX) {
             last = std::max(last, r.activationX);
         }
     }
@@ -84,17 +86,16 @@ int viewLimit(const std::vector<LevelEventRecord>& events, int levelWidth, int v
     return std::min(levelWidth, std::max(last + Camera::kNarrowWidth, viewWidth));
 }
 
-std::vector<int> wakePoints(const std::vector<LevelEventRecord>& events, int levelWidth, int viewWidth,
-                            int viewLimit) {
+std::vector<int> wakePoints(const std::vector<LevelEventRecord>& events, int viewWidth, int viewLimit) {
     std::vector<int> wake(events.size());
     const int extra = viewWidth - Camera::kNarrowWidth;
+    const int lastCamera2002 = viewLimit - Camera::kNarrowWidth;
 
     // The scroll locks, by activation X: (activation, wake point).
     std::vector<std::pair<int, int>> locks;
     for (const LevelEventRecord& r : events) {
         if (static_cast<LevelEventType>(r.type) == LevelEventType::ScrollLock) {
-            locks.emplace_back(r.activationX,
-                               reachableCameraX(r.activationX, levelWidth, viewWidth, viewLimit));
+            locks.emplace_back(r.activationX, reachableCameraX(r.activationX, viewWidth, viewLimit));
         }
     }
     std::sort(locks.begin(), locks.end());
@@ -103,7 +104,7 @@ std::vector<int> wakePoints(const std::vector<LevelEventRecord>& events, int lev
         const LevelEventRecord& r = events[i];
         const int activation = r.activationX;
         int x = activation;
-        if (extra > 0 && appearsOnTheRight(r) && activation <= levelWidth - Camera::kNarrowWidth) {
+        if (extra > 0 && appearsOnTheRight(r) && activation <= lastCamera2002) {
             x = activation - extra;
             // Not before the last scroll lock behind it is released.
             const auto behind = std::lower_bound(locks.begin(), locks.end(), std::make_pair(activation, 0));
@@ -111,9 +112,24 @@ std::vector<int> wakePoints(const std::vector<LevelEventRecord>& events, int lev
                 x = std::max(x, std::prev(behind)->second + 1);
             }
         }
-        wake[i] = reachableCameraX(x, levelWidth, viewWidth, viewLimit);
+        wake[i] = reachableCameraX(x, viewWidth, viewLimit);
     }
     return wake;
+}
+
+std::vector<std::size_t> sleepOrder(const std::vector<LevelEventRecord>& events,
+                                    const std::vector<int>& wake) {
+    std::vector<std::size_t> order(events.size());
+    for (std::size_t i = 0; i < order.size(); ++i) {
+        order[i] = i;
+    }
+    std::stable_sort(order.begin(), order.end(), [&](std::size_t a, std::size_t b) {
+        if (wake[a] != wake[b]) {
+            return wake[a] > wake[b];
+        }
+        return events[a].activationX < events[b].activationX;
+    });
+    return order;
 }
 
 void SpawnEvent::run(World& world) {

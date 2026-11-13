@@ -227,12 +227,22 @@ public:
     }
 
     ~Sdl2Input() override {
+#if defined(__SWITCH__)
+        for (Rumble& r : rumbles_) {
+            if (r.on) {
+                nx::rumble(r.npad, 0, 0);
+            }
+        }
+#endif
         for (auto& pad : pads_) {
             close(pad);
         }
     }
 
     bool poll(InputEvent& out) override {
+#if defined(__SWITCH__)
+        stopRumbles();
+#endif
         // A focus loss and its return in the same update would cancel out
         // (DeviceInput): the return waits for the next update. That is the
         // case of a game the Switch suspended in the background, which
@@ -280,13 +290,25 @@ public:
         if (!padConnected(slot)) {
             return;
         }
-        // -1 where the pad cannot rumble: nothing to do.
         const Pad& pad = pads_[slot];
+#if defined(__SWITCH__)
+        // The platform drives the motors itself (nx::rumble(): SDL's driver
+        // cannot rumble the Joy-Cons attached in handheld mode) and stops
+        // them when the time is up (poll()). SDL's joystick instance id is
+        // its index, the npad's.
+        Rumble& r = rumbles_[slot];
+        r.npad = static_cast<int>(pad.id);
+        r.on = (low != 0 || high != 0) && milliseconds > 0;
+        r.end = SDL_GetTicks() + milliseconds;
+        nx::rumble(r.npad, r.on ? low : 0, r.on ? high : 0);
+#else
+        // -1 where the pad cannot rumble: nothing to do.
         if (pad.controller != nullptr) {
             SDL_GameControllerRumble(pad.controller, low, high, milliseconds);
         } else {
             SDL_JoystickRumble(pad.handle, low, high, milliseconds);
         }
+#endif
     }
 
     bool beginTextEntry() override {
@@ -568,6 +590,26 @@ private:
         return -1;
     }
 
+#if defined(__SWITCH__)
+    // The rumbles still on, each until its end (SDL_GetTicks()).
+    struct Rumble {
+        bool on = false;
+        int npad = 0;
+        Uint32 end = 0;
+    };
+
+    void stopRumbles() {
+        const Uint32 now = SDL_GetTicks();
+        for (Rumble& r : rumbles_) {
+            if (r.on && SDL_TICKS_PASSED(now, r.end)) {
+                r.on = false;
+                nx::rumble(r.npad, 0, 0);
+            }
+        }
+    }
+
+    Rumble rumbles_[kMaxPads];
+#endif
     Pad pads_[kMaxPads];
     int slots_ = 0;
     bool textEntry_ = false;  // the on-screen keyboard was asked for

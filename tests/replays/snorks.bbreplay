@@ -3,6 +3,10 @@ bbreplay 1
 seed 1
 option /cheat
 option /quiet
+# expect level data/snorkniv.lvl loaded (kind 1)
+# expect level ends: complete
+# expect level data/snorkniv2.lvl loaded (kind 3)
+# expect level ends: complete
 @0
 @30 ESCAPE
 @40

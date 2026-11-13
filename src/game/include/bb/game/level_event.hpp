@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <memory>
 #include <vector>
 
@@ -51,20 +52,36 @@ public:
 //    viewLimit() below): a scroll lock or the victory at the end of a
 //    level then wakes at the last x;
 //  * what never woke in 2002 (an activation beyond the 2002 camera's
-//    reach) still never wakes.
-std::vector<int> wakePoints(const std::vector<core::assets::LevelEventRecord>& events, int levelWidth,
-                            int viewWidth, int viewLimit);
+//    reach, viewLimit less 640) still never wakes. (Before, the reach was
+//    the level's end, and snuf2's 43 events beyond its final lock, never
+//    seen in 2002, joined its boss fight.)
+std::vector<int> wakePoints(const std::vector<core::assets::LevelEventRecord>& events, int viewWidth,
+                            int viewLimit);
+
+// The order in which a level's events (in file order) join the sleeping
+// list, given their wake points (wakePoints()): by descending wake point;
+// for one wake point, by ascending activation X, then in file order. The
+// events that wake in one tick run in that order (World::updateEvents()).
+// In 4:3 one wake point is one activation X: the file's order, as in 2002.
+// In a wider view, events of several activation Xs can share a wake point
+// (the last camera x, or just past a scroll lock) and run in the order the
+// 2002 camera met them. (In file order, snuf2's "generators on" ran before
+// its "generators off", and its boss fight never ended.)
+std::vector<std::size_t> sleepOrder(const std::vector<core::assets::LevelEventRecord>& events,
+                                    const std::vector<int>& wake);
 
 // A camera x of the 2002 screen as the view reaches it (the victory X): the
-// same, or the last camera x when the view cannot reach it.
-int reachableCameraX(int x, int levelWidth, int viewWidth, int viewLimit);
+// same, or the last camera x when the view cannot reach it; unchanged past
+// the 2002 camera's reach (viewLimit less 640), which nothing reaches.
+int reachableCameraX(int x, int viewWidth, int viewLimit);
 
 // The level x a view viewWidth pixels wide never shows past (Camera::limit):
 // the level's width in 4:3; in a wider view, the right edge of the 2002
-// screen where it stopped for good, at the level's last scroll lock or its
-// victory X, whichever is further (every level ends there; the decor
-// beyond was never seen, and some of it is filler: snuf1 repeats its last
-// picture there).
+// screen where it stopped for good: at the furthest scroll lock at or past
+// the victory X (every level's waits for a flag value that nothing sets:
+// the level ends there; the decor beyond was never seen, and some of it is
+// filler: snuf1 repeats its last picture there), or at the level's end
+// without one (snorkniv2, whose last lock opens before its victory X).
 int viewLimit(const std::vector<core::assets::LevelEventRecord>& events, int levelWidth, int viewWidth,
               int victoryX);
 

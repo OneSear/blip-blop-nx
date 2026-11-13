@@ -25,6 +25,17 @@ void showError(const std::string& title, const std::string& message);
 // blocks until it closes.
 void requestPlayers(int count);
 
+// Sets the motors of the controller of npad No1 + `npad` (0 to 7: SDL's
+// joystick of that index; for 0 also the Joy-Cons attached to the console,
+// which SDL reads as player 1 in handheld mode), both of a pair: the low-
+// and high-frequency bands at these strengths (0 to 65535) until the next
+// call; 0 and 0 stop them. Not SDL's rumble: devkitPro's SDL 2.28.5 opens
+// the vibration devices of npads No1 to No8 only, never the handheld ones
+// (and player 1's only once a controller changes), and it sends the
+// strengths as frequencies, at an amplitude of 320 where 1 is the most
+// (read in its SDL_sysjoystick.o).
+void rumble(int npad, std::uint16_t low, std::uint16_t high);
+
 // The console's language: "fr" for French and Canadian French, "en" for
 // the others.
 std::string languageCode();

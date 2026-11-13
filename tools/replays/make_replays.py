@@ -10,7 +10,8 @@ name entry - and press F9 (win level, needs /cheat) at fixed intervals.
 Jump is bound to the Menu key by the legacy defaults and to Left Alt once
 D-37 is fixed; the scripts press both so they work before and after.
 
-Usage: make_replays.py <output-directory>
+Usage: make_replays.py <output-directory> (tests/replays: the 16:9 scripts
+go to its wide/ directory)
 """
 
 import os
@@ -20,8 +21,21 @@ import sys
 class Script:
     def __init__(self, options=()):
         self.lines = ["bbreplay 1", "seed 1"] + [f"option {o}" for o in options]
+        self.expects = []
         self.frame = 0
         self.held = None
+
+    def expect(self, *milestones):
+        """Milestones the run must print, in this order (`# expect` lines,
+        which the replay tests check: run_replay.cmake)."""
+        self.expects += milestones
+
+    def expect_win(self, level):
+        """The level loads and is won (a bonus level not failed)."""
+        kind = LEVEL_KINDS[level]
+        self.expect(f"level data/{level}.lvl loaded (kind {kind})", "level ends: complete")
+        if kind == 0:
+            self.expect("level summary")
 
     def hold(self, frames, *keys):
         if frames <= 0:
@@ -35,7 +49,14 @@ class Script:
     def end(self, extra=0):
         self.frame += extra
         self.lines.append(f"end {self.frame}")
-        return "\n".join(self.lines) + "\n"
+        header = 2 + sum(1 for line in self.lines if line.startswith("option "))
+        expects = [f"# expect {m}" for m in self.expects]
+        return "\n".join(self.lines[:header] + expects + self.lines[header:]) + "\n"
+
+
+# The kind of each level in bb.lst (0: bonus, timed).
+LEVEL_KINDS = {"snuf1": 1, "snuf2": 3, "dork": 0, "bisous1": 1, "bisous2": 2, "bisous3": 3,
+               "snorkniv": 1, "snorkniv2": 3, "lem": 0, "video": 4, "videoboss": 4, "finalboss": 5}
 
 
 # Frames from the moment the last player takes a hero to the loading
@@ -445,6 +466,8 @@ def smurf():
     menu_to_first_level(s)
     while s.frame < 22820:
         play_cycle(s)
+    s.expect_win("snuf1")
+    s.expect_win("snuf2")
     return s.end(200)                 # in the snuf2 level summary
 
 
@@ -547,6 +570,7 @@ def dork():
     for _ in range(12):                   # level summary, briefing
         s.hold(4, "RETURN")
         s.hold(40)
+    s.expect_win("dork")
     return s.end(200)
 
 
@@ -622,6 +646,8 @@ def carebears():
         explore_cycle(s, n)
         n += 1
     boss_sweep(s, CAREBEARS_END)
+    for level in ("bisous1", "bisous2", "bisous3"):
+        s.expect_win(level)
     return s.end(200)
 
 
@@ -646,7 +672,10 @@ def snorks():
     25300, snorkniv2 (its boss from about 33000, dialogue 1 when he falls
     at 37871) at frame 38311. Ends in the snorkniv2 level summary. (Before
     the fixes of 24 October 2026: 19300, 28000 and 35800.)"""
-    return explore_levels(6, SNORKS_END).end(200)
+    s = explore_levels(6, SNORKS_END)
+    s.expect_win("snorkniv")
+    s.expect_win("snorkniv2")
+    return s.end(200)
 
 
 SNORKS_END = 38200
@@ -672,6 +701,7 @@ def video():
     while s.frame < VIDEO_END:
         explore_cycle(s, n)
         n += 1
+    s.expect_win("video")
     return s.end(100)
 
 
@@ -717,6 +747,7 @@ def videoboss():
         explore_cycle(s, n)
         n += 1
     s.hold(250)
+    s.expect_win("videoboss")
     return s.end()
 
 
@@ -729,7 +760,9 @@ def finalboss():
     After the stork flight, Mario (50,000 HP, attacks chosen by his HP)
     falls at about frame 32,000; the level is complete at frame 32,086.
     Ends as the ending starts."""
-    return explore_levels(11, FINALBOSS_END).end(60)
+    s = explore_levels(11, FINALBOSS_END)
+    s.expect_win("finalboss")
+    return s.end(60)
 
 
 FINALBOSS_END = 32000
@@ -770,10 +803,229 @@ def lemmings():
     somersault(s, "RIGHT")                # over the pit
     s.hold(30, "RIGHT", FIRE)
     stand_and_bomb(s, LEMMINGS_END)
+    s.expect_win("lem")
     return s.end(150)
 
 
 LEMMINGS_END = 10930
+
+
+# The scripts above were measured in 4:3. In 16:9 (--widescreen) a level
+# plays otherwise (a wider view wakes events earlier, the camera stops
+# elsewhere), and some no longer win their level: the scripts below, written
+# to tests/replays/wide/, play these worlds in 16:9, and the .wide tests
+# play them instead of the 4:3 script of the same name. Each wins its levels
+# without the win-level cheat (`# expect`).
+
+
+def wide_script():
+    return Script(options=("/cheat", "/quiet", "widescreen"))
+
+
+def wide_explore(skipped, until_frame, levels):
+    """Wins the first `skipped` levels with F9, then plays the next ones
+    with the generic driver until the given frame."""
+    s = wide_script()
+    skip_levels(s, skipped)
+    n = 0
+    while s.frame < until_frame:
+        explore_cycle(s, n)
+        n += 1
+    for level in levels:
+        s.expect_win(level)
+    return s
+
+
+def wide_carebears(end=53000):
+    """bisous1 to bisous3 in 16:9, as `carebears`: the generic driver, then
+    the shaman fought with a floor sweep; bisous3 is complete at frame
+    52806."""
+    s = wide_script()
+    skip_levels(s, 3)
+    n = 0
+    while s.frame < 25600:
+        explore_cycle(s, n)
+        n += 1
+    boss_sweep(s, end)
+    for level in ("bisous1", "bisous2", "bisous3"):
+        s.expect_win(level)
+    return s.end(200)
+
+
+def wide_snorks(end=38300):
+    """snorkniv and snorkniv2 in 16:9, with the generic driver: snorkniv2 is
+    complete at frame 38148."""
+    return wide_explore(6, end, ("snorkniv", "snorkniv2")).end(200)
+
+
+def wide_finalboss(end=33800):
+    """finalboss in 16:9, with the generic driver: complete at frame 33724."""
+    return wide_explore(11, end, ("finalboss",)).end(60)
+
+
+def wide_video(turret=10247, walk=76, end=37700):
+    """video in 16:9, as `video`: the Yoshi turret on the ledge at x 1417
+    is shot from under it (the scroll lock at x 1534 waits for it, and the
+    view no longer shows it from there), at the 16:9 timing: from frame
+    10247 (x 1202), 76 frames right put him under it (70 or 82 miss it);
+    the level is complete at frame 37587."""
+    s = wide_script()
+    skip_levels(s, 9)
+    n = 0
+    while s.frame < turret:
+        explore_cycle(s, n)
+        n += 1
+    s.hold(walk, "RIGHT", FIRE)
+    cycle_until(s, s.frame + 600, [(40, ("UP", FIRE)), (3, ("F1", "F3", "UP", FIRE))])
+    while s.frame < end:
+        explore_cycle(s, n)
+        n += 1
+    s.expect_win("video")
+    return s.end(100)
+
+
+# Firing up while waiting on the ledge before dork's lift 2: kills the
+# flying Com that would otherwise reach the player on the lift.
+DORK_LEDGE_UP = [(20, ("UP", FIRE)), (4, ("UP", "LEFT", FIRE)), (20, ("UP", FIRE)),
+                 (4, ("UP", "RIGHT", FIRE)), (3, ("F3", FIRE))]
+
+
+def wide_smurf(end=24400):
+    """snuf1 and snuf2 in 16:9, as `smurf`, with a longer fight in snuf2's
+    arena (its waves come as in 2002, and the Big Smurf and the stork
+    later): snuf2 is complete at frame 24339."""
+    s = wide_script()
+    menu_to_first_level(s)
+    while s.frame < end:
+        play_cycle(s)
+    s.expect_win("snuf1")
+    s.expect_win("snuf2")
+    return s.end(200)
+
+
+def wide_dork(shift=0, ledge=DORK_LEDGE_UP, ride=(FIRE,), end=6060):
+    """dork in 16:9: the route of `dork`, which a 16:9 world changes (its
+    enemies come otherwise: the player reaches lift 2 with one point of
+    health, where in 4:3 he had died on the ledge and come back with five,
+    and a flying Com reaches him on the lift). `ledge`: how to fire while
+    waiting on the ledge before lift 2 (None: the sideways turns of
+    wait_fire, as in 4:3); `ride`: the keys held on the lift; `shift`:
+    frames to wait there first (lift 2 comes back every 412 frames), which
+    delays the rest of the route. Won at frame 6061, as in 4:3 (firing
+    sideways, or up-left, the player dies on the lift)."""
+    s = wide_script()
+    menu_to_first_level(s)
+    for _ in range(2):                    # snuf1, snuf2: won with F9
+        for _ in range(3):
+            play_cycle(s)
+        s.hold(30)
+        s.hold(4, "F9")
+        s.hold(10)
+        for _ in range(12):
+            s.hold(4, "RETURN")
+            s.hold(30)
+    s.hold(120)
+    s.hold(150, "RIGHT")
+    s.hold(20)
+    s.hold(8, *JUMP)                      # short jump into switch 1
+    s.hold(40)
+    s.hold(60, "LEFT")                    # under lift 1
+    until(s, 2504)
+    s.hold(8, *JUMP)                      # onto lift 1 at its lowest
+    until(s, 2702)                        # ride up
+    s.hold(80, "RIGHT")                   # bomb 1
+    until(s, 2940, "RIGHT", FIRE)
+    for _ in range(3):
+        s.hold(35, "RIGHT", FIRE, *JUMP)
+        s.hold(6, "RIGHT", FIRE)
+    s.hold(4, "LEFT", FIRE)               # stay on ledge 226
+    if ledge is None:
+        wait_fire(s, 3425 + shift)
+    else:
+        cycle_until(s, 3425 + shift, ledge)
+
+    def at(frame):
+        return frame + shift
+    until(s, at(3453), "RIGHT", FIRE)     # to the end of the ledge
+    s.hold(35, "RIGHT", FIRE, *JUMP)      # onto lift 2, rising
+    s.hold(12, "RIGHT", FIRE)
+    until(s, at(3560), *ride)             # ride up
+    s.hold(70, "RIGHT", FIRE)             # bomb 2
+    until(s, at(3912), "RIGHT", FIRE)     # down, right to switch 3
+    somersault(s)                         # switch 3: the crate falls
+    wait_fire(s, at(4210))
+    s.hold(60, "LEFT", FIRE)
+    somersault(s)                         # onto the crate's step
+    wait_fire(s, at(4500))
+    s.hold(40, "LEFT", FIRE)
+    somersault(s, "LEFT")                 # onto a crate platform
+    wait_fire(s, at(4675))
+    until(s, at(4715), "RIGHT", FIRE)
+    s.hold(35, "RIGHT", FIRE, *JUMP)      # onto the swinging platform
+    s.hold(25, "RIGHT", FIRE)
+    until(s, at(4815), FIRE)              # ride up
+    s.hold(80, "RIGHT", FIRE)             # bomb 3
+    s.hold(40, "LEFT", FIRE)              # down: kill every enemy left
+    cycle_until(s, at(end), [(60, ("LEFT", FIRE)), (16, ("UP", "LEFT", FIRE)),
+                             (16, ("UP", FIRE)), (120, ("RIGHT", FIRE)),
+                             (16, ("UP", "RIGHT", FIRE)), (16, ("UP", FIRE)),
+                             (35, ("RIGHT", FIRE) + JUMP), (60, ("LEFT", FIRE)),
+                             (35, ("LEFT", FIRE) + JUMP), (3, ("F3", FIRE)), (6, ())])
+    s.hold(30)
+    for _ in range(12):                   # level summary, briefing
+        s.hold(4, "RETURN")
+        s.hold(40)
+    s.expect_win("dork")
+    return s.end(200)
+
+
+def wide_lemmings(walk=283, second=9260, to_pit=185, end=11300):
+    """lem in 16:9, as `lemmings`: the camera reaches the second lock (x
+    425) only when the player stands right of about x 852 (the middle of
+    the wider view), so the walk to it is longer; then the 100 kills there
+    (the lock opens at frame 9254), the walk to the pit (185 or 191 frames;
+    197 is too far) and the somersault over it. Won at frame 11119."""
+    s = wide_script()
+    skip_levels(s, 8)
+    until(s, 6974)
+    stand_and_bomb(s, 7800)
+    s.hold(walk, "RIGHT", FIRE)
+    stand_and_bomb(s, second)
+    s.hold(to_pit, "RIGHT", FIRE)
+    somersault(s, "RIGHT")
+    s.hold(30, "RIGHT", FIRE)
+    stand_and_bomb(s, end)
+    s.expect_win("lem")
+    return s.end(150)
+
+
+def wide_videoboss(left=500, end=26000):
+    """videoboss in 16:9, as `videoboss`: the walk to the left edge of
+    Lara's locked screen starts further right (x 863 instead of 475); the
+    level is complete at frame 25776."""
+    s = wide_script()
+    skip_levels(s, 10)
+    n = 0
+    while s.frame < 9344:
+        explore_cycle(s, n)
+        n += 1
+    until(s, s.frame + left, "LEFT")
+    s.hold(8, "RIGHT")
+    s.hold(10)
+    for _ in range(3):
+        s.hold(18, *JUMP)
+        s.hold(3)
+        s.hold(30, *JUMP)
+        s.hold(40)
+    s.hold(1, "RIGHT")
+    s.hold(5)
+    cycle_until(s, s.frame + 1300, [(60, (FIRE,)), (3, ("F1", "F3", FIRE))])
+    while s.frame < end:
+        explore_cycle(s, n)
+        n += 1
+    s.hold(250)
+    s.expect_win("videoboss")
+    return s.end()
 
 
 def attract(frames=6000):
@@ -802,6 +1054,18 @@ def main():
         "videoboss.bbreplay": videoboss(),
         "finalboss.bbreplay": finalboss(),
     }
+    wide = {
+        "smurf.bbreplay": wide_smurf(),
+        "dork.bbreplay": wide_dork(),
+        "carebears.bbreplay": wide_carebears(),
+        "snorks.bbreplay": wide_snorks(),
+        "lemmings.bbreplay": wide_lemmings(),
+        "video.bbreplay": wide_video(),
+        "videoboss.bbreplay": wide_videoboss(),
+        "finalboss.bbreplay": wide_finalboss(),
+    }
+    os.makedirs(os.path.join(out, "wide"), exist_ok=True)
+    files.update({os.path.join("wide", name): text for name, text in wide.items()})
     for name, text in files.items():
         with open(os.path.join(out, name), "w", newline="\n") as f:
             f.write("# Generated by tools/replays/make_replays.py - do not edit by hand.\n")

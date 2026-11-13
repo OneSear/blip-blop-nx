@@ -66,7 +66,10 @@ descending `activationX` order. Place what comes from the right beyond the
 right edge of the 2002 screen (the 2002 editor put it 740 pixels ahead of
 `activationX`): in the 854-pixel view of the widescreen option, such an
 event wakes earlier by the extra width, but not before the scroll lock
-behind it opens (`wakePoints()`, `src/game/src/level_events.cpp`). The other event types (generators, props,
+behind it opens (`wakePoints()`, `src/game/src/level_events.cpp`). The wider view stops 214 pixels
+before the level's final lock (the furthest lock at or past the victory X), with its right edge where the 2002
+screen's was: the events between the two wake there together, in ascending `activationX` order
+(`sleepOrder()`), and nothing past that lock ever wakes. The other event types (generators, props,
 scroll locks, flags, banners, music, weather, dialogues, vehicles) are
 listed in the same document. The 2002 MFC editors in `vc-projects/` still
 edit the 2002 files: `bbassets legacy` writes them from `assets/source`,

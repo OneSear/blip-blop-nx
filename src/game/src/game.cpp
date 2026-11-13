@@ -474,7 +474,7 @@ bool Game::loadLevel(const char* name) {
     const int levelWidth = world_.collision.width;
     const int viewWidth = world_.camera.width;
     world_.camera.limit = viewLimit(data->events, levelWidth, viewWidth, data->victoryX);
-    level_.victory.x = reachableCameraX(data->victoryX, levelWidth, viewWidth, world_.camera.limit);
+    level_.victory.x = reachableCameraX(data->victoryX, viewWidth, world_.camera.limit);
     level_.victory.flag1 = data->victoryFlag1;
     level_.victory.value1 = data->victoryValue1;
     level_.victory.flag2 = data->victoryFlag2;
@@ -482,15 +482,9 @@ bool Game::loadLevel(const char* name) {
 
     // Every event type is ported; the unused ones give none. They sleep in
     // the order they wake: in 4:3 the file's order, in a wider view some
-    // wake earlier (wakePoints()).
-    const std::vector<int> wake = wakePoints(data->events, levelWidth, viewWidth, world_.camera.limit);
-    std::vector<std::size_t> order(data->events.size());
-    for (std::size_t i = 0; i < order.size(); ++i) {
-        order[i] = i;
-    }
-    std::stable_sort(order.begin(), order.end(),
-                     [&](std::size_t a, std::size_t b) { return wake[a] > wake[b]; });
-    for (const std::size_t i : order) {
+    // wake earlier (wakePoints(), sleepOrder()).
+    const std::vector<int> wake = wakePoints(data->events, viewWidth, world_.camera.limit);
+    for (const std::size_t i : sleepOrder(data->events, wake)) {
         std::unique_ptr<LevelEvent> event = makeLevelEvent(data->events[i]);
         if (event) {
             event->wakeX = wake[i];
