@@ -13,6 +13,15 @@ struct World;
 // with a player close and leaves when its spot leaves the screen
 // (facing right: 200 pixels to the left; facing left: once the camera
 // passes x - 690).
+//
+// Facing left, it watches the 2002 screen's right edge (camera x + 640),
+// not the view's, as no other entity does: the 2002 levels fill their
+// locked arenas from generators placed 60 to 160 pixels right of the
+// screen, which a wider view would show, and which would then leave before
+// the camera reached the lock (fewer enemies in 25 arenas of 8 levels;
+// lem's lock at 425 waited for 100 kills that came too slowly, and its
+// first lemmings and dork's first Pokémon never came). In a wider view
+// their enemies can then appear inside the view's right part.
 class EnemyGenerator : public Generator {
 public:
     struct Setup {

@@ -113,7 +113,7 @@ void EnemyGenerator::update() {
             done_ = true;
         }
     } else if ((setup_.direction == kFacingRight && setup_.x < camera - 200) ||
-               (setup_.direction == kFacingLeft && setup_.x < w.camera.right() + 50)) {
+               (setup_.direction == kFacingLeft && setup_.x < camera + Camera::kNarrowWidth + 50)) {
         done_ = true;
     }
 }

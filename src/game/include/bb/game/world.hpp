@@ -102,7 +102,8 @@ struct GameFlags {
 // (4:3), or 854 with the widescreen option (16:9 at 480 lines). The view
 // width is set at each level start; the entities use the view's edges
 // (right(), centre()) where the 2002 code used the screen's, so that a
-// level plays the same in 4:3 as in 2002.
+// level plays the same in 4:3 as in 2002 (the temporary generators facing
+// left keep the 2002 screen's edge: EnemyGenerator).
 struct Camera {
     static constexpr int kNarrowWidth = core::gfx::kScreenWidth;
     static constexpr int kWideWidth = core::gfx::kWideScreenWidth;
