@@ -1144,6 +1144,12 @@ Fixed deliberately; the replays were re-recorded (docs/progress.md, "Completing 
 | D-25 | Fixed: French text exists again (`assets/source/strings/fr.json`, a new translation: the 2002 `fr.dat` was never in the repository) and the options choose the language. |
 | D-96 (new) | Found and fixed: the French key names of `key_translator.cpp` named the places of DirectInput scan codes on an AZERTY keyboard ("Q" for the key at A's place). The game reads SDL key codes, which follow the keyboard's layout, so letters and signs now show the character of the key in both languages; the French words (RETOUR, CONTROLE GAUCHE...) stay. |
 | D-97 (new) | Found by CI (UBSan, Linux) and fixed: before its first mouse event Dear ImGui puts the mouse at -FLT_MAX, and the level editor converted that to an `int` (`editor_app.cpp`, undefined behaviour); the level coordinates are clamped first. |
+
+### D.N Found and fixed after the release (14 November 2026)
+
+| ID | Status |
+|----|--------|
+| D-98 (new) | Found while winning every level in 16:9, and fixed: the Yoshi turret (`EnnemiYoshiDCA`, now `video::YoshiTurret`) never moves along the level, yet it left only 250 pixels past the screen's left edge (`updateADetruire()`), where no shot reaches it. In video, one left alive on the ledge at x 1285 or 1417 kept the scroll lock at 1534, which waits for no enemies, shut for good: a player who walked past it could not finish the level, in 4:3 as in 16:9. A turret now leaves once its picture is past the screen's left edge (`YoshiTurret::dieWhenPassed()`); a dying or burning one still ends by itself. The `video` replays walk past it. |
 ---
 
 ## Appendix E — Content catalogue

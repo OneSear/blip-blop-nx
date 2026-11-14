@@ -79,6 +79,8 @@ private:
     void stand();       // onAvance()
     void die();         // onMeure()
     void throwShell();  // onTire()
+    // Leaves once the screen has passed it (D-98 fixed).
+    void dieWhenPassed();
 
     int attackDelay_;
     int attackWait_ = 0;
