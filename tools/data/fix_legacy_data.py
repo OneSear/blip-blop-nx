@@ -84,6 +84,10 @@ November 2026):
         to join" (ids 835-839), before id 840, and the pause menu's "X =
         controllers" (id 869), before the mission sheets' text (870).
 
+And the pause menu's cheats (14 November 2026):
+  uk.dat gains the CHEATS item, the labels of its page and the line under
+        it (ids 990-996), before the credits (1000).
+
 The script is idempotent: running it on a fixed archive changes nothing.
 Every other entry keeps its content, compression method and timestamp.
 
@@ -336,6 +340,17 @@ PLAYER_FEATURE_STRINGS = [
     (839, 'Press A to join'),
 ]
 PAUSE_CONTROLLERS_STRING = (869, 'X = controllers')
+# The pause menu's cheats: its item, the switches and WIN LEVEL of its page,
+# and the line under them.
+CHEATS_STRINGS = [
+    (990, 'CHEATS'),
+    (991, 'INFINITE AMMO = '),
+    (992, 'INFINITE LIVES = '),
+    (993, 'INFINITE COW BOMBS = '),
+    (994, 'INVINCIBLE = '),
+    (995, 'WIN LEVEL'),
+    (996, 'No hi-score for a game with cheats'),
+]
 FRENCH_SOURCE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "assets", "source",
                              "strings", "fr.json")
 
@@ -448,6 +463,12 @@ def fix_entry(name, data):
         data = data[:at] + added.encode("cp1252") + data[at:]
         more, _ = fix_entry(name, data)
         return more, "added the pause menu's controllers string"
+    if name == "data/uk.dat" and b"\n990^" not in data and b"\n937^" in data:
+        added = "".join("\n%d^%s" % (i, text) for i, text in CHEATS_STRINGS)
+        at = data.index(b"\n1000^")
+        data = data[:at] + added.encode("cp1252") + data[at:]
+        more, _ = fix_entry(name, data)
+        return more, "added %d cheat strings" % len(CHEATS_STRINGS)
     if name == "data/uk.dat" and b"\n807^\n" in data:
         return data.replace(b"\n807^\n", b"\n807^%s\n" % WIDESCREEN_LABEL.encode("cp1252")), \
             "filled the widescreen option label (807)"

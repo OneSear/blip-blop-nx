@@ -86,7 +86,9 @@ public:
 
 private:
     void updateCamera(bool scrollSpeedApplies);  // updateScrolling()
+    // The F keys, after the pause menu's cheats (World::cheats).
     void updateCheats(const CheatKeys& cheats);
+    void updateMenuCheats();
     void updateShake();
     void updateBubbles();
     void updateLock();

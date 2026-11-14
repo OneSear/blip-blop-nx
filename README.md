@@ -50,6 +50,11 @@ the pause menu), + or − pauses and resumes and skips cutscenes; any button
 shows the next box of a dialogue. The hi-score name is typed on the
 console's keyboard.
 
+The pause menu's CHEATS page switches on infinite ammo, infinite lives (at
+least 5), infinite cow bombs (at least one) and invincibility, for every
+player in the game, until it ends; WIN LEVEL ends the level as won. A game
+in which a cheat was switched on enters no hi-score.
+
 START GAME opens the hero choice: Blip, Blop, Bleach (a pink Blip: SMG
 and laser) and Blitz (a green Blop: shotgun and flamethrower) side by side.
 Up to four players join, each on their own controller: + or − (or A)
@@ -225,7 +230,8 @@ Keyboard defaults: arrows to move and aim, Left Ctrl to fire, Left Alt to
 jump, Space for the cow bomb, Escape for the pause menu. On the hero choice,
 a player's fire joins and takes a hero and its jump gives it back (player 1
 also joins and takes with Return; player 2 has Tab and G); Escape goes back
-to the main menu. Cheat keys (`/cheat`):
+to the main menu. Cheat keys (`/cheat`, for development: unlike the pause
+menu's CHEATS page, they do not stop the hi-scores):
 F1 ammo, F2 cow bomb, F3 extra life, F9 win the level, F12 FPS counter.
 Players 3 and 4 have no keys by default and play with game controllers 3 and
 4. Controllers have the Switch's layout everywhere, by position (A is the

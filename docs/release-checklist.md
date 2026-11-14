@@ -98,6 +98,11 @@ blocks the release or becomes a known issue in the release notes.
       (Bleach and Blitz load without a pause long enough to notice). In
       the pause menu, X opens the controller applet: a Joy-Con pair split
       there joins as two players.
+- [ ] The pause menu's CHEATS page, with two players: each switch applies
+      to both (a weapon keeps its ammo, no life is lost below 5, a cow
+      bomb is always there, enemies and shots do nothing); WIN LEVEL ends
+      the level as won; B goes back to the first page on CHEATS. At game
+      over no name is asked, and the hi-score table is unchanged.
 
 ## The campaign
 

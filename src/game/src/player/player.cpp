@@ -877,7 +877,7 @@ void Player::fireShots(int gunY) {
             break;
     }
 
-    if (weapon != Weapon::Rifle) {
+    if (weapon != Weapon::Rifle && !w.cheats.infiniteAmmo) {
         ammo -= 1;
         if (ammo <= 0) {
             setWeapon(Weapon::Rifle);
@@ -901,7 +901,9 @@ void Player::hitboxFromBody() {
 //-----------------------------------------------------------------------------
 
 void Player::hurt(int damage) {
-    if (invincible > 0 || mode == kDying) {
+    // The invincible cheat: enemies and shots never hurt (the scroll still
+    // crushes, crushedByScroll()).
+    if (invincible > 0 || mode == kDying || world().cheats.invincible) {
         return;
     }
 
