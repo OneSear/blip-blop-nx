@@ -3,6 +3,43 @@
 Status of the phases of [migration.md](../migration.md), with the facts
 learnt while implementing them. Newest phase first.
 
+## The Yoshi turret no longer shuts video's scroll lock for good (D-98, 14 November 2026)
+
+Asked by the maintainer after the v1.0.0 release: the hazard found while
+winning every level in 16:9 (next entry).
+
+* **The fix** (`YoshiTurret::dieWhenPassed()`). A turret never moves along
+  the level and the camera never goes back: once its picture is past the
+  screen's left edge, no shot reaches it (the players' shots end 20 pixels
+  past that edge). In 2002 it left only 250 pixels past it
+  (`dieWhenOffscreen()`), and counted as an enemy until then. In video, the
+  turrets on the ledges at x 1285 and 1417 are within 250 pixels of the
+  scroll lock at 1534, which waits for no enemies: a player who walked
+  past either while it was alive could not finish the level, in 4:3 as in
+  16:9. A turret now leaves once past the edge; a dying or burning one
+  still ends by itself. `migration.md` Appendix D, D-98.
+* **Replays.** `wide/video.bbreplay` is now the generic driver alone. It
+  walks past the turret at x 1417 alive (175 HP of 400), which leaves at
+  camera 1461, and the level is complete at frame 36496 (37587 with the
+  old detour, which shot it). The 4:3 `video` script keeps that detour:
+  alone, the 4:3 driver stops at the lock under the turret at x 1605, on
+  the screen, which it does not shoot. It now completes the level at frame
+  35910 (36722 before).
+* **Fingerprints.** Recorded again for `video`, `video.wide`, `campaign`
+  and `campaign.wide`; the other 39 replay tests held theirs, and each
+  `.pack` matched its plain run. `campaign` changed tick lines only (56 of
+  882, 4:3 and 16:9 alike): the turret at x 698, left behind before F9
+  wins the level, leaves off the screen sooner. `video` changed from tick
+  7680, when that same turret leaves at camera 740 instead of 948.
+
+Facts learnt:
+
+* A turret attacks whenever it is left of the screen's right edge, off the
+  screen to the left too: the turrets left behind threw shells from out of
+  sight until 250 pixels past the edge, each throw a random draw. That is
+  why video's fingerprints moved from the first turret passed, long before
+  the lock.
+
 ## Widescreen: every level won in 16:9; rumble in handheld mode (13 November 2026)
 
 Reported by the maintainer from the Switch: in 16:9 the first mission could
@@ -80,7 +117,8 @@ Facts learnt:
   scroll lock at 1534 (no enemies) shut for good once the camera has passed
   it: off the screen, it can no longer be shot, and the off-screen rule
   removes enemies only 250 pixels left of the view. 2002 behaves so; a
-  player who walks past it cannot finish the level (both views).
+  player who walks past it cannot finish the level (both views). (Fixed
+  the next day: D-98, the entry above.)
 * Searched for other 16:9 faults in the code: the level code places,
   removes and aims its entities from the view's edges (`right()`,
   `centre()`, `width`) or from the left edge, which both views share, and
