@@ -44,7 +44,8 @@ tools/switch/make-nsp.sh --upload v1.2.0     # at the tag, with a clean tree (un
 # Run a local build (it reads ./data, which the build extracts from vc-projects/Blip_n_Blop_3/data.zip)
 cd build/default && ./blipblop /cheat        # /quiet: no music; --pack blipblop.bbpack; --level data/snuf1.lvl 1: that
                                              # level alone (kind as in bb.lst); --all-missions; --help for the rest
-# /cheat keys: F1 ammo, F2 cow bomb, F3 extra life, F9 win the level, F12 FPS counter
+# /cheat keys: F1 ammo, F2 cow bomb, F3 extra life, F9 win the level, F12 FPS counter. Every build (the Switch
+# too) also has the pause menu's CHEATS page (World::cheats): switches for all players, WIN LEVEL, no hi-score
 ```
 
 Formatting and linting use `.editorconfig` (UTF-8, LF), `.clang-format` and `.clang-tidy`. The build exports `compile_commands.json` for clang-tidy, and there is no lint target. Python 3 is needed for the `naming.french` and `strings.fonts` tests, which are skipped without it.

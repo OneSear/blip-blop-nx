@@ -180,10 +180,13 @@ TEST_CASE("uk.dat reads as UTF-8 strings and writes back unchanged") {
     // four-player mode, the CRISP filter of the Switch port, the 4 texts
     // of the hero choice, the 46 of the mission sheets, the names of the
     // XBR and CRT filters and the 6 of the volumes, the rumble, the mission
-    // choice, joining a running level and the pause menu's controllers.
-    CHECK(table->strings.size() == 253 + 4 + 1 + 4 + 46 + 2 + 6);
+    // choice, joining a running level and the pause menu's controllers, and
+    // the 7 of the pause menu's cheats.
+    CHECK(table->strings.size() == 253 + 4 + 1 + 4 + 46 + 2 + 6 + 7);
     REQUIRE(table->find(839) != nullptr);
     CHECK(*table->find(839) == "Press A to join");
+    REQUIRE(table->find(993) != nullptr);
+    CHECK(*table->find(993) == "INFINITE COW BOMBS = ");
     REQUIRE(table->find(854) != nullptr);
     CHECK(*table->find(854) == "PLAYER %d GOT A HIGH SCORE!");
     REQUIRE(table->find(1013) != nullptr);

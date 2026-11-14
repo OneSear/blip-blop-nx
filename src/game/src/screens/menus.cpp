@@ -51,15 +51,22 @@ enum Text {
     kMusicText = 835,  // the volumes and the rumble
     kSoundText = 836,
     kRumbleText = 837,
+    kCheatsText = 990,  // the pause menu's cheats, before the credits (1000)
+    kInfiniteAmmoText = 991,
+    kInfiniteLivesText = 992,
+    kInfiniteCowBombsText = 993,
+    kInvincibleText = 994,
+    kWinLevelText = 995,
 };
 
 // The menus' items stand within this height; a page with more items than
 // fit at its line height gets closer lines (the options page of the pause
 // menu: 13 items).
 constexpr int kItemsHeight = 400;
-// The band's growth for a line under the first page's items.
+// The band's growth for a line under a page's items (Menu::footerText()).
 constexpr int kFooterHeight = 24;
 constexpr int kControllersText = 869;  // "X = controllers"
+constexpr int kNoHiScoreText = 996;    // "No hi-score for a game with cheats"
 
 // The aliases of the first player's up, down, left, right and fire.
 constexpr int kAliasUp = AliasControls::kFirstPlayer + AliasControls::kUp;
@@ -74,8 +81,8 @@ constexpr int kAliasFire = AliasControls::kFirstPlayer + AliasControls::kFire;
 // Menu
 //-----------------------------------------------------------------------------
 
-Menu::Menu(Services& services, int pauseOptionsPage, int lineHeight) noexcept
-    : services_(services), optionsPage_(pauseOptionsPage), lineHeight_(lineHeight) {}
+Menu::Menu(Services& services, int pauseOptionsPage, int lineHeight, int mainItems) noexcept
+    : services_(services), optionsPage_(pauseOptionsPage), lineHeight_(lineHeight), mainItems_(mainItems) {}
 
 void Menu::setPage(int page, int items, int focusedItem) {
     // What the options and key pages changed is written when they are left,
@@ -97,7 +104,7 @@ void Menu::saveIfOnOptions() {
 
 bool Menu::backFromOptions() {
     if (page_ == optionsPage_) {
-        setPage(kMainPage, 3, 1);  // on OPTIONS
+        setPage(kMainPage, mainItems_, 1);  // on OPTIONS
         return true;
     }
     if (const int player = keysPlayer(page_); player >= 0) {
@@ -200,7 +207,7 @@ void Menu::chooseOption() {
             setPage(keysPage(focus_ - kKeys1Item), 8, 7);
             break;
         case kOptionsReturnItem:
-            setPage(kMainPage, 3, 1);
+            setPage(kMainPage, mainItems_, 1);
             break;
         case kMusicItem:
         case kSoundItem: {
@@ -321,13 +328,14 @@ void Menu::draw() {
 
     // Darkened again when the page changes or the band moves by more than
     // 20 pixels.
+    const int footer = footerText();
     const int moved = (centre - halfWidth) - bandLeft_;
     if (page_ != bandPage_ || moved > 20 || moved < -20) {
         gfx::blit(backdrop, 0, 0, screen);
         bandLeft_ = centre - halfWidth;
-        const int footer = footerText_ != 0 && page_ == kMainPage ? kFooterHeight : 0;
+        const int footerHeight = footer != 0 ? kFooterHeight : 0;
         const gfx::Rect band{centre - halfWidth, 220 - halfHeight, 2 * halfWidth,
-                             40 + 2 * halfHeight + footer};
+                             40 + 2 * halfHeight + footerHeight};
         gfx::darken(backdrop, &band);
         bandPage_ = page_;
     }
@@ -338,9 +346,9 @@ void Menu::draw() {
             .printCentred(screen, centre, y, text_[static_cast<std::size_t>(i)].data());
         y += lineHeight;
     }
-    if (footerText_ != 0 && page_ == kMainPage) {
+    if (footer != 0) {
         services_.fonts->rpg->printCentred(screen, centre, 240 + halfHeight + 8,
-                                           services_.texts->text(footerText_));
+                                           services_.texts->text(footer));
     }
 }
 
@@ -635,12 +643,8 @@ enum PauseStage {
 
 }  // namespace
 
-PauseMenu::PauseMenu(Services& services) noexcept : Menu(services, 1, 40) {
-    footerText_ = kControllersText;
-}
-
 void PauseMenu::start() {
-    setPage(kMainPage, 3, 0);
+    setPage(kMainPage, mainItems_, 0);
 }
 
 void PauseMenu::stop() {
@@ -653,12 +657,65 @@ void PauseMenu::updateItems() {
     if (page_ == kMainPage) {
         setItem(0, t.text(kResumeText));
         setItem(1, t.text(kOptionsText));
-        setItem(2, t.text(kExitGameText));
+        setItem(2, t.text(kCheatsText));
+        setItem(3, t.text(kExitGameText));
     } else if (page_ == optionsPage_) {
         optionsItems();
+    } else if (page_ == kCheatsPage) {
+        cheatItems();
     } else if (keysPlayer(page_) >= 0) {
         keyItems(AliasControls::firstOf(keysPlayer(page_)));
     }
+}
+
+int PauseMenu::footerText() const {
+    return page_ == kMainPage ? kControllersText : page_ == kCheatsPage ? kNoHiScoreText : 0;
+}
+
+void PauseMenu::cheatItems() {
+    const TextSource& t = *services_.texts;
+    const MenuCheats& c = services_.world->cheats;
+    const auto option = [&](int item, int label, bool on) {
+        std::snprintf(text_[static_cast<std::size_t>(item)].data(), text_[0].size(), "%s %s", t.text(label),
+                      t.text(on ? kOnText : kOffText));
+    };
+    option(kAmmoItem, kInfiniteAmmoText, c.infiniteAmmo);
+    option(kLivesItem, kInfiniteLivesText, c.infiniteLives);
+    option(kCowBombItem, kInfiniteCowBombsText, c.infiniteCowBombs);
+    option(kInvincibleItem, kInvincibleText, c.invincible);
+    setItem(kWinItem, t.text(kWinLevelText));
+    setItem(kCheatsReturnItem, t.text(kReturnText));
+}
+
+bool PauseMenu::switchCheat() {
+    MenuCheats& c = services_.world->cheats;
+    bool* cheat = nullptr;
+    const char* name = "";
+    switch (focus_) {
+        case kAmmoItem:
+            cheat = &c.infiniteAmmo;
+            name = "infinite ammo";
+            break;
+        case kLivesItem:
+            cheat = &c.infiniteLives;
+            name = "infinite lives";
+            break;
+        case kCowBombItem:
+            cheat = &c.infiniteCowBombs;
+            name = "infinite cow bombs";
+            break;
+        case kInvincibleItem:
+            cheat = &c.invincible;
+            name = "invincible";
+            break;
+        default:
+            return false;
+    }
+    *cheat = !*cheat;
+    c.used = c.used || *cheat;
+    services_.session->note((std::string("cheat: ") + name + (*cheat ? " on" : " off")).c_str());
+    updateItems();
+    return true;
 }
 
 bool PauseMenu::update(int& result) {
@@ -722,10 +779,28 @@ bool PauseMenu::update(int& result) {
                             setPage(optionsPage_, kOptionItems, kOptionsReturnItem);
                             return done(result, kStay);
                         case 2:
+                            setPage(kCheatsPage, kCheatItems, kAmmoItem);
+                            return done(result, kStay);
+                        case 3:
                             return done(result, kLeaveLevel);
                         default:
                             break;
                     }
+                } else if (page_ == kCheatsPage) {
+                    if (focus_ == kWinItem) {
+                        // Back to the game, which the next tick wins.
+                        MenuCheats& c = services_.world->cheats;
+                        c.winLevel = true;
+                        c.used = true;
+                        services_.session->note("cheat: win level");
+                        return done(result, kResume);
+                    }
+                    if (focus_ == kCheatsReturnItem) {
+                        setPage(kMainPage, mainItems_, 2);  // on CHEATS
+                    } else {
+                        switchCheat();
+                    }
+                    return done(result, kStay);
                 } else if (page_ == optionsPage_) {
                     chooseOption();
                     return done(result, kStay);
@@ -750,7 +825,7 @@ bool PauseMenu::update(int& result) {
 
             case kPauseRightAction:
                 stage_ = kPauseLeftKey;
-                if (page_ == optionsPage_ && switchOption(1)) {
+                if ((page_ == optionsPage_ && switchOption(1)) || (page_ == kCheatsPage && switchCheat())) {
                     return done(result, kStay);
                 }
                 break;
@@ -765,7 +840,7 @@ bool PauseMenu::update(int& result) {
 
             case kPauseLeftAction:
                 stage_ = kPauseEscapeKey;
-                if (page_ == optionsPage_ && switchOption(-1)) {
+                if ((page_ == optionsPage_ && switchOption(-1)) || (page_ == kCheatsPage && switchCheat())) {
                     return done(result, kStay);
                 }
                 break;
@@ -811,7 +886,11 @@ bool PauseMenu::update(int& result) {
                 if (page_ == kMainPage) {
                     return done(result, kResume);
                 }
-                backFromOptions();
+                if (page_ == kCheatsPage) {
+                    setPage(kMainPage, mainItems_, 2);  // on CHEATS
+                } else {
+                    backFromOptions();
+                }
                 return done(result, kStay);
 
             default:

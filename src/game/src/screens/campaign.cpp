@@ -377,6 +377,9 @@ Frame CampaignScreen::update(ScreenStack& stack) {
             case Step::GameOver:
                 step_ = Step::HiScore;
                 hiScorePlayer_ = 1;
+                if (services_.world->cheats.used) {
+                    session.note("no hi-score: cheats were used");
+                }
                 if (!won_) {
                     stack.push(std::make_unique<GameOverScreen>(services_));
                     return Frame::Continue;
@@ -388,8 +391,11 @@ Frame CampaignScreen::update(ScreenStack& stack) {
                 if (hiScorePlayer_ > kMaxPlayers) {
                     step_ = Step::Table;
                 }
+                // A campaign with the pause menu's cheats enters no score
+                // (the F keys of /cheat, a developer's switch, do not count).
                 const Player* p = game_.player(number);
-                if (p != nullptr && services_.hiScores->qualifies(p->score)) {
+                if (p != nullptr && !services_.world->cheats.used &&
+                    services_.hiScores->qualifies(p->score)) {
                     stack.push(std::make_unique<HiScoreEntryScreen>(services_, p->score, number));
                     return Frame::Continue;
                 }

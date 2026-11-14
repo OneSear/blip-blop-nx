@@ -88,6 +88,7 @@ bool Game::startCampaign(const Lineup& lineup, int firstPart) {
     services_.session->note(note.c_str());
 
     world_.cowBombUnlocked = false;
+    world_.cheats = MenuCheats{};
     for (bool& perfect : lastPerfect_) {
         perfect = false;
     }

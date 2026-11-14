@@ -162,9 +162,10 @@ def menus():
     """The menus the other replays do not reach: main menu wrap-around, exit
     confirmation, options, key redefinition, the hero choice (Escape back
     to the main menu, X, two players joining, a hero taken from under the
-    other's tag, given back, a player leaving; Blop), pause menu options
-    and exit, the pause menu opened by a focus loss, dialogue skip, the
-    attract cycle interrupted by keys, and a normal quit. The Phase 9
+    other's tag, given back, a player leaving; Blop), pause menu options,
+    cheats (the four switches on for the rest of the level) and exit, the
+    pause menu opened by a focus loss, dialogue skip, the attract cycle
+    interrupted by keys, and a normal quit. The Phase 9
     options are all switched on, so everything from the key pages on is in
     French and the level is drawn with smooth motion; widescreen stays off
     (replay.menus.wide plays the level in 16:9)."""
@@ -261,7 +262,7 @@ def menus():
     s.hold(20)
     tap(s, "ESCAPE", frames=10, gap=30)
     s.hold(200)
-    tap(s, "ESCAPE", frames=10)       # pause menu (RESUME, OPTIONS, EXIT)
+    tap(s, "ESCAPE", frames=10)       # pause menu (RESUME, OPTIONS, CHEATS, EXIT)
     tap(s, "DOWN")
     tap(s, "RETURN")                  # options, focus on RETURN
     for _ in range(4):
@@ -269,6 +270,19 @@ def menus():
     tap(s, "RETURN")                  # player 1 keys
     tap(s, "RETURN")                  # RETURN: back to the options
     tap(s, "RETURN")                  # RETURN: back to the pause menu
+    tap(s, "DOWN")
+    tap(s, "RETURN")                  # cheats (AMMO, LIVES, COW BOMBS, INVINCIBLE,
+                                      # WIN LEVEL, RETURN), focus on AMMO
+    tap(s, "RIGHT")                   # infinite ammo on
+    tap(s, "DOWN")
+    tap(s, "RETURN")                  # infinite lives on
+    tap(s, "DOWN")
+    tap(s, "LEFT")                    # infinite cow bombs on
+    tap(s, "DOWN")
+    tap(s, "RIGHT")                   # invincible on
+    tap(s, "DOWN")
+    tap(s, "DOWN")
+    tap(s, "RETURN")                  # RETURN: back to the pause menu on CHEATS
     tap(s, "ESCAPE")                  # Escape resumes
     s.hold(120, "RIGHT", "LCTRL")
     s.hold(60, "unfocused")           # the window loses the focus: pause menu
@@ -276,6 +290,7 @@ def menus():
     tap(s, "RETURN")                  # RESUME
     s.hold(10)
     tap(s, "ESCAPE", frames=10)       # pause menu again
+    tap(s, "DOWN")
     tap(s, "DOWN")
     tap(s, "DOWN")
     tap(s, "RETURN")                  # EXIT: back to the main menu
@@ -352,7 +367,8 @@ def missions():
             s.hold(30)
         for _ in range(2):
             cycle(*p2, *p3)
-    tap(s, "ESCAPE", frames=10)       # pause menu (RESUME, OPTIONS, EXIT)
+    tap(s, "ESCAPE", frames=10)       # pause menu (RESUME, OPTIONS, CHEATS, EXIT)
+    tap(s, "DOWN")
     tap(s, "DOWN")
     tap(s, "DOWN")
     tap(s, "RETURN")                  # EXIT: back to the main menu
@@ -409,7 +425,8 @@ def four_players():
             for _ in range(12):
                 s.hold(4, "RETURN")
                 s.hold(30)
-    tap(s, "ESCAPE", frames=10)       # pause menu (RESUME, OPTIONS, EXIT)
+    tap(s, "ESCAPE", frames=10)       # pause menu (RESUME, OPTIONS, CHEATS, EXIT)
+    tap(s, "DOWN")
     tap(s, "DOWN")
     tap(s, "DOWN")
     tap(s, "RETURN")                  # EXIT: back to the main menu

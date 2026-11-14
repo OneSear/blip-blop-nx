@@ -253,7 +253,31 @@ void Level::updateCamera(bool scrollSpeedApplies) {
     }
 }
 
+void Level::updateMenuCheats() {
+    MenuCheats& cheats = world_.cheats;
+
+    // Before the players' update: a player who loses a life still has
+    // kLives - 1, and drops a cow bomb the tick it wants one.
+    for (Player* player : players) {
+        if (player == nullptr || player->dead) {
+            continue;
+        }
+        if (cheats.infiniteLives && player->lives < MenuCheats::kLives) {
+            player->lives = MenuCheats::kLives;
+        }
+        if (cheats.infiniteCowBombs && player->cowBombs < 1) {
+            player->cowBombs = 1;
+        }
+    }
+    if (cheats.winLevel) {
+        won = true;
+        cheats.winLevel = false;
+    }
+}
+
 void Level::updateCheats(const CheatKeys& cheats) {
+    updateMenuCheats();
+
     if (cheatWait_ < kCheatDelay) {
         cheatWait_ += 1;
     }

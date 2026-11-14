@@ -3,6 +3,49 @@
 Status of the phases of [migration.md](../migration.md), with the facts
 learnt while implementing them. Newest phase first.
 
+## The pause menu's cheats (14 November 2026)
+
+Asked by the maintainer: the cheats of 2002 need the `/cheat` switch and
+the F keys, and neither reaches a Switch (the Homebrew Menu passes no
+arguments, an installed title starts with none, and the console has no F
+keys). The pause menu now has a fourth item, CHEATS, on every build.
+
+* **The page** (`PauseMenu::cheatItems()`, `switchCheat()`). INFINITE
+  AMMO, INFINITE LIVES, INFINITE COW BOMBS and INVINCIBLE switch with A,
+  left or right; WIN LEVEL resumes the game, and the next tick wins the
+  level as F9 does; RETURN or B goes back to the first page, on CHEATS. A
+  line under the items (string 996, the rpg font) tells that a game with
+  cheats enters no hi-score. The first page's item count is now a member
+  of `Menu` (`mainItems_`: 3 in the main menu, 4 in the pause menu), and
+  the line under the items is the virtual `footerText()`, per page.
+* **What they do** (`World::cheats`, a `MenuCheats`). Every player in the
+  level, players 3 and 4 too: firing a weapon uses no ammo
+  (`Player::fireShots()`); `Level::updateMenuCheats()`, before the
+  players' update, keeps at least 5 lives (a life lost leaves 4, topped up
+  the next tick) and one cow bomb (the cow bomb's own delay still holds);
+  `Player::hurt()` does nothing while invincible (the scroll still crushes,
+  which only infinite lives covers). They hold until the campaign ends:
+  `Game::startCampaign()` clears them.
+* **Hi-scores.** `MenuCheats::used`, set when a switch goes on or WIN LEVEL
+  is chosen, skips the name entry of every player
+  (`CampaignScreen`, `Step::HiScore`) and notes "no hi-score: cheats were
+  used". The F keys of `/cheat` do not set it: the replays that enter
+  names after F9 keep them.
+* **Text.** Strings 990 to 996, before the credits (1000) and away from
+  the mission sheets' ids (870 to 939, which `check_strings.py` reads as
+  sheet text), in both JSON tables and in `uk.dat`
+  (`fix_legacy_data.py`). The longest item, BOMBES VACHES INFINIES = NON,
+  is 513 pixels wide in the menu font; the band holds 580.
+* **Replays.** `menus`, `fourplayers` and `missions` take one more DOWN to
+  reach EXIT, and `menus` switches the four cheats on before resuming.
+  Every tick line held, in all 45 replay tests: in the 195 ticks `menus`
+  plays with the cheats on, the player fires only the rifle and nothing
+  hurts it. Only frame lines changed, in the 10 fingerprints of the
+  replays that open the pause menu (campaign, smoke, menus, fourplayers,
+  missions, each in 4:3 and 16:9): the first page has 4 items. Frame
+  lines chain, so in `campaign` and `smoke` every line after the pause
+  menu changes, though the frames after it are the same pixels.
+
 ## The Yoshi turret no longer shuts video's scroll lock for good (D-98, 14 November 2026)
 
 Asked by the maintainer after the v1.0.0 release: the hazard found while

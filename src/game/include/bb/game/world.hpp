@@ -225,6 +225,22 @@ struct Media {
     LevelEffects* effects = nullptr;
 };
 
+// The cheats of the pause menu's CHEATS page (not of 2002, whose only cheats
+// were the F keys of the /cheat switch: CheatKeys). Each holds for every
+// player in the level, from the next tick to the end of the campaign
+// (Game::startCampaign() clears them); a campaign in which one was used
+// enters no hi-score.
+struct MenuCheats {
+    static constexpr int kLives = 5;  // what infinite lives keep
+
+    bool infiniteAmmo = false;      // firing a weapon uses no ammo (Player::fireShots())
+    bool infiniteLives = false;     // at least kLives lives (Level::updateMenuCheats())
+    bool infiniteCowBombs = false;  // at least one cow bomb
+    bool invincible = false;        // nothing hurts a player (Player::hurt())
+    bool winLevel = false;          // WIN LEVEL was chosen: the next tick wins the level
+    bool used = false;              // one was switched on or chosen in this campaign
+};
+
 // Everything a level runs on (migration.md, sections 3.4 and Phase 4).
 // One World is reused from level to level; the level start resets it.
 struct World {
@@ -286,6 +302,8 @@ struct World {
     // The campaign state the players read: the cow bomb is given from the
     // second level on, and with each new life (cowBombOn).
     bool cowBombUnlocked = false;
+    // The pause menu's cheats, which the players and the level read.
+    MenuCheats cheats;
 
     // The entity lists. Players and player shots belong to the players,
     // weather particles to fixed pools; the lists own everything else.

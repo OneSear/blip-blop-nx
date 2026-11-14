@@ -154,7 +154,7 @@ fingerprints included.
 | `attract` | The intro and the attract cycle, no input. |
 | `smoke` | Menus, the first two levels briefly (pause menu once), quit. |
 | `campaign` | All 12 levels played briefly then won with F9, the ending and the credits. |
-| `menus` | The menu paths the others do not reach, key redefinition, the hero choice (two players; Blop), dialogue skip, a focus loss. |
+| `menus` | The menu paths the others do not reach, key redefinition, the hero choice (two players; Blop), the pause menu's CHEATS page (its four switches on for the rest of the level), dialogue skip, a focus loss. |
 | `gameover` | Two players, level summaries, game over, both names, the hi-score table. |
 | `fourplayers` | Four players join (two on the keyboard, two on pads 3 and 4) and take Blip, Blop, Bleach and Blitz; the first level and its dialogue, the second won (the table of four), part of the third, the pause menu's EXIT. |
 | `missions` | Every mission offered (`option all-missions`): the mission page left with its RETURN, MISSION 3 chosen; in snorkniv players 2 (Tab) and 3 (A on pad 3, Bleach) join the running level; snorkniv and snorkniv2 won with F9 (the summary of three), the Lemmings bonus stage's briefing and start, the pause menu's EXIT. |

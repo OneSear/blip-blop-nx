@@ -41,12 +41,15 @@ protected:
         kKeys4Page = 11,
         kExitPage = 8,
         kMissionPage = 12,  // the missions reached (the main menu's)
+        kCheatsPage = 13,   // the cheats (the pause menu's)
     };
 
-    Menu(Services& services, int pauseOptionsPage, int lineHeight) noexcept;
+    Menu(Services& services, int pauseOptionsPage, int lineHeight, int mainItems) noexcept;
 
     // The items of the current page.
     virtual void updateItems() = 0;
+    // A line under the items of the current page (a string id; 0: none).
+    virtual int footerText() const { return 0; }
 
     // Leaving the options page or a key page saves the settings.
     void setPage(int page, int items, int focusedItem);
@@ -104,6 +107,7 @@ protected:
     Services& services_;
     const int optionsPage_;  // MENU_OPTS: 7 in the main menu, 1 in the pause menu
     const int lineHeight_;   // 30 in the main menu, 40 in the pause menu
+    const int mainItems_;    // the items of the first page: 3 in the main menu, 4 in the pause menu
 
     int page_ = kMainPage;  // current_menu
     int focus_ = 0;         // the item in red
@@ -116,8 +120,6 @@ protected:
     // The band and the page it was darkened for (old_menu, rec).
     int bandPage_ = 0;
     int bandLeft_ = 0;
-    // A line under the first page's items (a string id; 0: none).
-    int footerText_ = 0;
 
     // The items of a page: 13 on the options page.
     std::array<std::array<char, 100>, 16> text_{};
@@ -133,7 +135,7 @@ public:
     // (firstPart()).
     enum Result { kContinue = 0, kStartGame = 1, kExit = 3 };
 
-    explicit MainMenu(Services& services) noexcept : Menu(services, kOptionsPage, 30) {}
+    explicit MainMenu(Services& services) noexcept : Menu(services, kOptionsPage, 30, 3) {}
 
     // Opens the first page; reads the missions of bb.lst.
     void start();
@@ -163,21 +165,37 @@ private:
     int firstPart_ = 0;
 };
 
-// The pause menu of a level (MenuGame).
+// The pause menu of a level (MenuGame): RESUME, OPTIONS, CHEATS (not of
+// 2002: the switches of World::cheats, and WIN LEVEL) and EXIT.
 class PauseMenu : public Menu {
 public:
-    // What update() returns in its result.
+    // What update() returns in its result. WIN LEVEL resumes the game.
     enum Result { kStay = 0, kResume = 1, kLeaveLevel = 2 };
 
-    // Its first page tells X opens the controller screen.
-    explicit PauseMenu(Services& services) noexcept;
+    explicit PauseMenu(Services& services) noexcept : Menu(services, 1, 40, 4) {}
 
     void start();
     bool update(int& result);
     void stop();
 
 private:
+    enum CheatItem {
+        kAmmoItem,
+        kLivesItem,
+        kCowBombItem,
+        kInvincibleItem,
+        kWinItem,
+        kCheatsReturnItem,
+        kCheatItems
+    };
+
     void updateItems() override;
+    // The first page tells X opens the controller screen; the cheats page,
+    // that a game with cheats enters no hi-score.
+    int footerText() const override;
+    void cheatItems();
+    // Switches the focused cheat; false when the focus is not on a switch.
+    bool switchCheat();
 };
 
 }  // namespace bb::game
