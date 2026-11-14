@@ -57,11 +57,12 @@ enum Text {
     kInfiniteCowBombsText = 993,
     kInvincibleText = 994,
     kWinLevelText = 995,
+    kShowFpsText = 997,  // the frame counter (Options::showFps)
 };
 
 // The menus' items stand within this height; a page with more items than
-// fit at its line height gets closer lines (the options page of the pause
-// menu: 13 items).
+// fit at its line height gets closer lines (the options page: 14 items,
+// 28 pixels apart in both menus).
 constexpr int kItemsHeight = 400;
 // The band's growth for a line under a page's items (Menu::footerText()).
 constexpr int kFooterHeight = 24;
@@ -177,6 +178,9 @@ bool Menu::switchOption(int step) {
         case kRumbleItem:
             o.rumble = !o.rumble;
             break;
+        case kFpsItem:
+            o.showFps = !o.showFps;
+            break;
         default:
             return false;
     }
@@ -257,6 +261,7 @@ void Menu::optionsItems() {
     volume(kMusicItem, kMusicText, o.musicVolume);
     volume(kSoundItem, kSoundText, o.soundVolume);
     option(kRumbleItem, kRumbleText, o.rumble ? kOnText : kOffText);
+    option(kFpsItem, kShowFpsText, o.showFps ? kOnText : kOffText);
     setItem(kKeys1Item, t.text(kPlayer1KeysText));
     setItem(kKeys2Item, t.text(kPlayer2KeysText));
     setItem(kKeys3Item, t.text(kPlayer3KeysText));

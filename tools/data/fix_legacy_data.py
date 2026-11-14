@@ -88,6 +88,9 @@ And the pause menu's cheats (14 November 2026):
   uk.dat gains the CHEATS item, the labels of its page and the line under
         it (ids 990-996), before the credits (1000).
 
+And the frame counter (14 November 2026):
+  uk.dat gains the SHOW FPS option's label (id 997), before the credits.
+
 The script is idempotent: running it on a fixed archive changes nothing.
 Every other entry keeps its content, compression method and timestamp.
 
@@ -351,6 +354,8 @@ CHEATS_STRINGS = [
     (995, 'WIN LEVEL'),
     (996, 'No hi-score for a game with cheats'),
 ]
+# The options' SHOW FPS: the frame counter over a level.
+SHOW_FPS_STRING = (997, 'SHOW FPS = ')
 FRENCH_SOURCE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "assets", "source",
                              "strings", "fr.json")
 
@@ -469,6 +474,12 @@ def fix_entry(name, data):
         data = data[:at] + added.encode("cp1252") + data[at:]
         more, _ = fix_entry(name, data)
         return more, "added %d cheat strings" % len(CHEATS_STRINGS)
+    if name == "data/uk.dat" and b"\n997^" not in data and b"\n996^" in data:
+        added = "\n%d^%s" % SHOW_FPS_STRING
+        at = data.index(b"\n1000^")
+        data = data[:at] + added.encode("cp1252") + data[at:]
+        more, _ = fix_entry(name, data)
+        return more, "added the SHOW FPS string"
     if name == "data/uk.dat" and b"\n807^\n" in data:
         return data.replace(b"\n807^\n", b"\n807^%s\n" % WIDESCREEN_LABEL.encode("cp1252")), \
             "filled the widescreen option label (807)"

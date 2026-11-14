@@ -33,6 +33,7 @@ core::Settings current(const game::Options& options, const game::Input& in) {
     settings.musicVolume = options.musicVolume;
     settings.soundVolume = options.soundVolume;
     settings.rumble = options.rumble;
+    settings.showFps = options.showFps;
     for (int p = 0; p < input::kPlayerCount; ++p) {
         for (int a = 0; a < input::kActionCount; ++a) {
             settings.bindings.set(p, input::kActions[static_cast<std::size_t>(a)],
@@ -53,6 +54,7 @@ void applySettings(const core::Settings& settings, game::Options& options, game:
     options.musicVolume = settings.musicVolume;
     options.soundVolume = settings.soundVolume;
     options.rumble = settings.rumble;
+    options.showFps = settings.showFps;
     for (int p = 0; p < input::kPlayerCount; ++p) {
         for (int a = 0; a < input::kActionCount; ++a) {
             in.setAlias(aliasOf(p, a),

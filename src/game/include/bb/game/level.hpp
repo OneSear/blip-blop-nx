@@ -81,7 +81,8 @@ public:
     // The distortion's phase (Weather::Distortion).
     int distortionPhase = 0;
 
-    bool showFps = false;    // F12
+    // F12 was taken this tick: Game switches Options::showFps (SHOW FPS).
+    bool fpsKey = false;
     bool showLists = false;  // F11 (its display is commented out)
 
 private:

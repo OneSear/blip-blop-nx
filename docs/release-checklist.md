@@ -92,6 +92,9 @@ blocks the release or becomes a known issue in the release notes.
       controller when the screen shakes (Sonic, Lara, Mario, the cows);
       only the player's own controller for the rest; a Joy-Con pair and a
       single Joy-Con held sideways both rumble. RUMBLE = OFF: none.
+- [ ] SHOW FPS = ON: "FPS = 60" under player 1's score in a level, in 4:3
+      and 16:9, with SMOOTH MOTION and with each filter (a lower count
+      tells the console misses frames); it survives a restart. OFF: none.
 - [ ] Joining a running level: in a one-player game, "Press A to join" in
       the top right corner; A on a second controller brings player 2 in
       next to player 1, on Blop; a third and a fourth join the same way

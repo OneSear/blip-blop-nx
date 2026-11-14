@@ -70,11 +70,12 @@ TEST_CASE("settings round-trip through their text form") {
     s.musicVolume = 7;
     s.soundVolume = 0;
     s.rumble = false;
+    s.showFps = true;
     s.bindings.set(1, in::Action::Fire, in::padCode(0, 5));
     const std::string text = s.serialize();
     CHECK(text.rfind("blipblop-settings 1\nlanguage french\nscaling integer\nfilter smooth\n"
                      "smooth-motion off\nwidescreen off\nmusic-volume 7\nsound-volume 0\nrumble off\n"
-                     "p1.up key:up\n",
+                     "show-fps on\np1.up key:up\n",
                      0) == 0);
 
     std::string error;
@@ -89,16 +90,19 @@ TEST_CASE("settings round-trip through their text form") {
     CHECK(back->musicVolume == 7);
     CHECK(back->soundVolume == 0);
     CHECK_FALSE(back->rumble);
+    CHECK(back->showFps);
     CHECK(back->bindings == s.bindings);
     CHECK(warnings.size() == 1);
 
-    // Files written before the volumes keep the defaults: full, rumbling.
+    // Files written before the volumes keep the defaults: full, rumbling,
+    // no frame counter.
     const auto beforeVolumes =
         bb::core::Settings::parse("blipblop-settings 1\nlanguage french\n", error, warnings);
     REQUIRE(beforeVolumes.has_value());
     CHECK(beforeVolumes->musicVolume == 10);
     CHECK(beforeVolumes->soundVolume == 10);
     CHECK(beforeVolumes->rumble);
+    CHECK_FALSE(beforeVolumes->showFps);
     CHECK_FALSE(
         bb::core::Settings::parse("blipblop-settings 1\nmusic-volume 11\n", error, warnings).has_value());
     CHECK(error == "line 2: music-volume must be 0 to 10");
@@ -106,6 +110,9 @@ TEST_CASE("settings round-trip through their text form") {
         bb::core::Settings::parse("blipblop-settings 1\nsound-volume -1\n", error, warnings).has_value());
     CHECK_FALSE(
         bb::core::Settings::parse("blipblop-settings 1\nrumble maybe\n", error, warnings).has_value());
+    CHECK_FALSE(
+        bb::core::Settings::parse("blipblop-settings 1\nshow-fps yes\n", error, warnings).has_value());
+    CHECK(error == "line 2: show-fps must be off or on");
 
     CHECK_FALSE(bb::core::Settings::parse("language french\n", error, warnings).has_value());
     CHECK_FALSE(
