@@ -163,7 +163,7 @@ fingerprints included.
 | `lemmings` | The first eight levels won with F9, then the Lemmings bonus level won: fights with cow bombs at each scroll lock, a somersault over the pit, the 200-kill nuke. |
 | `snorks` | The first six levels won with F9, then snorkniv and snorkniv2 won with the generic driver. |
 | `carebears` | snuf1, snuf2 and dork won with F9, then bisous1, bisous2 and bisous3 won with the generic driver (`explore_cycle`) and a floor sweep against the shaman (`boss_sweep`). |
-| `video` | The first nine levels won with F9, then video won with the generic driver; the Yoshi turret on the ledge at x 1417 is shot from under it (the driver walks past it and the next scroll lock waits for it); Rayman with the Pokémon hero summons. |
+| `video` | The first nine levels won with F9, then video won with the generic driver; the Yoshi turret on the ledge at x 1417 is shot from under it (alone, the driver stops at the scroll lock at x 1536, under a turret it does not shoot); Rayman with the Pokémon hero summons. Its 16:9 script, `wide/video.bbreplay`, is the generic driver alone: it walks past the turret at x 1417, which leaves once off the screen (D-98, which kept that scroll lock shut for good). |
 | `videoboss` | The first ten levels won with F9, then videoboss won: the generic driver, except the Lara fight, where the player climbs to the top ledge and shoots the weight until it falls on her (`lara_weight`); then small Mario, Luigi, Sonic and the Pac-Man car with the generic driver. |
 | `finalboss` | The first eleven levels won with F9, then the final boss level won with the generic driver alone (the stork flight, the hyperspace rocks, Mario); ends as the ending starts. |
 

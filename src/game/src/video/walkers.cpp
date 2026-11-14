@@ -502,6 +502,20 @@ void YoshiTurret::update() {
             break;
     }
     dieWhenOffscreen();
+    dieWhenPassed();
+}
+
+// D-98 fixed: a turret never moves along the level and the camera never goes
+// back, so once its image is past the screen's left edge it can be neither
+// seen nor shot again. In 2002 it stayed until 250 pixels past that edge
+// (dieWhenOffscreen()), still counted as an enemy: in video, one left alive
+// on the ledge at x 1285 or 1417 kept the scroll lock at 1534, which waits
+// for no enemies, shut for good. A dying or burning turret ends by itself.
+void YoshiTurret::dieWhenPassed() {
+    if (mode != kDying && mode != kCarbonised && image != nullptr &&
+        x - image->spotX() + image->width() < world().camera.x) {
+        dead = true;
+    }
 }
 
 void YoshiTurret::stand() {
