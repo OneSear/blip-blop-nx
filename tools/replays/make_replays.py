@@ -685,11 +685,14 @@ def video():
     """The video-game world's first level (video) played to the end
     without the win-level cheat (the first nine levels are won with F9):
     the generic driver, except that the Yoshi turret on the ledge at x 1417
-    is shot from under it at about frame 9640 (the driver walks past it,
-    and the scroll lock at x 1536 waits for it); the end arena (camera
-    10388) is reached, then Rayman (15000 HP, with the Pokemon hero
-    summons) is fought; the level is complete at frame 36722 (38316 before
-    the fixes of 24 October 2026). Ends in the level summary."""
+    is shot from under it at about frame 9640 (`wide_video` walks past it;
+    alone, the driver stops at the scroll lock at x 1536, under the turret
+    at x 1605 it does not shoot); the end arena (camera 10388) is reached,
+    then Rayman (15000 HP, with the Pokemon hero summons) is fought; the
+    level is complete at frame 35910 (36722 before D-98 was fixed: the
+    turrets the driver walks past no longer throw shells from off the
+    screen; 38316 before the fixes of 24 October 2026). Ends in the level
+    summary."""
     s = Script(options=("/cheat", "/quiet"))
     skip_levels(s, 9)
     n = 0
@@ -863,25 +866,13 @@ def wide_finalboss(end=33800):
     return wide_explore(11, end, ("finalboss",)).end(60)
 
 
-def wide_video(turret=10247, walk=76, end=37700):
-    """video in 16:9, as `video`: the Yoshi turret on the ledge at x 1417
-    is shot from under it (the scroll lock at x 1534 waits for it, and the
-    view no longer shows it from there), at the 16:9 timing: from frame
-    10247 (x 1202), 76 frames right put him under it (70 or 82 miss it);
-    the level is complete at frame 37587."""
-    s = wide_script()
-    skip_levels(s, 9)
-    n = 0
-    while s.frame < turret:
-        explore_cycle(s, n)
-        n += 1
-    s.hold(walk, "RIGHT", FIRE)
-    cycle_until(s, s.frame + 600, [(40, ("UP", FIRE)), (3, ("F1", "F3", "UP", FIRE))])
-    while s.frame < end:
-        explore_cycle(s, n)
-        n += 1
-    s.expect_win("video")
-    return s.end(100)
+def wide_video(end=36550):
+    """video in 16:9, with the generic driver alone: it walks past the
+    Yoshi turret on the ledge at x 1417, still alive (175 HP of 400), which
+    leaves once off the screen at camera 1461 (D-98 fixed: in 2002 it stayed
+    until camera 1667 and the scroll lock at 1534, which waits for no
+    enemies, never opened). The level is complete at frame 36496."""
+    return wide_explore(9, end, ("video",)).end(100)
 
 
 # Firing up while waiting on the ledge before dork's lift 2: kills the
