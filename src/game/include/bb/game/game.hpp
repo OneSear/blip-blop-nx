@@ -187,7 +187,8 @@ private:
     core::FixedClock frameClock_;
     int frameTicks_ = 0;
 
-    // The F12 frame counter: frames drawn in the last second of game time.
+    // The frame counter of SHOW FPS (and F12): frames drawn in the last second
+    // of game time.
     int fps_ = 0;
     int framesThisSecond_ = 0;
     std::uint64_t secondStart_ = 0;

@@ -110,6 +110,9 @@ struct Options {
     int musicVolume = kMaxVolume;
     int soundVolume = kMaxVolume;
     bool rumble = true;
+    // The frames drawn each second, over a level (Game::drawAll()); the F12
+    // key of /cheat switches it too.
+    bool showFps = false;
 };
 
 // The banks and fonts of the game, owned by the application: some live as

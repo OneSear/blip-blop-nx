@@ -23,6 +23,7 @@ namespace bb::core {
 //   music-volume 10             (0 to 10)
 //   sound-volume 10
 //   rumble on
+//   show-fps off                (the frame counter in levels)
 //   p1.fire key:left_ctrl
 //   p2.jump pad1:button3
 //   ...
@@ -42,6 +43,7 @@ struct Settings {
     int musicVolume = kMaxVolume;
     int soundVolume = kMaxVolume;
     bool rumble = true;
+    bool showFps = false;  // the frames drawn each second, over a level
     input::Bindings bindings = input::Bindings::defaults();
 
     // What deterministic runs start from: the defaults, with smooth motion

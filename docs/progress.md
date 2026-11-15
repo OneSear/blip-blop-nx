@@ -3,6 +3,35 @@
 Status of the phases of [migration.md](../migration.md), with the facts
 learnt while implementing them. Newest phase first.
 
+## SHOW FPS, an option (14 November 2026)
+
+Asked by the maintainer: the frame counter of 2002 (D-45) needs `/cheat`
+and F12, which a Switch has neither of. The options page (both menus) gets
+SHOW FPS = ON/OFF, after RUMBLE and before the key pages.
+
+* **The option.** `Options::showFps`, saved as `show-fps on|off` in
+  `settings.cfg` (`core::Settings::showFps`, off by default and in
+  `Settings::reference()`); a file without it keeps the counter off. The
+  five two-value options of `Settings::parse()` are now one table.
+* **The counter** is the one of 2002: "FPS = n" in the rpg font at
+  (10, 130), under player 1's score, over a level only (`Game::drawAll()`):
+  the frames drawn in the last second of game time. The pause menu shows
+  the last level frame, so the count stands still while paused, and the
+  first second after a pause counts low.
+* **F12** (`/cheat`) no longer keeps its own `Level::showFps`: the level
+  reports the key (`Level::fpsKey`, under the cheat keys' 20-tick wait)
+  and `Game::tickBegin()` switches the option, so the options page always
+  tells what is shown, and the next visit to the options saves it.
+* **Text.** String 997 ("SHOW FPS = ", "AFFICHER FPS = "), after the
+  cheats' 990 to 996, in both JSON tables and in `uk.dat`.
+* **Layout.** 14 items on the options page: 28 pixels apart in both menus
+  (the main menu's were 30, the pause menu's 30 of its 40).
+* **Replays.** `menus` switches SHOW FPS on after RUMBLE (two more taps,
+  24 frames), so its level shows "FPS = 60". Every tick line held in all
+  45 replay tests, the shifted `menus` included; only `menus` and
+  `menus.wide` changed, in 89 of their 90 frame lines (the chain from the
+  options page on).
+
 ## The pause menu's cheats (14 November 2026)
 
 Asked by the maintainer: the cheats of 2002 need the `/cheat` switch and

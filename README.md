@@ -112,7 +112,8 @@ The options also set the volume of the MUSIC and of the SOUNDS, from 0
 (silent) to 10 (as loud as in 2002; left and right change it, A raises it
 and goes from 10 back to 0), and RUMBLE: the controllers rumble when their
 player is hurt or loses a life, drops a cow bomb or joins, and when the
-screen shakes.
+screen shakes. SHOW FPS (off by default) prints the frames drawn each
+second over a level, under player 1's score.
 
 ## Building
 
@@ -232,7 +233,8 @@ a player's fire joins and takes a hero and its jump gives it back (player 1
 also joins and takes with Return; player 2 has Tab and G); Escape goes back
 to the main menu. Cheat keys (`/cheat`, for development: unlike the pause
 menu's CHEATS page, they do not stop the hi-scores):
-F1 ammo, F2 cow bomb, F3 extra life, F9 win the level, F12 FPS counter.
+F1 ammo, F2 cow bomb, F3 extra life, F9 win the level, F12 FPS counter (it
+switches the SHOW FPS option).
 Players 3 and 4 have no keys by default and play with game controllers 3 and
 4. Controllers have the Switch's layout everywhere, by position (A is the
 right button, B the bottom one; SDL's A is the Switch's B); other pads keep

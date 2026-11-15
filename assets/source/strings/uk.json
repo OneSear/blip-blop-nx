@@ -256,6 +256,7 @@
     {"id": 994, "text": "INVINCIBLE = "},
     {"id": 995, "text": "WIN LEVEL"},
     {"id": 996, "text": "No hi-score for a game with cheats"},
+    {"id": 997, "text": "SHOW FPS = "},
     {"id": 1000, "text": "Credits"},
     {"id": 1001, "text": "CODE"},
     {"id": 1002, "text": "Benjamin Karaban"},

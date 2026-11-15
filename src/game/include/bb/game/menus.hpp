@@ -77,6 +77,7 @@ protected:
         kMusicItem,
         kSoundItem,
         kRumbleItem,
+        kFpsItem,  // SHOW FPS
         kKeys1Item,
         kKeys2Item,
         kKeys3Item,  // the four-player mode
@@ -121,7 +122,7 @@ protected:
     int bandPage_ = 0;
     int bandLeft_ = 0;
 
-    // The items of a page: 13 on the options page.
+    // The items of a page: 14 on the options page.
     std::array<std::array<char, 100>, 16> text_{};
 };
 
