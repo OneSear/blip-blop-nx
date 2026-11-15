@@ -167,8 +167,8 @@ def menus():
     pause menu opened by a focus loss, dialogue skip, the attract cycle
     interrupted by keys, and a normal quit. The Phase 9
     options are all switched on, so everything from the key pages on is in
-    French and the level is drawn with smooth motion; widescreen stays off
-    (replay.menus.wide plays the level in 16:9)."""
+    French and the level is drawn with smooth motion and the frame counter;
+    widescreen stays off (replay.menus.wide plays the level in 16:9)."""
     s = Script()
     s.hold(30)
     tap(s, "ESCAPE", frames=10)       # skip the intro
@@ -182,7 +182,7 @@ def menus():
     tap(s, "DOWN")                    # OPTIONS
     tap(s, "RETURN")                  # options (SCALING, FILTER, SMOOTH MOTION,
                                       # WIDESCREEN, LANGUAGE, MUSIC, SOUNDS,
-                                      # RUMBLE, P1 to P4 KEYS, RETURN)
+                                      # RUMBLE, SHOW FPS, P1 to P4 KEYS, RETURN)
     tap(s, "DOWN")                    # wraps to SCALING
     tap(s, "RIGHT")
     tap(s, "LEFT")
@@ -205,6 +205,8 @@ def menus():
     tap(s, "RETURN")                  # sound volume: from 10 around to 0
     tap(s, "DOWN")
     tap(s, "RIGHT")                   # rumble off (none in a replay anyway)
+    tap(s, "DOWN")
+    tap(s, "RIGHT")                   # show FPS on: the counter over the level
     tap(s, "DOWN")
     tap(s, "RETURN")                  # player 1 keys, focus on RETURN
     tap(s, "UP")                      # special

@@ -713,6 +713,11 @@ void Game::tickBegin() {
     }
 
     level_.tick(cheats);
+    // F12 switches the SHOW FPS option, so the options page shows it.
+    if (level_.fpsKey) {
+        level_.fpsKey = false;
+        services_.options->showFps = !services_.options->showFps;
+    }
 }
 
 bool Game::pauseRequested() {
@@ -762,7 +767,7 @@ void Game::drawAll(bool flip) {
     Hud::draw(world_, players_, level_.bonusLevel, world_.blink, joinSlot());
     level_.drawOverlays(screen);
 
-    if (level_.showFps) {
+    if (services_.options->showFps) {
         char buffer[40];
         std::snprintf(buffer, sizeof(buffer), "FPS = %d", fps_);
         services_.fonts->rpg->print(screen, 10, 130, buffer);

@@ -316,7 +316,7 @@ void Level::updateCheats(const CheatKeys& cheats) {
         return;
     }
     if (cheats.fpsDisplay) {
-        showFps = !showFps;
+        fpsKey = true;
         cheatWait_ = 0;
     }
     if (cheats.listsDisplay) {

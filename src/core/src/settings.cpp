@@ -55,6 +55,7 @@ std::string Settings::serialize() const {
     out << "music-volume " << musicVolume << "\n";
     out << "sound-volume " << soundVolume << "\n";
     out << "rumble " << (rumble ? "on" : "off") << "\n";
+    out << "show-fps " << (showFps ? "on" : "off") << "\n";
     for (int p = 0; p < kPlayerCount; ++p) {
         for (const Action a : kActions) {
             out << 'p' << (p + 1) << '.' << input::actionName(a) << ' ' << input::codeName(bindings.get(p, a))
@@ -130,16 +131,30 @@ std::optional<Settings> Settings::parse(std::string_view text, std::string& erro
             (w[0] == "music-volume" ? s.musicVolume : s.soundVolume) = level;
             continue;
         }
-        if (w[0] == "scaling" || w[0] == "smooth-motion" || w[0] == "widescreen" || w[0] == "rumble") {
-            // Each takes one of two values; the second sets the option.
-            const char* values[4][2] = {{"fit", "integer"}, {"off", "on"}, {"off", "on"}, {"off", "on"}};
-            bool* options[4] = {&s.integerScaling, &s.smoothMotion, &s.widescreen, &s.rumble};
-            const int i = w[0] == "scaling" ? 0 : w[0] == "smooth-motion" ? 1 : w[0] == "widescreen" ? 2 : 3;
-            if (w[1] != values[i][0] && w[1] != values[i][1]) {
-                error = where + std::string(w[0]) + " must be " + values[i][0] + " or " + values[i][1];
+        // The options that take one of two values; the second sets the option.
+        struct TwoWay {
+            const char* name;
+            const char* values[2];
+            bool* option;
+        };
+        const TwoWay twoWays[] = {{"scaling", {"fit", "integer"}, &s.integerScaling},
+                                  {"smooth-motion", {"off", "on"}, &s.smoothMotion},
+                                  {"widescreen", {"off", "on"}, &s.widescreen},
+                                  {"rumble", {"off", "on"}, &s.rumble},
+                                  {"show-fps", {"off", "on"}, &s.showFps}};
+        const TwoWay* twoWay = nullptr;
+        for (const TwoWay& candidate : twoWays) {
+            if (w[0] == candidate.name) {
+                twoWay = &candidate;
+            }
+        }
+        if (twoWay != nullptr) {
+            if (w[1] != twoWay->values[0] && w[1] != twoWay->values[1]) {
+                error =
+                    where + std::string(w[0]) + " must be " + twoWay->values[0] + " or " + twoWay->values[1];
                 return std::nullopt;
             }
-            *options[i] = w[1] == values[i][1];
+            *twoWay->option = w[1] == twoWay->values[1];
             continue;
         }
         bool bound = false;
